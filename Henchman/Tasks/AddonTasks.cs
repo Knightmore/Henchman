@@ -1,6 +1,5 @@
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
-using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -159,8 +158,8 @@ internal class AddonTasks
         {
             if (TryGetAddonByName<AddonRetainerTaskAsk>("RetainerTaskAsk", out var addon) && IsAddonReady(&addon->AtkUnitBase))
             {
-                    new AddonMaster.RetainerTaskAsk(addon).Assign();
-                    return true;
+                new AddonMaster.RetainerTaskAsk(addon).Assign();
+                return true;
             }
         }
 

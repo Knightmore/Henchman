@@ -1,9 +1,9 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
@@ -43,16 +43,30 @@ internal static class WorldTasks
     internal static async Task<IGameObject?> GetNearestMobByNameId(uint nameId, bool moveOnTimeout = false, CancellationToken token = default)
     {
         IBattleNpc? gameObject = null;
-        var         iterations = 0;
+        var iterations = 0;
         while (gameObject == null)
         {
             token.ThrowIfCancellationRequested();
             if (!IsOccupied())
             {
-                gameObject = Svc.Objects.OfType<IBattleNpc>()
-                                .Where(bnpc => bnpc is { IsTargetable: true, IsDead: false } && bnpc.NameId == nameId && (bnpc.TargetObject == null || bnpc.TargetObject.Equals(Player.Object)))
-                                .OrderBy(x => Player.DistanceTo(x))
-                                .FirstOrDefault();
+                var foundTargets = Svc.Objects.OfType<IBattleNpc>()
+                                  .Where(bnpc => bnpc is { IsTargetable: true, IsDead: false } && bnpc.NameId == nameId && (bnpc.TargetObject == null || bnpc.TargetObject.Equals(Player.Object)))
+                                  .OrderBy(x => Player.DistanceTo(x)).ToList();
+
+                if (foundTargets.Count == 1)
+                    gameObject = foundTargets.First();
+                else if (foundTargets.Count > 1)
+                {
+                    var paths = new List<(IBattleNpc target, List<Vector3> pathTo, float pathLength)>();
+                    foreach (var target in foundTargets)
+                    {
+                        var navTask = await Vnavmesh.NavPathfind(Player.Position, target.Position, false);
+                        paths.Add(new ValueTuple<IBattleNpc, List<Vector3>, float>(target, navTask, navTask.TotalDistance()));
+                    }
+
+                    var shortestPath = paths.OrderBy(p => p.pathLength).First();
+                    gameObject = shortestPath.target;
+                }
 
                 if (gameObject != null) return gameObject;
 

@@ -43,7 +43,7 @@ internal class SettingsUI : FeatureUI
                                                                                                                        .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
                                                                                           : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => PlayerState.Instance()->IsMountUnlocked(x.RowId)))
         {
-            C.MountId     = selectedMount.RowId;
+            C.MountId = selectedMount.RowId;
             configChanged = true;
         }
 

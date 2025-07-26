@@ -1,7 +1,7 @@
-using System.Linq;
-using System.Reflection;
 using Dalamud.Plugin.Services;
 using ECommons.EzIpcManager;
+using System.Linq;
+using System.Reflection;
 
 namespace Henchman.IPC;
 
@@ -36,7 +36,7 @@ internal static class SubscriptionManager
                                                  ? "RotationSolverReborn"
                                                  : attr.Name);
                         InitializedIPCs.Add(attr.Name);
-                        PluginLog.Debug($"{attr.Name} IPC registered.");
+                        Debug($"{attr.Name} IPC registered.");
                     }
                 }
             }
@@ -45,5 +45,17 @@ internal static class SubscriptionManager
         {
             PluginLog.Error("Could not subscribe to IPCs");
         }
+    }
+
+    public static bool AreMandatoryEnabled(this List<(string pluginName, bool mandatory)> requirements)
+    {
+        var missingPlugins = requirements
+                            .Where(x => x.mandatory && !IsInitialized(x.pluginName))
+                            .ToList();
+
+        if (missingPlugins.Count > 0)
+            Svc.Chat.PrintError($"Required plugins not enabled: \n {string.Join("\n", missingPlugins.Select(x => x.pluginName))}");
+
+        return missingPlugins.Count == 0;
     }
 }

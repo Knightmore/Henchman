@@ -1,11 +1,11 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Data;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using GrandCompany = ECommons.ExcelServices.GrandCompany;
 
 namespace Henchman.Features.OnYourMark;
@@ -107,8 +107,8 @@ internal class OnYourMark
                         Verbose($"Mob: {mob.Target.Value.Name.Value.RowId} {mob.Target.Value.Name.Value.Singular.ExtractText()}");
                         if (HuntMarks.TryGetValue(mob.Target.Value.Name.Value.RowId, out var tempMark))
                         {
-                            tempMark.NeededKills     = mob.NeededKills;
-                            tempMark.MobHuntRowId    = (byte)currentMobHuntType.RowId;
+                            tempMark.NeededKills = mob.NeededKills;
+                            tempMark.MobHuntRowId = (byte)currentMobHuntType.RowId;
                             tempMark.MobHuntSubRowId = (byte)mob.SubrowId;
                             Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
                             if (tempMark.GetOpenMobHuntKills == 0)
@@ -168,18 +168,18 @@ internal class OnYourMark
                 }
 
                 //Verbose($"InExpansionCategory Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
-                var  currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
+                var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                 bool isMarkBillUnlocked;
                 bool isMarkBillObtained;
-                int  availableMarkId;
-                int  obtainedMarkId;
+                int availableMarkId;
+                int obtainedMarkId;
 
                 unsafe
                 {
                     isMarkBillUnlocked = MobHunt.Instance()->IsMarkBillUnlocked((byte)currentMobHuntType.RowId);
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
-                    availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
-                    obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    availableMarkId = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    obtainedMarkId = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
                 }
 
                 if (!isMarkBillUnlocked)
@@ -262,11 +262,11 @@ internal class OnYourMark
         if (expansion == "A Realm Reborn")
         {
             huntBoardId = Player.GrandCompany switch
-                          {
-                                  GrandCompany.Maelstrom      => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
-                                  GrandCompany.TwinAdder      => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
-                                  GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
-                          };
+            {
+                GrandCompany.Maelstrom => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
+                GrandCompany.TwinAdder => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
+                GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
+            };
         }
         else
             huntBoardId = HuntBoardIds[expansion];

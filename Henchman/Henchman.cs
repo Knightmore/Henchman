@@ -26,9 +26,12 @@ public class Henchman : IDalamudPlugin
     public static readonly HashSet<FeatureUI> FeatureSet = [];
     public static readonly HashSet<FeatureUI> GeneralSet = [];
 
-    public readonly WindowSystem  WindowSystem = new("Henchman");
-    public          Configuration Config;
-    private         MainWindow    mainWindow;
+    public readonly WindowSystem WindowSystem = new("Henchman");
+    public Configuration Config;
+    private MainWindow mainWindow;
+    private FeatureBar featureBar;
+    internal FeatureWindow FeatureWindow;
+    internal string SelectedFeature = string.Empty;
 
     public Henchman(IDalamudPluginInterface pluginInterface)
     {
@@ -39,31 +42,33 @@ public class Henchman : IDalamudPlugin
         Initialize();
     }
 
-    public          string        Name => "Henchman";
-    internal static Configuration C    => P.Config;
+    public string Name => "Henchman";
+    internal static Configuration C => P.Config;
 
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
 
         mainWindow.Dispose();
+        //featureBar.Dispose();
+        //FeatureWindow.Dispose();
 
         Svc.Commands.RemoveHandler(CommandName);
 
         CancelAllTasks();
         Wrath.DisableWrath();
 
-        Svc.Framework.Update                     -= TaskManagerTick;
-        Svc.Framework.Update                     -= SubscriptionManager.Subscribe;
-        Svc.Framework.Update                     -= Tick;
-        Svc.PluginInterface.UiBuilder.Draw       -= DrawUi;
+        Svc.Framework.Update -= TaskManagerTick;
+        Svc.Framework.Update -= SubscriptionManager.Subscribe;
+        Svc.Framework.Update -= Tick;
+        Svc.PluginInterface.UiBuilder.Draw -= DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
     }
 
     private void Initialize()
     {
         EzConfig.Migrate<Configuration>();
-        Config               =  EzConfig.Init<Configuration>();
+        Config = EzConfig.Init<Configuration>();
         Svc.Framework.Update += TaskManagerTick;
 
         Svc.Framework.Update += SubscriptionManager.Subscribe;
@@ -83,6 +88,7 @@ public class Henchman : IDalamudPlugin
 
         GeneralSet.Add(new SettingsUI());
         GeneralSet.Add(new RequirementsUI());
+        GeneralSet.Add(new MarkDatabaseUI());
 #if PRIVATE
         GeneralSet.Add(new DebuggingUI());
         GeneralSet.Add(new LGBInspectorUI());
@@ -90,16 +96,20 @@ public class Henchman : IDalamudPlugin
 
 
         mainWindow = new MainWindow(this);
+        //featureBar = new FeatureBar();
+        //FeatureWindow = new FeatureWindow();
 
         WindowSystem.AddWindow(mainWindow);
+        //WindowSystem.AddWindow(featureBar);
+        //WindowSystem.AddWindow(FeatureWindow);
 
 
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
-                                             {
-                                                     HelpMessage = "Open plugin window"
-                                             });
+        {
+            HelpMessage = "Open plugin window"
+        });
 
-        Svc.PluginInterface.UiBuilder.Draw       += DrawUi;
+        Svc.PluginInterface.UiBuilder.Draw += DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
 
         Svc.Framework.Update += Tick;
@@ -125,6 +135,7 @@ public class Henchman : IDalamudPlugin
     public void ToggleMainUi()
     {
         mainWindow.Toggle();
+        //featureBar.Toggle();
     }
 
     public static bool TryGetFeature<T>(out T result) where T : FeatureUI

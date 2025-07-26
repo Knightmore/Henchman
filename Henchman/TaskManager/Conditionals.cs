@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Henchman.Helpers;
 
 namespace Henchman.TaskManager;
 
@@ -9,7 +8,6 @@ internal static class Conditionals
     internal static async Task WaitWhileAsync(Func<bool> asyncCondition, string taskDescription = "", CancellationToken token = default)
     {
         using var scope = new TaskDescriptionScope(taskDescription);
-        Verbose(taskDescription);
         while (asyncCondition())
         {
             token.ThrowIfCancellationRequested();
@@ -21,7 +19,6 @@ internal static class Conditionals
     internal static async Task WaitWhileAsync(Func<Task<bool>> asyncCondition, string taskDescription = "", CancellationToken token = default)
     {
         using var scope = new TaskDescriptionScope(taskDescription);
-        Verbose(taskDescription);
         while (await asyncCondition())
         {
             token.ThrowIfCancellationRequested();

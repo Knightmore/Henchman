@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.GameFunctions;
@@ -15,6 +12,9 @@ using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.RetainerVocate;
 
@@ -82,7 +82,7 @@ internal class RetainerVocate
     internal async Task GoToRetainerVocate(CancellationToken token = default)
     {
         if (token.IsCancellationRequested) return;
-        var  retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
+        var retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
         byte maxRetainerEntitlement;
         unsafe
         {
@@ -144,7 +144,7 @@ internal class RetainerVocate
 
         return true;
     }
-    
+
     internal async Task StartVentureQuest(CancellationToken token = default, uint combatClass = 0)
     {
         if (combatClass == 0)
@@ -168,35 +168,35 @@ internal class RetainerVocate
             startTown = PlayerState.Instance()->StartTown;
         }
 
-        YesAlreadyManager.TemporarilyNeeded  = true;
+        YesAlreadyManager.TemporarilyNeeded = true;
         TextAdvanceManager.TemporarilyNeeded = true;
 
         switch (startTown)
         {
             case 1:
-            {
-                Questionable.StartSingleQuest("1433");
-                await WaitUntilAsync(() => QuestManager.IsQuestComplete(66969), "Waiting for Quest 'An Ill-conceived Venture' (Limsa) to finish.", token);
-                break;
-            }
+                {
+                    Questionable.StartSingleQuest("1433");
+                    await WaitUntilAsync(() => QuestManager.IsQuestComplete(66969), "Waiting for Quest 'An Ill-conceived Venture' (Limsa) to finish.", token);
+                    break;
+                }
             case 2:
-            {
-                Questionable.StartSingleQuest("1432");
-                await WaitUntilAsync(() => QuestManager.IsQuestComplete(66968), "Waiting for Quest 'An Ill-conceived Venture' (Gridania) to finish.", token);
-                break;
-            }
+                {
+                    Questionable.StartSingleQuest("1432");
+                    await WaitUntilAsync(() => QuestManager.IsQuestComplete(66968), "Waiting for Quest 'An Ill-conceived Venture' (Gridania) to finish.", token);
+                    break;
+                }
             case 3:
-            {
-                Questionable.StartSingleQuest("1434");
-                await WaitUntilAsync(() => QuestManager.IsQuestComplete(66970), "Waiting for Quest 'An Ill-conceived Venture' (Ul'dah) to finish.", token);
-                break;
-            }
+                {
+                    Questionable.StartSingleQuest("1434");
+                    await WaitUntilAsync(() => QuestManager.IsQuestComplete(66970), "Waiting for Quest 'An Ill-conceived Venture' (Ul'dah) to finish.", token);
+                    break;
+                }
             default:
                 Console.WriteLine("Unknown start town, no quest assigned.");
                 break;
         }
 
-        YesAlreadyManager.TemporarilyNeeded  = false;
+        YesAlreadyManager.TemporarilyNeeded = false;
         TextAdvanceManager.TemporarilyNeeded = false;
     }
 
@@ -204,7 +204,7 @@ internal class RetainerVocate
     {
         byte maxRetainerEntitlement;
         bool anyRetainerNoJob;
-        int  retainerAmountNoJob;
+        int retainerAmountNoJob;
         unsafe
         {
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
@@ -344,7 +344,7 @@ internal class RetainerVocate
                             .GetRow(C.RetainerClass)
                             .Name.ExtractText();
         }
-        PluginLog.Debug(retainerAmount.ToString());
+        Debug(retainerAmount.ToString());
         var index = -1;
         unsafe
         {
@@ -362,12 +362,12 @@ internal class RetainerVocate
 
         for (var i = index; i < index + retainerAmount; i++)
         {
-            var    pos = i;
-            byte   classJob;
+            var pos = i;
+            byte classJob;
             string nameString;
             unsafe
             {
-                classJob   = RetainerManager.Instance()->Retainers[pos].ClassJob;
+                classJob = RetainerManager.Instance()->Retainers[pos].ClassJob;
                 nameString = RetainerManager.Instance()->Retainers[pos].NameString;
             }
             if (classJob != 0) continue;
@@ -415,7 +415,7 @@ internal class RetainerVocate
         }
 
         byte maxRetainerEntitlement = 0;
-        byte retainerCount          = 0;
+        byte retainerCount = 0;
 
         await WaitUntilAsync(async () =>
                              {
@@ -423,7 +423,7 @@ internal class RetainerVocate
                                  {
                                      var manager = RetainerManager.Instance();
                                      maxRetainerEntitlement = manager->MaxRetainerEntitlement;
-                                     retainerCount          = manager->GetRetainerCount();
+                                     retainerCount = manager->GetRetainerCount();
                                  }
 
                                  return (maxRetainerEntitlement > 0 && maxRetainerEntitlement == retainerCount) || await TrySelectSpecificEntry(Lang.SelectStringHireARetainer);
@@ -474,7 +474,7 @@ internal class RetainerVocate
                 if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgessAddon) && IsAddonReady(charaMakeProgessAddon))
                 {
                     Callback.Fire(charaMakeProgessAddon, true, 0, raceGender, 0, "", 0);
-                    PluginLog.Debug($"Choosing Retainer Race {C.RetainerRace} and Gender {C.RetainerGender}");
+                    Debug($"Choosing Retainer Race {C.RetainerRace} and Gender {C.RetainerGender}");
                     return true;
                 }
             }
@@ -491,7 +491,7 @@ internal class RetainerVocate
             if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
             {
                 Callback.Fire(charaMakeFeatureAddon, true, -9, 0);
-                PluginLog.Debug("Randomize Retainer Look");
+                Debug("Randomize Retainer Look");
                 return true;
             }
         }
@@ -507,7 +507,7 @@ internal class RetainerVocate
             if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
             {
                 Callback.Fire(charaMakeFeatureAddon, true, 100);
-                PluginLog.Debug("Finish Retainer");
+                Debug("Finish Retainer");
                 return true;
             }
         }
@@ -525,7 +525,7 @@ internal class RetainerVocate
                 Callback.Fire(inputString, true, 0, C.RetainerGender == RetainerDetails.RetainerGender.Male
                                                             ? NameGenerator.GetMasculineName
                                                             : NameGenerator.GetFeminineName, "");
-                PluginLog.Debug("Input Retainer Name");
+                Debug("Input Retainer Name");
                 return true;
             }
         }
@@ -541,7 +541,7 @@ internal class RetainerVocate
             if (TryGetAddonByName<AtkUnitBase>("RetainerCharacter", out var retainerCharacterAddon))
             {
                 Callback.Fire(retainerCharacterAddon, true, -1);
-                PluginLog.Debug("Close Retainer Character window");
+                Debug("Close Retainer Character window");
                 return true;
             }
         }
@@ -570,8 +570,8 @@ internal class RetainerVocate
         {
             if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon))
             {
-                PluginLog.Debug(new AddonMaster.RetainerList(retainerListAddon).Retainers.Length.ToString());
-                PluginLog.Debug(pos.ToString());
+                Debug(new AddonMaster.RetainerList(retainerListAddon).Retainers.Length.ToString());
+                Debug(pos.ToString());
                 new AddonMaster.RetainerList(retainerListAddon).Retainers[pos]
                                                                .Select();
                 return true;

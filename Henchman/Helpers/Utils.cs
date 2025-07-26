@@ -1,10 +1,3 @@
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Reflection;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Dalamud.Game;
 using Dalamud.Interface.Utility;
 using Dalamud.Utility;
@@ -13,6 +6,13 @@ using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Henchman.Helpers;
 
@@ -22,14 +22,14 @@ internal static class Utils
 
     internal static unsafe byte? GetGearsetForClassJob(ClassJob cj)
     {
-        byte? backup        = null;
-        var   gearsetModule = RaptureGearsetModule.Instance();
+        byte? backup = null;
+        var gearsetModule = RaptureGearsetModule.Instance();
         for (var i = 0; i < 100; i++)
         {
             var gearset = gearsetModule->GetGearset(i);
             if (gearset == null) continue;
             if (!gearset->Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists)) continue;
-            if (gearset->Id       != i) continue;
+            if (gearset->Id != i) continue;
             if (gearset->ClassJob == cj.RowId) return gearset->Id;
             if (backup == null && cj.ClassJobParent.RowId != 0 && gearset->ClassJob == cj.ClassJobParent.RowId) backup = gearset->Id;
         }
@@ -47,7 +47,7 @@ internal static class Utils
             return (dx * dx) + (dy * dy) + (dz * dz);
         }
 
-        var path   = new List<Vector3> { Player.Position };
+        var path = new List<Vector3> { Player.Position };
         var points = pointList.ToList();
 
         while (points.Count > 0)
@@ -84,7 +84,7 @@ internal static class Utils
         return LoadEmbeddedResource(resourceName, stream =>
                                                   {
                                                       using var reader = new StreamReader(stream);
-                                                      var       json   = reader.ReadToEnd();
+                                                      var json = reader.ReadToEnd();
                                                       return JsonSerializer.Deserialize<T>(json,
                                                                                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                                                   });
@@ -93,13 +93,13 @@ internal static class Utils
     internal static T? ReadLocalJsonFile<T>(string fileName)
     {
         var filePath = $"{Svc.PluginInterface.AssemblyLocation.Directory}\\Data\\{fileName}";
-        PluginLog.Verbose(filePath);
+        Verbose(filePath);
         if (!File.Exists(filePath))
             Error($"File '{filePath}' not found.");
 
         using var stream = File.OpenRead(filePath);
         using var reader = new StreamReader(stream);
-        var       json   = reader.ReadToEnd();
+        var json = reader.ReadToEnd();
 
         return JsonSerializer.Deserialize<T>(json,
                                              new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -108,7 +108,7 @@ internal static class Utils
 
     internal static async Task<T?> ReadRemoteJsonAsync<T>(string fileName)
     {
-        var       url        = $"https://raw.githubusercontent.com/Knightmore/Henchman/refs/heads/main/Henchman/Data/{fileName}";
+        var url = $"https://raw.githubusercontent.com/Knightmore/Henchman/refs/heads/main/Henchman/Data/{fileName}";
         using var httpClient = new HttpClient();
         try
         {

@@ -1,25 +1,26 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Henchman.Features.OnYourBGame;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
 internal static class MovementTasks
 {
     internal static async Task MoveToStationaryObject(
-            Vector3           interactablePosition,
-            uint              dataId,
-            bool              stopAtDistance = false,
-            float             distance       = 5f,
-            CancellationToken token          = default)
+            Vector3 interactablePosition,
+            uint dataId,
+            bool stopAtDistance = false,
+            float distance = 5f,
+            CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Move To Object");
@@ -33,14 +34,17 @@ internal static class MovementTasks
             Vnavmesh.StopCompletely();
         }
         else
-            await WaitUntilAsync(() => !Vnavmesh.PathIsRunning() && !Vnavmesh.NavPathfindInProgress(), "Wait for walking to Object", token);
+            await WaitUntilAsync(() => !Vnavmesh.PathIsRunning() &&
+                                       !Vnavmesh.NavPathfindInProgress() &&
+                                       IsPlayerInObjectRange(dataId, distance)
+                                              .Result, "Wait for walking to Object", token);
     }
 
     internal static async Task MoveToMovingObject(
-            IGameObject       gameObject,
-            float             distance        = 3f,
-            bool              recheckPosition = false,
-            CancellationToken token           = default)
+            IGameObject gameObject,
+            float distance = 3f,
+            bool recheckPosition = false,
+            CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Move To moving Object");
@@ -48,6 +52,7 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
         var position = gameObject.Position;
         ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {gameObject.Position}");
+        await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         if (recheckPosition)
@@ -68,6 +73,7 @@ internal static class MovementTasks
                 if (Vector3.Distance(position, gameObject.Position) > gameObject.HitboxRadius)
                 {
                     ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(gameObject.Position, Player.Mounted && Player.CanFly), $"Could not find path to {gameObject.Position}");
+                    await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
                     position = gameObject.Position;
                 }
 
@@ -98,7 +104,7 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
 
         if (Player.DistanceTo(position) < 5) return;
-        if (C.UseMount      && Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
+        if (C.UseMount && Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {position}");
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
@@ -163,6 +169,7 @@ internal static class MovementTasks
         await Mount(token);
         ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(zoneTransitionPosition, Player.Mounted && Player.CanFly),
                 $"Could not find path to {zoneTransitionPosition}");
+        await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
         if (!Player.Mounted) UseSprint();
         await WaitUntilAsync(() => Player.Territory == nextTerritoryId, "Check for right territory", token);
@@ -171,7 +178,7 @@ internal static class MovementTasks
     internal static async Task<bool> RoamUntilTargetNearby(List<Vector3> pointList, uint targetId, bool gotKilledWhileDetour, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-
+        using var scope = new TaskDescriptionScope("Roam until Target nearby");
         var path = Utils.SortListByDistance(pointList);
 
         foreach (var point in path)
@@ -182,8 +189,8 @@ internal static class MovementTasks
             if (!Player.Mounted && Player.DistanceTo(point) > C.MinRunDistance) UseSprint();
 
 #if DEBUG || PRIVATE
-            ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(point, Player.Mounted && Player.CanFly),
-                    $"Could not find path from {Player.Position} to {point}");
+
+            ErrorIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(point, Player.Mounted && Player.CanFly), $"Could not find path from {Player.Position} to {point}");
 #else
                 if (WarningIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(point, Player.Mounted && Player.CanFly),
                               $"Could not find path from {Player.Position} to {point}. Skipping to next!"))
@@ -191,18 +198,23 @@ internal static class MovementTasks
                     continue;
                 }
 #endif
+            await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
+
 
             if (C.DetourForOtherAB && !gotKilledWhileDetour)
             {
-                var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < 60f, "Moving close to next roaming point!", token);
-                ;
+                using var multiTaskToken = new CancellationTokenSource();
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, multiTaskToken.Token);
+
+                var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < 60f, $"Moving close to next roaming point: {point}!", linkedCts.Token);
                 var scanningForABRanks = WaitUntilAsync(() => Svc.Objects.OfType<IBattleNpc>()
                                                                  .Any(x => Svc.Objects.OfType<IBattleNpc>()
                                                                               .FirstOrDefault(x => Svc.Data.GetExcelSheet<BNpcBase>()
                                                                                                       .TryGetRow(x.DataId, out var row) &&
-                                                                                                   row.Rank == 1) is { Level: <= 70 } detourTarget), "Scanning for other A- and B-Ranks", token);
+                                                                                                   row.Rank == 1) is { Level: <= 70 } detourTarget), "Scanning for other A- and B-Ranks", linkedCts.Token);
 
                 var completedTask = await Task.WhenAny(playerCloseToPoint, scanningForABRanks);
+                linkedCts.Cancel();
                 await completedTask;
 
                 Vnavmesh.StopCompletely();
@@ -221,11 +233,26 @@ internal static class MovementTasks
             }
             else
             {
-                await WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < 70f, "Moving close to next roaming point!", token);
+                await WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < 70f, $"Moving close to next roaming point: {point}!", token);
                 Vnavmesh.StopCompletely();
             }
 
-            if (IsMobNearby(targetId)) return true;
+            if (GetMobNearby(targetId) is { } mob)
+            {
+                if (TaskName == "On Your B Game" && C.TrackBRankSpots)
+                {
+                    if (TryGetFeature<OnYourBGameUI>(out var plugin))
+                    {
+                        if (!plugin.foundSpawns.Any(x => IsWithinRadius(x.ToVector2(), mob.Position.ToVector2())))
+                        {
+                            plugin.foundSpawns.Add(new Vector3(MathF.Round(mob.Position.X, 2), MathF.Round(mob.Position.Y, 2), MathF.Round(mob.Position.Z, 2)));
+                            plugin.possibleSpawnPoints.Remove(point);
+                        }
+                    }
+                }
+
+                return true;
+            }
         }
 
         return true;

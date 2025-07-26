@@ -4,9 +4,9 @@ namespace Henchman.Features.General;
 
 internal class RequirementsUI : FeatureUI
 {
-    public override string  Name        => "Requirements";
-    public override Action? Help        { get; }
-    public override bool    LoginNeeded { get; }
+    public override string Name => "Requirements";
+    public override Action? Help { get; }
+    public override bool LoginNeeded => false;
 
     public override void Draw()
     {

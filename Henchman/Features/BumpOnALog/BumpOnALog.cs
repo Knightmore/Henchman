@@ -1,10 +1,10 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.BumpOnALog;
 

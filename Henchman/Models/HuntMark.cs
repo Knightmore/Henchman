@@ -1,8 +1,8 @@
-using System.Linq;
-using System.Text.Json.Serialization;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Henchman.Models;
 
@@ -13,15 +13,15 @@ public class HuntMark
         BNpcNameRowId = bnpcNameRowId;
         Positions.Add(new Vector3(x, y, z));
         TerritoryId = territoryId;
-        FateId      = fateId;
+        FateId = fateId;
     }
 
     public HuntMark(HuntMark original)
     {
         BNpcNameRowId = original.BNpcNameRowId;
-        Positions   = new List<Vector3>(original.Positions);
+        Positions = new List<Vector3>(original.Positions);
         TerritoryId = original.TerritoryId;
-        FateId      = original.FateId;
+        FateId = original.FateId;
         NeededKills = original.NeededKills;
     }
 
@@ -40,17 +40,17 @@ public class HuntMark
                              .ExclusiveType ==
                           2;
 
-    public        byte MobHuntRowId           { get; set; }
-    public        byte MobHuntSubRowId        { get; set; }
-    public unsafe int  GetCurrentMobHuntKills => MobHunt.Instance()->GetKillCount(MobHuntRowId, MobHuntSubRowId);
+    public byte MobHuntRowId { get; set; }
+    public byte MobHuntSubRowId { get; set; }
+    public unsafe int GetCurrentMobHuntKills => MobHunt.Instance()->GetKillCount(MobHuntRowId, MobHuntSubRowId);
 
     public int GetOpenMobHuntKills => NeededKills - GetCurrentMobHuntKills > 0
                                               ? NeededKills - GetCurrentMobHuntKills
                                               : 0;
 
-    public int MonsterNoteId      { get; set; }
+    public int MonsterNoteId { get; set; }
     public int MonsterNoteSubRank { get; set; }
-    public int MonsterNoteCount   { get; set; }
+    public int MonsterNoteCount { get; set; }
 
     public unsafe int GetCurrentMonsterNoteKills => MonsterNoteManager.Instance()->RankData[MonsterNoteId]
                                                    .RankData[MonsterNoteSubRank]

@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.Configuration;
@@ -8,6 +7,7 @@ using Henchman.Helpers;
 using Henchman.TaskManager;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.OnYourMark;
@@ -16,7 +16,7 @@ namespace Henchman.Features.OnYourMark;
 public class OnYourMarkUi : FeatureUI
 {
     private readonly OnYourMark feature = new();
-    public override  string     Name => "On Your Mark";
+    public override string Name => "On Your Mark";
 
     public override Action Help => () =>
                                    {
@@ -50,6 +50,7 @@ public class OnYourMarkUi : FeatureUI
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
             (IPCNames.vnavmesh, true),
+            (IPCNames.Lifestream, true),
             (IPCNames.BossMod, false),
             (IPCNames.Wrath, false),
             (IPCNames.RotationSolverReborn, false)
@@ -63,14 +64,14 @@ public class OnYourMarkUi : FeatureUI
                                              .ToArray()));
 
         var mobHuntOrderTypeEnumerator = Svc.Data.GetExcelSheet<MobHuntOrderType>()
-                                             //.ToList()
                                             .GetEnumerator();
 
         ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
                                   .X /
                              2) -
                             10);
-        if (ImGui.Button("Start")) EnqueueTask(new TaskRecord(feature.Start, "OnYourMark"));
+        if (ImGui.Button("Start"))
+            EnqueueTask(new TaskRecord(feature.Start, "On Your Mark"));
 
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
@@ -95,8 +96,8 @@ public class OnYourMarkUi : FeatureUI
                         {
                             var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                             var isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained(GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
+                            var availableMarkId = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
+                            var obtainedMarkId = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
                             var mobHuntOrderTypeOffset = isMarkBillObtained && availableMarkId != obtainedMarkId
                                                                  ? MobHunt.Instance()->ObtainedMarkId.ToArray()
                                                                  : MobHunt.Instance()->AvailableMarkId.ToArray();
@@ -141,7 +142,7 @@ public class OnYourMarkUi : FeatureUI
                             if (ImGui.Checkbox($"Enable##{key}", ref enabled))
                             {
                                 C.EnableHuntBills[key] = enabled;
-                                configChanged          = true;
+                                configChanged = true;
                             }
 
                             ImGui.Spacing();
@@ -155,7 +156,7 @@ public class OnYourMarkUi : FeatureUI
                             }
 
 
-                            using (var table = ImRaii.Table($"###{key}BillTable", 3, ImGuiTableFlags.RowBg))
+                            using (var table = ImRaii.Table($"###{key}BillTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
                             {
                                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
                                 ImGui.TableSetupColumn("Amount", ImGuiTableColumnFlags.WidthFixed);

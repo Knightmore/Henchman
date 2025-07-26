@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
@@ -10,6 +7,9 @@ using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Map = Lumina.Excel.Sheets.Map;
 
 namespace Henchman.Helpers;
@@ -23,26 +23,26 @@ internal static class GeneralHelpers
         NoSpawns
     }
 
-    public static          bool  IsPlayerBusy                                                       => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
-    internal static unsafe float GetChocoboTimeLeft                                                 => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
-    internal static        bool  IsPlayerInObjectRange3D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
-    internal static        bool  IsPlayerInObjectRange2D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
-    internal static        bool  IsPlayerInPositionRange3D(Vector3   position, float distance = 5f) => Player.DistanceTo(position) < distance;
-    internal static        bool  IsPlayerInPositionRange2D(Vector2   position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    public static bool IsPlayerBusy => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
+    internal static unsafe float GetChocoboTimeLeft => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
+    internal static bool IsPlayerInObjectRange3D(IGameObject gameObj, float distance = 5f) => Player.DistanceTo(gameObj) < distance;
+    internal static bool IsPlayerInObjectRange2D(IGameObject gameObj, float distance = 5f) => Player.DistanceTo(gameObj) < distance;
+    internal static bool IsPlayerInPositionRange3D(Vector3 position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    internal static bool IsPlayerInPositionRange2D(Vector2 position, float distance = 5f) => Player.DistanceTo(position) < distance;
 
-    internal static bool IsMobNearby(uint dataId)
+    internal static bool IsMobNearby(uint nameId)
     {
         var x = Svc.Objects.OfType<IBattleNpc>()
-                   .Where(obj => obj.NameId == dataId && obj.IsTargetable)
+                   .Where(obj => obj.NameId == nameId && obj is { IsTargetable: true, IsDead: false })
                    .OrderBy(x => Player.DistanceTo(x))
                    .FirstOrDefault();
         return x != null;
     }
 
-    internal static IGameObject? GetMobNearby(uint dataId)
+    internal static IGameObject? GetMobNearby(uint nameId)
     {
         var x = Svc.Objects.OfType<IBattleNpc>()
-                   .Where(obj => obj.NameId == dataId && obj.IsTargetable)
+                   .Where(obj => obj.NameId == nameId && obj is { IsTargetable: true, IsDead: false })
                    .OrderBy(x => Player.DistanceTo(x))
                    .FirstOrDefault();
         return x;
@@ -61,13 +61,29 @@ internal static class GeneralHelpers
     internal static async Task<bool> Mount(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        using var scope       = new TaskDescriptionScope($"Mounting");
-        if (Player.IsBusy) return false;
-        if (Player.Mounted) return true;
+        if (Player.Mounted)
+        {
+            return true;
+        }
+        using var scope = new TaskDescriptionScope("Mounting");
+        // ToDo: Recheck after a while. Sometimes the player was forced to walk, because the Player was somehow still AnimationLocked and Walking. Remove again if other problems occur with it.
+        if (Player.IsBusy)
+            await WaitUntilAsync(() => !Player.IsBusy, "Waiting for Player Status not busy!", token);
+        /*if (Player.IsBusy)
+        {
+            Verbose("Can not mount. Player is busy.");
+            Verbose($"IsOccupied: {IsOccupied()} | IsCasting: {Player.Object.IsCasting} | IsMoving: {Player.IsMoving} | IsAnimationLocked: {Player.IsAnimationLocked} | InCombat: {Svc.Condition[ConditionFlag.InCombat]}");
+            return false;
+        }*/
         if (!Svc.Data.GetExcelSheet<TerritoryType>()
                 .GetRow(Svc.ClientState.TerritoryType)
-                .Mount) return false;
-        PluginLog.Verbose("Mounting");
+                .Mount)
+        {
+            Verbose("Can not mount in current territory.");
+            return false;
+        }
+
+        Verbose("Using Mount");
         unsafe
         {
             var actionManager = ActionManager.Instance();
@@ -90,14 +106,11 @@ internal static class GeneralHelpers
     internal static async Task Dismount(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        using var scope = new TaskDescriptionScope($"Dismounting"); 
+        using var scope = new TaskDescriptionScope("Dismounting");
         ;
-        if (!Player.Mounted)
-        {
-            return;
-        }
+        if (!Player.Mounted) return;
 
-        PluginLog.Verbose("Dismounting");
+        Verbose("Dismounting");
         do
         {
             token.ThrowIfCancellationRequested();
@@ -192,7 +205,7 @@ internal static class GeneralHelpers
     internal static Vector3 GetAetherytePosition(uint aetheryteId)
     {
         var aetheryte = GetRow<Aetheryte>(aetheryteId)!.Value;
-        var level     = aetheryte.Level[0].ValueNullable;
+        var level = aetheryte.Level[0].ValueNullable;
 
         if (level != null)
             return new Vector3(level.Value.X, level.Value.Y, level.Value.Z);
@@ -206,12 +219,10 @@ internal static class GeneralHelpers
 
     internal static Vector2 ConvertCurrentToMapXZ()
     {
-        var zone = Svc.Data.GetExcelSheet<TerritoryType>()
-                      .GetRow(Player.Territory)
-                      .Map.Value;
-        var x = (Player.Position.X * zone.SizeFactor / 100.0f) + (zone.OffsetX * (zone.SizeFactor / 100.0f)) + 1024.0f;
-        var z = (Player.Position.Z * zone.SizeFactor / 100.0f) + (zone.OffsetY * (zone.SizeFactor / 100.0f)) + 1024.0f;
-        return new Vector2(x, z);
+        var map = Svc.Data.GetExcelSheet<TerritoryType>()
+                     .GetRow(Player.Territory)
+                     .Map.Value;
+        return WorldToMap(Player.Position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
     }
 
     internal static Vector2 MapToWorld(Vector2 mapCoordinates, Map map) => MapToWorld(mapCoordinates, map.OffsetX, map.OffsetY, map.SizeFactor);
@@ -219,7 +230,12 @@ internal static class GeneralHelpers
     internal static Vector2 MapToWorld(Vector2 mapCoordinates, int xOffset = 0, int yOffset = 0, uint scale = 100) => new(ConvertMapCoordToWorldCoord(mapCoordinates.X, scale, xOffset),
                                                                                                                           ConvertMapCoordToWorldCoord(mapCoordinates.Y, scale, yOffset));
 
-    internal static float ConvertMapCoordToWorldCoord(float mapCoord, uint scale, int offset) => (mapCoord - 1.0f - (2048f / scale) - (0.02f * offset)) / 0.02f;
+    private static float ConvertMapCoordToWorldCoord(float mapCoord, uint scale, int offset) => (mapCoord - 1.0f - (2048f / scale) - (0.02f * offset)) / 0.02f;
+
+    internal static Vector2 WorldToMap(Vector2 worldCoordinates, int xOffset = 0, int yOffset = 0, uint scale = 100) => new(MathF.Round(ConvertWorldCoordToMapCoord(worldCoordinates.X, scale, xOffset), 1), MathF.Round(ConvertWorldCoordToMapCoord(worldCoordinates.Y, scale, yOffset), 1));
+
+    private static float ConvertWorldCoordToMapCoord(float worldCoord, uint scale, int offset) => worldCoord * 0.02f + 1.0f + (2048f / scale) + (0.02f * offset);
+
 
     internal static bool IsWithinRadius(Vector2 x, Vector2 y, float radius = 50f) => Vector2.DistanceSquared(x, y) <= radius * radius;
 
@@ -230,4 +246,5 @@ internal static class GeneralHelpers
     internal static unsafe HaterInfo[] GetHatersArray() => UIState.Instance()->Hater.Haters.ToArray();
 
     internal static unsafe int GetItemAmount(uint itemId) => InventoryManager.Instance()->GetInventoryItemCount(itemId);
+    internal static float TotalDistance(this List<Vector3> points) => Enumerable.Range(0, points.Count - 1).Select(i => Vector3.Distance(points[i], points[i + 1])).Sum();
 }

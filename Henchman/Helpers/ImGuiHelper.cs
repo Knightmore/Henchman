@@ -1,9 +1,9 @@
-using System.Linq;
-using System.Reflection;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using ECommons.ImGuiMethods;
 using ImGuiNET;
+using System.Linq;
+using System.Reflection;
 
 namespace Henchman.Helpers;
 
@@ -52,7 +52,7 @@ internal static class ImGuiHelper
                 If no settings are available, you'll need to manually configure alternatives for any optional plugins.
 
                 If BossMod is optional, you can also use BossModReborn for AI (not the autorotation).
-                Don't have both enabled at the same time. Henchman is not actively preventing your from being stupid! 
+                Don't have both enabled at the same time. Henchman is not actively preventing you from being stupid! 
                 """;
 
     private static float GetLongestIPCNameWidth()
@@ -224,7 +224,7 @@ internal static class ImGuiHelper
 
         for (var i = 0; i < text.Length; i++)
         {
-            var hue   = ((time * 50f) + (i * 30f)) % 360f;
+            var hue = ((time * 50f) + (i * 30f)) % 360f;
             var color = ColorFromHSV(hue, 1f, 1f);
 
             ImGui.PushStyleColor(ImGuiCol.Text, color);
@@ -241,23 +241,23 @@ internal static class ImGuiHelper
     private static Vector4 ColorFromHSV(float hue, float saturation, float value)
     {
         var hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
-        var f  = (hue / 60) - MathF.Floor(hue / 60);
+        var f = (hue / 60) - MathF.Floor(hue / 60);
 
         value *= 255;
         var v = value;
         var p = value * (1 - saturation);
-        var q = value * (1 - (f       * saturation));
+        var q = value * (1 - (f * saturation));
         var t = value * (1 - ((1 - f) * saturation));
 
         return hi switch
-               {
-                       0 => new Vector4(v, t, p, 255),
-                       1 => new Vector4(q, v, p, 255),
-                       2 => new Vector4(p, v, t, 255),
-                       3 => new Vector4(p, q, v, 255),
-                       4 => new Vector4(t, p, v, 255),
-                       _ => new Vector4(v, p, q, 255)
-               } /
+        {
+            0 => new Vector4(v, t, p, 255),
+            1 => new Vector4(q, v, p, 255),
+            2 => new Vector4(p, v, t, 255),
+            3 => new Vector4(p, q, v, 255),
+            4 => new Vector4(t, p, v, 255),
+            _ => new Vector4(v, p, q, 255)
+        } /
                255f;
     }
 }

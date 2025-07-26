@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ImGuiMethods;
@@ -9,6 +8,7 @@ using Henchman.Models;
 using Henchman.TaskManager;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 
@@ -17,14 +17,14 @@ namespace Henchman.Features.BumpOnALog;
 [Feature]
 public class BumpOnALogUi : FeatureUI
 {
-    private readonly BumpOnALog          feature = new();
-    private          int                 classMonsterNoteId;
-    private          MonsterNoteRankInfo classMonsterNoteRankInfo;
-    private          int                 currentClassRank;
-    private          int                 currentGcRank;
-    private          int                 gcMonsterNoteId;
-    private          MonsterNoteRankInfo gcMonsterNoteRankInfo;
-    public override  string              Name => "Bump On A Log";
+    private readonly BumpOnALog feature = new();
+    private int classMonsterNoteId;
+    private MonsterNoteRankInfo classMonsterNoteRankInfo;
+    private int currentClassRank;
+    private int currentGcRank;
+    private int gcMonsterNoteId;
+    private MonsterNoteRankInfo gcMonsterNoteRankInfo;
+    public override string Name => "Bump On A Log";
 
     public override Action Help => () =>
                                    {
@@ -40,6 +40,7 @@ public class BumpOnALogUi : FeatureUI
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
             (IPCNames.vnavmesh, true),
+            (IPCNames.Lifestream, true),
             (IPCNames.BossMod, false),
             (IPCNames.Wrath, false),
             (IPCNames.RotationSolverReborn, false)
@@ -88,7 +89,7 @@ public class BumpOnALogUi : FeatureUI
         }
 
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
-        currentClassRank         = classMonsterNoteRankInfo.Rank;
+        currentClassRank = classMonsterNoteRankInfo.Rank;
 
         ImGuiEx.TextCentered($"Current Rank: {currentClassRank + 1}");
 
@@ -112,7 +113,7 @@ public class BumpOnALogUi : FeatureUI
         ImGuiEx.TextCentered(gcRow.Name.ExtractText());
 
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
-        currentGcRank         = gcMonsterNoteRankInfo.Rank;
+        currentGcRank = gcMonsterNoteRankInfo.Rank;
 
         ImGuiEx.TextCentered($"Current Rank: {currentGcRank + 1}");
 
@@ -140,8 +141,8 @@ public class BumpOnALogUi : FeatureUI
         if (ImGui.Button("Start"))
         {
             EnqueueTask(gcLog
-                                ? new TaskRecord(feature.StartGCRank, "BumpOnALog - GC Log")
-                                : new TaskRecord(feature.StartClassRank, "BumpOnALog - Rank Log"));
+                            ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
+                            : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
         }
 
         var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
@@ -150,7 +151,7 @@ public class BumpOnALogUi : FeatureUI
                                        .ToArray();
 
 
-        using (var table = ImRaii.Table("###HuntRankTable", 3, ImGuiTableFlags.RowBg))
+        using (var table = ImRaii.Table("###HuntRankTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
         {
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed);

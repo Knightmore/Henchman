@@ -1,5 +1,5 @@
-using System.ComponentModel;
 using ECommons.EzIpcManager;
+using System.ComponentModel;
 
 namespace Henchman.IPC;
 
@@ -21,7 +21,7 @@ internal class IPCProvider
                      "theoretically this was done by you.")]
         LeaseeReleased = 3,
 
-        [Description("IPC Services have been disabled remotely. "                +
+        [Description("IPC Services have been disabled remotely. " +
                      "Please see the commit history for /res/ipc_status.txt.\n " +
                      "https://github.com/PunishXIV/WrathCombo/commits/main/res/ipc_status.txt")]
         AllServicesSuspended = 4,
@@ -41,12 +41,12 @@ internal class IPCProvider
     [EzIPC]
     public void WrathComboCallback(int reason, string additionalInfo)
     {
-        PluginLog.Warning($"Lease was cancelled for reason {reason}. " +
+        Warning($"Lease was cancelled for reason {reason}. " +
                           $"Additional info: {additionalInfo}");
 
         if (reason == 0)
         {
-            PluginLog.Error("The user cancelled our lease." +
+            Error("The user cancelled our lease." +
                             "We are suspended from creating a new lease for now.");
         }
     }

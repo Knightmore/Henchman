@@ -4,9 +4,9 @@ namespace Henchman.Helpers;
 
 internal static class TextAdvanceManager
 {
-    private static  bool WasChanged;
+    private static bool WasChanged;
     internal static bool TemporarilyNeeded;
-    private static  bool IsBusy => Utils.IsPluginBusy;
+    private static bool IsBusy => Utils.IsPluginBusy;
 
     internal static void Tick()
     {

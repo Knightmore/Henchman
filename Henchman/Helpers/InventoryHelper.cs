@@ -16,7 +16,7 @@ internal static class InventoryHelper
     internal static unsafe InventoryItem* GetItemInInventory(uint itemId)
     {
         InventoryContainer* container;
-        var                 inventoryManager = InventoryManager.Instance();
+        var inventoryManager = InventoryManager.Instance();
         foreach (var inventory in MainInventory)
         {
             container = inventoryManager->GetInventoryContainer(inventory);

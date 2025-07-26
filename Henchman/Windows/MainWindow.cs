@@ -5,7 +5,6 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.Events;
 using ECommons.ImGuiMethods;
-using Henchman.Features.General;
 using Henchman.Helpers;
 using ImGuiNET;
 #if PRIVATE
@@ -19,13 +18,12 @@ public class MainWindow : Window, IDisposable
 {
     private const uint SidebarWidth = 200;
 
-    private string    selectedFeature = string.Empty;
-    public  FeatureUI SettingsUi      = new SettingsUI();
+    private string selectedFeature = string.Empty;
 
     public MainWindow(Henchman plugin) : base($"{P.Name} - {P.GetType().Assembly.GetName().Version} ",
-                                              ImGuiWindowFlags.NoScrollbar       |
+                                              ImGuiWindowFlags.NoScrollbar |
                                               ImGuiWindowFlags.NoScrollWithMouse |
-                                              ImGuiWindowFlags.AlwaysAutoResize  |
+                                              ImGuiWindowFlags.AlwaysAutoResize |
                                               ImGuiWindowFlags.NoSavedSettings)
     {
 #if PRIVATE
@@ -40,9 +38,9 @@ public class MainWindow : Window, IDisposable
                     (2 *
                      ImGui.GetStyle()
                           .FramePadding.X);
-        Size            = new Vector2(width, 600);
+        Size = new Vector2(width, 600);
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(width, 600), MaximumSize = new Vector2(1920, 1080) };
-        SizeCondition   = ImGuiCond.Always;
+        SizeCondition = ImGuiCond.Always;
     }
 
     private FeatureUI? SelectedFeature => FeatureSet.FirstOrDefault(t => t.Name == selectedFeature) ??
@@ -52,7 +50,7 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        var region            = ImGui.GetContentRegionAvail();
+        var region = ImGui.GetContentRegionAvail();
         var topLeftSideHeight = region.Y;
         if (Running && CurrentTaskRecord != null)
         {

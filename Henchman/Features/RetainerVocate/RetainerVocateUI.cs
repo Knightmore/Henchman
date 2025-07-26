@@ -1,4 +1,3 @@
-using System.Linq;
 using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
@@ -7,6 +6,7 @@ using Henchman.Helpers;
 using Henchman.TaskManager;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.RetainerVocate;
@@ -15,7 +15,7 @@ namespace Henchman.Features.RetainerVocate;
 public class RetainerVocateUi : FeatureUI
 {
     internal readonly RetainerVocate feature = new();
-    public override   string         Name => "Retainer Vocate";
+    public override string Name => "Retainer Vocate";
 
     public override Action Help => () =>
                                    {
@@ -48,11 +48,13 @@ public class RetainerVocateUi : FeatureUI
         else
         {
             if (ImGui.Button("Create Retainers"))
+            {
                 feature.RunFullCreation(C.UseMaxRetainerAmount
                                                 ? 10
                                                 : (uint)C.RetainerAmount, C.RetainerClass, C.QstClassJob);
+            }
 
-            
+
             ImGui.Text("Fill all retainer slots");
             ImGui.SameLine(150);
             configChanged |= ImGui.Checkbox("##fillAllSlots", ref C.UseMaxRetainerAmount);
@@ -102,7 +104,7 @@ public class RetainerVocateUi : FeatureUI
                                                   x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26 or 29))
             {
                 C.RetainerClass = selected.RowId;
-                configChanged   = true;
+                configChanged = true;
             }
 
             ImGui.Text("Assign Exploration");
@@ -127,10 +129,10 @@ public class RetainerVocateUi : FeatureUI
 
             if (ImGui.CollapsingHeader("Single Backup Tasks##singleTasks"))
             {
-                if (RetainerManager.Instance()->MaxRetainerEntitlement                                                  == 0 ||
+                if (RetainerManager.Instance()->MaxRetainerEntitlement == 0 ||
                     RetainerManager.Instance()->MaxRetainerEntitlement - RetainerManager.Instance()->GetRetainerCount() > 0)
                 {
-                    if (ImGui.Button(C.UseMaxRetainerAmount                                  ? "Create Retainers" :
+                    if (ImGui.Button(C.UseMaxRetainerAmount ? "Create Retainers" :
                                      RetainerManager.Instance()->MaxRetainerEntitlement == 0 ? "Go To Vocate" : "Create Retainers") &&
                         !Utils.IsPluginBusy)
                     {
@@ -160,7 +162,6 @@ public class RetainerVocateUi : FeatureUI
                         if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                         {
                             Error("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
-                            ChatPrint("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
                             return;
                         }
 

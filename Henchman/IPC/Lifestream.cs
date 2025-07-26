@@ -1,10 +1,10 @@
-using System.Threading;
-using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.EzIpcManager;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.IPC;
 
@@ -69,26 +69,26 @@ public static class Lifestream
         switch (destination)
         {
             case LifestreamDestination.Home:
-            {
-                TeleportToHome();
-                break;
-            }
+                {
+                    TeleportToHome();
+                    break;
+                }
 
             case LifestreamDestination.FC:
-            {
-                TeleportToFC();
-                break;
-            }
+                {
+                    TeleportToFC();
+                    break;
+                }
             case LifestreamDestination.Apartment:
-            {
-                TeleportToApartment();
-                break;
-            }
+                {
+                    TeleportToApartment();
+                    break;
+                }
             case LifestreamDestination.Inn:
-            {
-                ExecuteCommand("Inn");
-                break;
-            }
+                {
+                    ExecuteCommand("Inn");
+                    break;
+                }
             default:
                 return false;
         }

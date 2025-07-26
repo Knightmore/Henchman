@@ -1,4 +1,3 @@
-using System.Linq;
 using ECommons.GameFunctions;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
@@ -6,6 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using System.Linq;
 
 namespace Henchman.Helpers;
 
@@ -64,8 +64,8 @@ internal static unsafe class ShopUtils
         var agent = AgentShop.Instance();
         if (agent == null || agent->EventReceiver == null)
             return false;
-        AtkValue res   = default, arg = default;
-        var      proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
+        AtkValue res = default, arg = default;
+        var proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
         proxy->Handler->CancelInteraction();
         arg.SetInt(-1);
         agent->ReceiveEvent(&res, &arg, 1, 0);
