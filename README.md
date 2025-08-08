@@ -18,9 +18,3 @@ Repository Link:
 https://puni.sh/api/repository/knightmore
 ```
 
-For support, to propose ideas or general chatter, you can find me and the other weirdos on discord:
-
-<div align="center">
-  <a href="https://discord.gg/Zzrcc8kmvy"><img src="https://discordapp.com/api/guilds/1001823907193552978/embed.png?style=banner3"></a>
-</div>
-
