@@ -11,7 +11,7 @@ Just part of my after-work coding corner!
 - **Bump On A Log**: Hunt Logs for Classes and Grand Companies
 - **On Your Mark**: Hunt Bills from ARR - DT (including A-Rank if being spotted during Elite Mark Hunts)
 - **Retainer Vocate**: Retainer Creation (includes class assignment, level 1 weapon/tools purchase and equipment)
-- **Bring Your B Game**: B-Rank farmer for achievement
+- **Bring Your X Game**: A- & B-Rank farmer 
 
 Repository Link:
 ```
