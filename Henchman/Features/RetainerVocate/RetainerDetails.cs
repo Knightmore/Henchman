@@ -4,7 +4,7 @@ public class RetainerDetails
 {
     public enum RetainerGender
     {
-        Male = 0,
+        Male   = 0,
         Female = 10
     }
 

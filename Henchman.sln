@@ -4,6 +4,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.13.35919.96
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Henchman", "Henchman\Henchman.csproj", "{13C812E9-0D42-4B95-8646-40EEBF30636F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954} = {0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76} = {FD667165-D01D-9ACE-56EA-E5EEDB568C76}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoRetainerAPI", "AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj", "{FD667165-D01D-9ACE-56EA-E5EEDB568C76}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ECommons", "ECommons\ECommons\ECommons.csproj", "{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Henchman.Generators", "Henchman.Generators\Henchman.Generators.csproj", "{C430C670-23D2-23FB-5B69-F14F464CF066}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,6 +28,24 @@ Global
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Private|x64.Build.0 = Private|x64
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.ActiveCfg = Release|x64
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.Build.0 = Release|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Debug|x64.ActiveCfg = Debug|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Debug|x64.Build.0 = Debug|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Private|x64.ActiveCfg = Debug|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Private|x64.Build.0 = Debug|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Release|x64.ActiveCfg = Release|x64
+		{FD667165-D01D-9ACE-56EA-E5EEDB568C76}.Release|x64.Build.0 = Release|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Debug|x64.ActiveCfg = Debug|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Debug|x64.Build.0 = Debug|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Private|x64.ActiveCfg = Debug|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Private|x64.Build.0 = Debug|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Release|x64.ActiveCfg = Release|x64
+		{0B1F2C54-98D7-DBB6-6CDF-C71EE0173954}.Release|x64.Build.0 = Release|x64
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Debug|x64.Build.0 = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Private|x64.ActiveCfg = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Private|x64.Build.0 = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Release|x64.ActiveCfg = Release|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

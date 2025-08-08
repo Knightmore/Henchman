@@ -1,5 +1,5 @@
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 
@@ -9,11 +9,11 @@ internal static class HuntLogHelper
 {
     internal static unsafe int GetGrandCompanyRankInfo()
     {
-        int gcMonsterNoteId = Svc.Data.GetExcelSheet<GrandCompany>()
-                                 .GetRow(PlayerState.Instance()->GrandCompany)
-                                 .Unknown8;
+        var gcMonsterNoteId = Svc.Data.GetExcelSheet<GrandCompany>()
+                                 .GetRow((byte)Player.GrandCompany)
+                                 .MonsterNote.Value.RowId;
 
-        var gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
+        var gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[(int)gcMonsterNoteId];
 
         return gcMonsterNoteRankInfo.Rank;
     }
@@ -21,9 +21,8 @@ internal static class HuntLogHelper
     internal static unsafe int GetClassJobRankInfo()
     {
         var classMonsterNoteId = Svc.Data.GetExcelSheet<ClassJob>()
-                                    .GetRow(PlayerState.Instance()->CurrentClassJobId)
+                                    .GetRow(Player.JobId)
                                     .MonsterNote.RowId.ToInt();
-
         var classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
 
         return classMonsterNoteRankInfo.Rank;

@@ -1,18 +1,19 @@
-using Dalamud.Game.ClientState.Objects.Types;
-using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Types;
+using ECommons.GameHelpers;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 
 namespace Henchman.Tasks;
 
 internal static class WorldTasks
 {
-    internal static async Task InteractWithByDataId(uint dataId)
+    internal static async Task InteractWithByDataId(uint dataId, CancellationToken token = default)
     {
-        await WaitUntilAsync(() => TargetNearestByDataId(dataId), $"Target {dataId}");
-        await Task.Delay(GeneralDelayMs);
+        await WaitUntilAsync(() => TargetNearestByDataId(dataId, token), $"Target {dataId}", token);
+        await Task.Delay(GeneralDelayMs * 2, token);
         unsafe
         {
             TargetSystem.Instance()->InteractWithObject(TargetSystem.Instance()->Target);
@@ -43,15 +44,16 @@ internal static class WorldTasks
     internal static async Task<IGameObject?> GetNearestMobByNameId(uint nameId, bool moveOnTimeout = false, CancellationToken token = default)
     {
         IBattleNpc? gameObject = null;
-        var iterations = 0;
+        var         iterations = 0;
         while (gameObject == null)
         {
             token.ThrowIfCancellationRequested();
             if (!IsOccupied())
             {
                 var foundTargets = Svc.Objects.OfType<IBattleNpc>()
-                                  .Where(bnpc => bnpc is { IsTargetable: true, IsDead: false } && bnpc.NameId == nameId && (bnpc.TargetObject == null || bnpc.TargetObject.Equals(Player.Object)))
-                                  .OrderBy(x => Player.DistanceTo(x)).ToList();
+                                      .Where(bnpc => bnpc is { IsTargetable: true, IsDead: false } && bnpc.NameId == nameId && (bnpc.TargetObject == null || bnpc.TargetObject.Equals(Player.Object)))
+                                      .OrderBy(x => Player.DistanceTo(x))
+                                      .ToList();
 
                 if (foundTargets.Count == 1)
                     gameObject = foundTargets.First();
@@ -64,7 +66,8 @@ internal static class WorldTasks
                         paths.Add(new ValueTuple<IBattleNpc, List<Vector3>, float>(target, navTask, navTask.TotalDistance()));
                     }
 
-                    var shortestPath = paths.OrderBy(p => p.pathLength).First();
+                    var shortestPath = paths.OrderBy(p => p.pathLength)
+                                            .First();
                     gameObject = shortestPath.target;
                 }
 
@@ -73,7 +76,7 @@ internal static class WorldTasks
                 // 120 * 500 ms iterations to move on after 1 minute
                 if (moveOnTimeout && iterations == 120) return null;
 
-                await Task.Delay(GeneralDelayMs, token);
+                await Task.Delay(GeneralDelayMs * 2, token);
                 iterations++;
             }
         }
@@ -159,12 +162,27 @@ internal static class WorldTasks
                        .FirstOrDefault();
             if (x != null)
             {
-                await Task.Delay(100, token);
+                await Task.Delay(GeneralDelayMs, token);
                 Svc.Targets.Target = x;
                 return true;
             }
         }
 
         return false;
+    }
+
+    internal static async Task<bool> IsInFate(ushort fateId, CancellationToken token = default)
+    {
+        await Task.Delay(GeneralDelayMs, token);
+        unsafe
+        {
+            return FateManager.Instance()->CurrentFate != null && FateManager.Instance()->CurrentFate->FateId == fateId;
+        }
+    }
+
+    internal static async Task<bool> IsFateActive(ushort fateId, CancellationToken token = default)
+    {
+        await Task.Delay(GeneralDelayMs, token);
+        return Svc.Fates.Any(x => x.FateId == fateId && x.Progress < 50);
     }
 }

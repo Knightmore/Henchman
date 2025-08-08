@@ -1,11 +1,11 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Data;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using GrandCompany = ECommons.ExcelServices.GrandCompany;
 
 namespace Henchman.Features.OnYourMark;
@@ -23,14 +23,14 @@ internal class OnYourMark
                                     .Select(x => x.EventItem))
                 await DiscardItem(bill.Value.RowId, token);
 
-            await Task.Delay(3000, token);
+            await Task.Delay(GeneralDelayMs * 12, token);
         }
         else
             await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
 
         await GetNewBills(mobHuntOrderType.GetEnumerator(), token);
         await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
-        await Lifestream.LifestreamReturn(C.ReturnTo, token);
+        await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
     }
 
     private async Task ProcessBills(List<MobHuntOrderType>.Enumerator mobHuntOrderTypeEnumerator, CancellationToken token = default)
@@ -107,8 +107,8 @@ internal class OnYourMark
                         Verbose($"Mob: {mob.Target.Value.Name.Value.RowId} {mob.Target.Value.Name.Value.Singular.ExtractText()}");
                         if (HuntMarks.TryGetValue(mob.Target.Value.Name.Value.RowId, out var tempMark))
                         {
-                            tempMark.NeededKills = mob.NeededKills;
-                            tempMark.MobHuntRowId = (byte)currentMobHuntType.RowId;
+                            tempMark.NeededKills     = mob.NeededKills;
+                            tempMark.MobHuntRowId    = (byte)currentMobHuntType.RowId;
                             tempMark.MobHuntSubRowId = (byte)mob.SubrowId;
                             Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
                             if (tempMark.GetOpenMobHuntKills == 0)
@@ -131,7 +131,8 @@ internal class OnYourMark
             Verbose($"Enabled Bill Count: {enabledBillsSelectString.Count()}");
         }
 
-        var orderedMarks = huntTargets.OrderBy(x => x.FateId).ThenBy(x => x.TerritoryId)
+        var orderedMarks = huntTargets.OrderBy(x => x.FateId)
+                                      .ThenBy(x => x.TerritoryId)
                                       .ToList();
         await ProcessHuntMarks(orderedMarks, token: token);
     }
@@ -168,18 +169,18 @@ internal class OnYourMark
                 }
 
                 //Verbose($"InExpansionCategory Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
-                var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
+                var  currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                 bool isMarkBillUnlocked;
                 bool isMarkBillObtained;
-                int availableMarkId;
-                int obtainedMarkId;
+                int  availableMarkId;
+                int  obtainedMarkId;
 
                 unsafe
                 {
                     isMarkBillUnlocked = MobHunt.Instance()->IsMarkBillUnlocked((byte)currentMobHuntType.RowId);
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
-                    availableMarkId = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
-                    obtainedMarkId = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
                 }
 
                 if (!isMarkBillUnlocked)
@@ -235,8 +236,7 @@ internal class OnYourMark
             if (expansion == "A Realm Reborn" && Player.GrandCompany == GrandCompany.Maelstrom)
             {
                 Lifestream.ExecuteCommand("gc");
-                await WaitUntilAsync(() => Lifestream.IsBusy(), "Moving To GC", token);
-                await WaitUntilAsync(() => !Lifestream.IsBusy(), "Moving To GC", token);
+                await WaitPulseConditionAsync(() => Lifestream.IsBusy(), "Moving To GC", token);
             }
             else
             {
@@ -249,7 +249,7 @@ internal class OnYourMark
                 }
 
                 //Verbose($"HuntBoard Territory is null: {huntboardTerritory == null}");
-                ErrorIf(huntboardTerritory == null, "No aetheryte for huntboard found!");
+                ErrorThrowIf(huntboardTerritory == null, "No aetheryte for huntboard found!");
 
 
                 var aetheryteId = huntboardTerritory!.Value.AetheryteId;
@@ -262,11 +262,11 @@ internal class OnYourMark
         if (expansion == "A Realm Reborn")
         {
             huntBoardId = Player.GrandCompany switch
-            {
-                GrandCompany.Maelstrom => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
-                GrandCompany.TwinAdder => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
-                GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
-            };
+                          {
+                                  GrandCompany.Maelstrom      => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
+                                  GrandCompany.TwinAdder      => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
+                                  GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
+                          };
         }
         else
             huntBoardId = HuntBoardIds[expansion];
@@ -289,11 +289,11 @@ internal class OnYourMark
     private async Task GatherHuntBills(uint huntBoardId, string billSelect, string num, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        await InteractWithByDataId(huntBoardId);
+        await InteractWithByDataId(huntBoardId, token);
         await WaitUntilAsync(() => Svc.Targets.Target != null && Svc.Targets.Target.DataId == huntBoardId, "Waiting for Huntboard Target", token);
         await WaitUntilAsync(() => TrySelectSpecificEntry(billSelect), $"SelectString {billSelect}", token);
         await WaitUntilAsync(() => ClickAddonButton($"Mobhunt{num}", 21), "Click Accept", token);
-        await Task.Delay(1000, token)
+        await Task.Delay(GeneralDelayMs * 4, token)
                   .ConfigureAwait(true);
     }
 }

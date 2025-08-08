@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+<Project Sdk="Dalamud.NET.Sdk/13.0.0">
     <PropertyGroup>
-        <Version>1.0.0.6</Version>
+        <Version>1.0.1.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -13,6 +13,7 @@
         <PackageId>Henchman</PackageId>
         <Configurations>Debug;Release;Private</Configurations>
     </PropertyGroup>
+
     <ItemGroup>
         <Compile Remove="Properties\**" />
         <EmbeddedResource Remove="Properties\**" />
@@ -49,7 +50,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="ECommons" Version="3.0.0" />
+      <ProjectReference Include="..\AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj" />
+      <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
+      <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+      </ProjectReference>
     </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="DalamudPackager" Version="13.0.0" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
 
 </Project>

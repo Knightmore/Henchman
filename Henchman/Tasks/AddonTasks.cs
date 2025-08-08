@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
 using ECommons.UIHelpers.AddonMasterImplementations;
@@ -6,7 +7,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
 using Lumina.Text.ReadOnly;
-using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
@@ -18,7 +18,7 @@ internal class AddonTasks
         {
             if (TryGetAddonByName<AtkUnitBase>(addonName, out var addon) && IsAddonReady(addon))
             {
-                var button = addon->GetButtonNodeById(buttonNodeId);
+                var button = addon->GetComponentButtonById(buttonNodeId);
                 if (button->IsEnabled && button->AtkResNode->IsVisible())
                 {
                     button->ClickAddonButton(addon);

@@ -5,7 +5,7 @@ namespace Henchman.Helpers;
 internal static class TextAdvanceManager
 {
     private static bool WasChanged;
-    internal static bool TemporarilyNeeded;
+    private static bool TemporarilyNeeded;
     private static bool IsBusy => Utils.IsPluginBusy;
 
     internal static void Tick()
@@ -39,4 +39,7 @@ internal static class TextAdvanceManager
     {
         if (EzSharedData.TryGet<HashSet<string>>("TextAdvance.StopRequests", out var data)) data.Remove(P.Name);
     }
+
+    internal static void SetTemporary()   => TemporarilyNeeded = true;
+    internal static void UnsetTemporary() => TemporarilyNeeded = false;
 }

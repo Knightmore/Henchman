@@ -1,6 +1,6 @@
-using Henchman.Helpers;
 using System.Threading;
 using System.Threading.Tasks;
+using Henchman.Helpers;
 
 namespace Henchman.Tasks;
 

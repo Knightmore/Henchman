@@ -11,7 +11,7 @@ internal static class Conditionals
         while (asyncCondition())
         {
             token.ThrowIfCancellationRequested();
-            await Task.Delay(100, token)
+            await Task.Delay(GeneralDelayMs, token)
                       .ConfigureAwait(true);
         }
     }
@@ -22,7 +22,7 @@ internal static class Conditionals
         while (await asyncCondition())
         {
             token.ThrowIfCancellationRequested();
-            await Task.Delay(100, token)
+            await Task.Delay(GeneralDelayMs, token)
                       .ConfigureAwait(true);
         }
     }

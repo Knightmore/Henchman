@@ -1,10 +1,10 @@
+using System.Threading;
+using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.EzIpcManager;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Henchman.IPC;
 
@@ -22,6 +22,11 @@ public static class Lifestream
     [EzIPC]
     public static Func<bool> IsBusy;
 
+    /// <summary>
+    ///     Requests aethernet teleport to be executed by ID from <see cref="Aetheryte" /> sheet, if possible.
+    /// </summary>
+    /// <param name="aetheryteID">Aetheryte ID</param>
+    /// <param name="subIndex">Used for housing</param>
     [EzIPC]
     public static Func<uint, byte, bool> Teleport;
 
@@ -38,57 +43,79 @@ public static class Lifestream
     public static Action<string> ExecuteCommand;
 
     [EzIPC]
-    public static Action<string, string> ConnectAndOpenCharaSelect;
+    public static Func<string, string, bool> ConnectAndOpenCharaSelect;
 
-    public static async Task<bool> SwitchToChar(string charName, string worldName, CancellationToken token = default)
+    /// <summary>
+    ///     Requests character screen by name and world, if possible. Must be at the title menu.
+    /// </summary>
+    /// <param name="characterName"></param>
+    /// <param name="worldName"></param>
+    /// <returns></returns>
+    [EzIPC]
+    public static Func<string, string, bool> ConnectAndLogin;
+
+    /// <summary>
+    ///     Requests aethernet teleport to be executed by ID from <see cref="Aetheryte" /> sheet, if possible. Must be within
+    ///     an aetheryte or aetheryte shard range.
+    /// </summary>
+    /// <param name="aethernetSheetRowId"></param>
+    /// <returns></returns>
+    [EzIPC]
+    public static Func<uint, bool> AethernetTeleportById;
+
+    public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
-        if (Player.Available && (Player.Name != charName || Player.HomeWorld != worldName))
+        if (Player.Available && Player.Name == charName && Player.HomeWorld == worldName) return;
+        if (!Player.Available)
         {
-            Chat.SendMessage("/logout");
-            await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
-            await WaitUntilAsync(() =>
-                                 {
-                                     unsafe
-                                     {
-                                         return TryGetAddonByName<AtkUnitBase>("_Title", out var addon) && addon->IsVisible;
-                                     }
-                                 }, "Wait for title screen", token);
+            ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
+            await WaitUntilAsync(() => Player.Available, "Waiting for login", token);
+            return;
         }
 
-        ConnectAndOpenCharaSelect(charName, worldName);
+        Chat.SendMessage("/logout");
+        await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
+        await WaitUntilAsync(() =>
+                             {
+                                 unsafe
+                                 {
+                                     return TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var addon) && addon->IsVisible;
+                                 }
+                             }, "Wait for title screen", token);
+
+        ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
         await WaitUntilAsync(() => Player.Available, "Waiting for login", token);
-        return true;
     }
 
-    public static async Task<bool> LifestreamReturn(LifestreamDestination destination, CancellationToken token = default)
+    public static async Task<bool> LifestreamReturn(LifestreamDestination destination, bool returnCriteria, CancellationToken token = default)
     {
         if (!SubscriptionManager.IsInitialized(IPCNames.Lifestream))
             return false;
-        if (!C.ReturnOnceDone)
+        if (!returnCriteria)
             return false;
         switch (destination)
         {
             case LifestreamDestination.Home:
-                {
-                    TeleportToHome();
-                    break;
-                }
+            {
+                TeleportToHome();
+                break;
+            }
 
             case LifestreamDestination.FC:
-                {
-                    TeleportToFC();
-                    break;
-                }
+            {
+                TeleportToFC();
+                break;
+            }
             case LifestreamDestination.Apartment:
-                {
-                    TeleportToApartment();
-                    break;
-                }
+            {
+                TeleportToApartment();
+                break;
+            }
             case LifestreamDestination.Inn:
-                {
-                    ExecuteCommand("Inn");
-                    break;
-                }
+            {
+                ExecuteCommand("Inn");
+                break;
+            }
             default:
                 return false;
         }

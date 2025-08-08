@@ -48,6 +48,6 @@ internal static unsafe class SkipTalk
 
     private static void Click(AddonEvent type, AddonArgs args)
     {
-        if (((AtkUnitBase*)args.Addon)->IsVisible) new AddonMaster.Talk(args.Addon).Click();
+        if (((AtkUnitBase*)args.Addon.Address)->IsVisible) new AddonMaster.Talk(args.Addon).Click();
     }
 }

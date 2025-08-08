@@ -50,28 +50,34 @@ internal static class Lang
     internal static string SelectStringNoMainEquipped => Svc.Data.GetExcelSheet<Addon>()
                                                             .GetRow(2389)
                                                             .Text.ExtractText();
+
     internal static ReadOnlySeString SelectYesNoClassConfirmAsk => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerCall_00010")
-                                                                               .GetRow(208)
-                                                                               .ReadStringColumn(1);
+                                                                      .GetRow(208)
+                                                                      .ReadStringColumn(1);
+
     internal static string SelectStringAssignVenture => Svc.Data.GetExcelSheet<Addon>()
-                                                            .GetRow(2386)
-                                                            .Text.ExtractText();
+                                                           .GetRow(2386)
+                                                           .Text.ExtractText();
 
     internal static string SelectStringVentureCategoryFieldExploration => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerCall_00010")
-                                                                               .GetRow(196)
-                                                                               .ReadStringColumn(1).ExtractText();
+                                                                             .GetRow(196)
+                                                                             .ReadStringColumn(1)
+                                                                             .ExtractText();
 
     internal static string SelectStringVentureCategoryHighlandExploration => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerCall_00010")
-                                                                                       .GetRow(198)
-                                                                                       .ReadStringColumn(1).ExtractText();
+                                                                                .GetRow(198)
+                                                                                .ReadStringColumn(1)
+                                                                                .ExtractText();
 
     internal static string SelectStringVentureCategoryWoodlandExploration => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerCall_00010")
-                                                                                       .GetRow(200)
-                                                                                       .ReadStringColumn(1).ExtractText();
+                                                                                .GetRow(200)
+                                                                                .ReadStringColumn(1)
+                                                                                .ExtractText();
 
     internal static string SelectStringVentureCategoryWatersideExploration => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerCall_00010")
-                                                                                       .GetRow(202)
-                                                                                       .ReadStringColumn(1).ExtractText();
+                                                                                 .GetRow(202)
+                                                                                 .ReadStringColumn(1)
+                                                                                 .ExtractText();
 
     internal static string SelectStringQuitWithDot => Svc.Data.GetExcelSheet<Addon>()
                                                          .GetRow(917)

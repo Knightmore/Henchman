@@ -1,15 +1,13 @@
-using Dalamud.Game.ClientState.Conditions;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.TaskManager;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Lumina.Excel.Sheets;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Map = Lumina.Excel.Sheets.Map;
 
 namespace Henchman.Helpers;
@@ -18,17 +16,40 @@ internal static class GeneralHelpers
 {
     public enum KillResult
     {
+        Default,
         Success,
         Died,
         NoSpawns
     }
 
-    public static bool IsPlayerBusy => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
-    internal static unsafe float GetChocoboTimeLeft => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
-    internal static bool IsPlayerInObjectRange3D(IGameObject gameObj, float distance = 5f) => Player.DistanceTo(gameObj) < distance;
-    internal static bool IsPlayerInObjectRange2D(IGameObject gameObj, float distance = 5f) => Player.DistanceTo(gameObj) < distance;
-    internal static bool IsPlayerInPositionRange3D(Vector3 position, float distance = 5f) => Player.DistanceTo(position) < distance;
-    internal static bool IsPlayerInPositionRange2D(Vector2 position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    public static bool IsPlayerMelee => Svc.Data.GetExcelSheet<ClassJob>()
+                                           .GetRow(Player.JobId)
+                                           .Role is 1 or 2;
+
+    public static          bool  IsPlayerBusy                                                       => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
+    internal static unsafe float GetChocoboTimeLeft                                                 => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
+    internal static        bool  IsPlayerInObjectRange3D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
+    internal static        bool  IsPlayerInObjectRange2D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
+    internal static        bool  IsPlayerInPositionRange3D(Vector3   position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    internal static        bool  IsPlayerInPositionRange2D(Vector2   position, float distance = 5f) => Player.DistanceTo(position) < distance;
+
+    internal static unsafe byte? GetGearsetForClassJob(ClassJob cj)
+    {
+        byte? backup        = null;
+        var   gearsetModule = RaptureGearsetModule.Instance();
+        for (var i = 0; i < 100; i++)
+        {
+            var gearset = gearsetModule->GetGearset(i);
+            if (gearset == null) continue;
+            if (!gearset->Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists)) continue;
+            if (gearset->Id       != i) continue;
+            if (gearset->ClassJob == cj.RowId) return gearset->Id;
+            if (backup == null && cj.ClassJobParent.RowId != 0 && gearset->ClassJob == cj.ClassJobParent.RowId) backup = gearset->Id;
+        }
+
+        return backup;
+    }
+
 
     internal static bool IsMobNearby(uint nameId)
     {
@@ -58,69 +79,6 @@ internal static class GeneralHelpers
                   .FirstOrDefault();
     }
 
-    internal static async Task<bool> Mount(CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        if (Player.Mounted)
-        {
-            return true;
-        }
-        using var scope = new TaskDescriptionScope("Mounting");
-        // ToDo: Recheck after a while. Sometimes the player was forced to walk, because the Player was somehow still AnimationLocked and Walking. Remove again if other problems occur with it.
-        if (Player.IsBusy)
-            await WaitUntilAsync(() => !Player.IsBusy, "Waiting for Player Status not busy!", token);
-        /*if (Player.IsBusy)
-        {
-            Verbose("Can not mount. Player is busy.");
-            Verbose($"IsOccupied: {IsOccupied()} | IsCasting: {Player.Object.IsCasting} | IsMoving: {Player.IsMoving} | IsAnimationLocked: {Player.IsAnimationLocked} | InCombat: {Svc.Condition[ConditionFlag.InCombat]}");
-            return false;
-        }*/
-        if (!Svc.Data.GetExcelSheet<TerritoryType>()
-                .GetRow(Svc.ClientState.TerritoryType)
-                .Mount)
-        {
-            Verbose("Can not mount in current territory.");
-            return false;
-        }
-
-        Verbose("Using Mount");
-        unsafe
-        {
-            var actionManager = ActionManager.Instance();
-            if (C.UseMountRoulette || !PlayerState.Instance()->IsMountUnlocked(C.MountId))
-            {
-                if (actionManager->GetActionStatus(ActionType.GeneralAction, 9) != 0) return false;
-                actionManager->UseAction(ActionType.GeneralAction, 9);
-            }
-            else
-            {
-                if (actionManager->GetActionStatus(ActionType.Mount, C.MountId) != 0) return false;
-                actionManager->UseAction(ActionType.Mount, C.MountId);
-            }
-        }
-
-        await WaitUntilAsync(() => Player.Mounted, "Waiting for Mount", token);
-        return true;
-    }
-
-    internal static async Task Dismount(CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        using var scope = new TaskDescriptionScope("Dismounting");
-        ;
-        if (!Player.Mounted) return;
-
-        Verbose("Dismounting");
-        do
-        {
-            token.ThrowIfCancellationRequested();
-            if (!IsActionUsable(ActionType.GeneralAction, 23)) continue;
-            UseAction(ActionType.GeneralAction, 23);
-            await Task.Delay(GeneralDelayMs, token);
-        }
-        while (Svc.Condition[ConditionFlag.InFlight] || Player.Mounted);
-    }
-
     internal static async Task IsTargetDead(IGameObject? target, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
@@ -130,7 +88,25 @@ internal static class GeneralHelpers
 
     private static float DistanceToHitboxEdge(Vector3 targetPos, float hitboxRadius) => Player.DistanceTo(targetPos) - hitboxRadius;
 
-    internal static bool IsInMeleeRange(Vector3 targetPos, float hitboxRadius) => DistanceToHitboxEdge(targetPos, hitboxRadius + 1.5f) <= 2;
+    internal static bool IsInAttackRange(this IGameObject target, float baseHitboxRadius)
+    {
+        const float DefaultRangeBuffer = 1.5f;
+        const float RangedAdjustment   = 8f;
+        const float MaxRange           = 2f;
+
+        var jobRole = Svc.Data.GetExcelSheet<ClassJob>()
+                        ?.GetRow(Player.JobId)
+                         .Role ??
+                      0;
+        var adjustedRadius = baseHitboxRadius +
+                             (jobRole is 1 or 2
+                                      ? 0f
+                                      : RangedAdjustment) +
+                             DefaultRangeBuffer;
+
+        return DistanceToHitboxEdge(target.Position, adjustedRadius) <= MaxRange;
+    }
+
 
     internal static unsafe bool UseAction(ActionType actionType, uint actionId) => ActionManager.Instance()->UseAction(actionType, actionId);
 
@@ -147,20 +123,7 @@ internal static class GeneralHelpers
         return false;
     }
 
-    internal static async Task<bool> IsInFate(ushort fateId, CancellationToken token = default)
-    {
-        await Task.Delay(GeneralDelayMs, token);
-        unsafe
-        {
-            return FateManager.Instance()->CurrentFate != null && FateManager.Instance()->CurrentFate->FateId == fateId;
-        }
-    }
-
-    internal static async Task<bool> IsFateActive(ushort fateId, CancellationToken token = default)
-    {
-        await Task.Delay(GeneralDelayMs, token);
-        return Svc.Fates.Any(x => x.FateId == fateId && x.Progress < 50);
-    }
+    internal static unsafe byte GetGrandCompanyRank() => PlayerState.Instance()->GetGrandCompanyRank();
 
     /*
      * TODO: Switch to MappingTheRealm once/if ever released.
@@ -205,7 +168,7 @@ internal static class GeneralHelpers
     internal static Vector3 GetAetherytePosition(uint aetheryteId)
     {
         var aetheryte = GetRow<Aetheryte>(aetheryteId)!.Value;
-        var level = aetheryte.Level[0].ValueNullable;
+        var level     = aetheryte.Level[0].ValueNullable;
 
         if (level != null)
             return new Vector3(level.Value.X, level.Value.Y, level.Value.Z);
@@ -234,17 +197,16 @@ internal static class GeneralHelpers
 
     internal static Vector2 WorldToMap(Vector2 worldCoordinates, int xOffset = 0, int yOffset = 0, uint scale = 100) => new(MathF.Round(ConvertWorldCoordToMapCoord(worldCoordinates.X, scale, xOffset), 1), MathF.Round(ConvertWorldCoordToMapCoord(worldCoordinates.Y, scale, yOffset), 1));
 
-    private static float ConvertWorldCoordToMapCoord(float worldCoord, uint scale, int offset) => worldCoord * 0.02f + 1.0f + (2048f / scale) + (0.02f * offset);
+    private static float ConvertWorldCoordToMapCoord(float worldCoord, uint scale, int offset) => (worldCoord * 0.02f) + 1.0f + (2048f / scale) + (0.02f * offset);
 
-
-    internal static bool IsWithinRadius(Vector2 x, Vector2 y, float radius = 50f) => Vector2.DistanceSquared(x, y) <= radius * radius;
+    internal static bool IsWithinRadius(this Vector2 x, Vector2 y, float radius = 50f) => Vector2.DistanceSquared(x, y) <= radius * radius;
 
     internal static unsafe int GetHaterCount() => UIState.Instance()->Hater.HaterCount;
 
     internal static unsafe Span<HaterInfo> GetHaters() => UIState.Instance()->Hater.Haters;
 
-    internal static unsafe HaterInfo[] GetHatersArray() => UIState.Instance()->Hater.Haters.ToArray();
-
-    internal static unsafe int GetItemAmount(uint itemId) => InventoryManager.Instance()->GetInventoryItemCount(itemId);
-    internal static float TotalDistance(this List<Vector3> points) => Enumerable.Range(0, points.Count - 1).Select(i => Vector3.Distance(points[i], points[i + 1])).Sum();
+    internal static float TotalDistance(this List<Vector3> points) => Enumerable.Range(0, Math.Max(0, points.Count - 1))
+                                                                                .Where(i => i + 1 < points.Count)
+                                                                                .Select(i => Vector3.Distance(points[i], points[i + 1]))
+                                                                                .Sum();
 }

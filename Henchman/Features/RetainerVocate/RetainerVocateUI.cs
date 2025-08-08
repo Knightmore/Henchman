@@ -1,12 +1,12 @@
+using System.Linq;
+using Dalamud.Bindings.ImGui;
 using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Henchman.Helpers;
 using Henchman.TaskManager;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
-using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.RetainerVocate;
@@ -15,14 +15,14 @@ namespace Henchman.Features.RetainerVocate;
 public class RetainerVocateUi : FeatureUI
 {
     internal readonly RetainerVocate feature = new();
-    public override string Name => "Retainer Vocate";
+    public override   string         Name => "Retainer Vocate";
 
     public override Action Help => () =>
                                    {
                                        ImGui.Text("""
                                                   Set up how you want your retainer to be and click 'Create Retainers'
                                                   If you haven't already done the Venture Quest, it will run after creating retainers.
-                                                  
+
                                                   If any task fails or you somehow messed up midway, 
                                                   you can try to continue through one of the 'Single Backup Tasks' 
                                                   """);
@@ -104,7 +104,7 @@ public class RetainerVocateUi : FeatureUI
                                                   x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26 or 29))
             {
                 C.RetainerClass = selected.RowId;
-                configChanged = true;
+                configChanged   = true;
             }
 
             ImGui.Text("Assign Exploration");
@@ -129,18 +129,20 @@ public class RetainerVocateUi : FeatureUI
 
             if (ImGui.CollapsingHeader("Single Backup Tasks##singleTasks"))
             {
-                if (RetainerManager.Instance()->MaxRetainerEntitlement == 0 ||
+                if (RetainerManager.Instance()->MaxRetainerEntitlement                                                  == 0 ||
                     RetainerManager.Instance()->MaxRetainerEntitlement - RetainerManager.Instance()->GetRetainerCount() > 0)
                 {
-                    if (ImGui.Button(C.UseMaxRetainerAmount ? "Create Retainers" :
+                    if (ImGui.Button(C.UseMaxRetainerAmount                                  ? "Create Retainers" :
                                      RetainerManager.Instance()->MaxRetainerEntitlement == 0 ? "Go To Vocate" : "Create Retainers") &&
                         !Utils.IsPluginBusy)
                     {
                         EnqueueTask(new TaskRecord(feature.GoToRetainerVocate, "Go to Retainer Vocate"));
                         if (C.UseMaxRetainerAmount || RetainerManager.Instance()->MaxRetainerEntitlement != 0)
+                        {
                             EnqueueTask(new TaskRecord(token => feature.CreateRetainers(token, C.UseMaxRetainerAmount
                                                                                                        ? 10
                                                                                                        : C.RetainerAmount), "Create Retainers"));
+                        }
                     }
                 }
                 else
@@ -150,7 +152,7 @@ public class RetainerVocateUi : FeatureUI
                 {
                     var classJob = Svc.Data.GetExcelSheet<ClassJob>()
                                       .GetRow(C.QstClassJob);
-                    var gearset = Utils.GetGearsetForClassJob(classJob);
+                    var gearset = GetGearsetForClassJob(classJob);
                     ImGui.NewLine();
                     ImGui.Text("Questionable:");
                     ImGui.Text("An Ill-conceived Venture");

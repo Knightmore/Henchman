@@ -1,19 +1,19 @@
+using System.Linq;
+using System.Threading.Tasks;
 using Henchman.Helpers;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Henchman.Data;
 
 internal static class HuntDatabase
 {
     internal static Dictionary<uint, HuntMark> HuntMarks = new();
-    internal static Dictionary<uint, HuntMark> BRanks = new();
+    internal static Dictionary<uint, HuntMark> BRanks    = new();
 
-    internal static IEnumerable<ClassJob> HuntLogClasses;
+    internal static IEnumerable<ClassJob>     HuntLogClasses;
     internal static Dictionary<uint, HuntLog> ClassHuntRanks = new();
-    internal static Dictionary<uint, HuntLog> GcHuntRanks = new();
+    internal static Dictionary<uint, HuntLog> GcHuntRanks    = new();
 
     internal static Dictionary<GrandCompany, Location> ArrHuntBoardLocations = new()
                                                                                {
@@ -177,9 +177,7 @@ internal static class HuntDatabase
     {
         try
         {
-            var marks = C.UseOnlineMobData
-                                ? await Utils.ReadRemoteJsonAsync<List<JsonHuntMark>>(filePath)
-                                : Utils.ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
+            var marks = Utils.ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
 
             if (marks != null)
             {
@@ -190,11 +188,6 @@ internal static class HuntDatabase
                     else if (huntMark.TerritoryId == jsonMark.TerritoryId)
                         huntMark.Positions.Add(new Vector3(jsonMark.X, jsonMark.Y, jsonMark.Z));
                 }
-            }
-            else
-            {
-                if (C.UseOnlineMobData)
-                    Error($"{filePath} could not be loaded from server. As a temporary fix you can either untick 'Load mob location data from server' and rebuild the database or try to rebuild it with the server data.");
             }
         }
         catch (Exception e)
@@ -207,10 +200,10 @@ internal static class HuntDatabase
     {
         try
         {
-            HuntMarks = new Dictionary<uint, HuntMark>();
-            BRanks = new Dictionary<uint, HuntMark>();
+            HuntMarks      = new Dictionary<uint, HuntMark>();
+            BRanks         = new Dictionary<uint, HuntMark>();
             ClassHuntRanks = new Dictionary<uint, HuntLog>();
-            GcHuntRanks = new Dictionary<uint, HuntLog>();
+            GcHuntRanks    = new Dictionary<uint, HuntLog>();
 
             await ProcessHuntMarkJson("ARRHunt.json", HuntMarks);
             await ProcessHuntMarkJson("HWHunt.json", HuntMarks);
@@ -237,13 +230,13 @@ internal static class HuntDatabase
         foreach (var huntClass in HuntLogClasses)
         {
             var classHuntLog = new HuntLog();
-            var rowBase = (int)huntClass.RowId * 10000;
+            var rowBase      = (int)huntClass.RowId * 10000;
 
             for (var rankNumber = 0; rankNumber < 5; rankNumber++)
             {
                 var entryBase = rowBase + (rankNumber * 10) + 1;
-                var count = 0;
-                var subRank = 0;
+                var count     = 0;
+                var subRank   = 0;
                 for (var rankEntry = entryBase; rankEntry <= entryBase + 9; rankEntry++)
                 {
                     var rankEntryRow = Svc.Data.GetExcelSheet<MonsterNote>()
@@ -254,12 +247,12 @@ internal static class HuntDatabase
                         if (HuntMarks.TryGetValue(monsterTarget.BNpcName.Value.RowId, out var huntMark))
                         {
                             var newHuntMark = new HuntMark(huntMark)
-                            {
-                                NeededKills = rankEntryRow.Count[i],
-                                MonsterNoteId = (int)huntClass.MonsterNote.RowId,
-                                MonsterNoteSubRank = subRank,
-                                MonsterNoteCount = i
-                            };
+                                              {
+                                                      NeededKills        = rankEntryRow.Count[i],
+                                                      MonsterNoteId      = (int)huntClass.MonsterNote.RowId,
+                                                      MonsterNoteSubRank = subRank,
+                                                      MonsterNoteCount   = i
+                                              };
 
                             classHuntLog.HuntMarks[rankNumber, count] = newHuntMark;
                         }
@@ -285,12 +278,12 @@ internal static class HuntDatabase
         foreach (var gc in grandCompanies)
         {
             var gcHuntLog = new HuntLog();
-            var rowBase = gc.RowId * 1000000;
+            var rowBase   = gc.RowId * 1000000;
             for (uint rankNumber = 0; rankNumber < 5; rankNumber++)
             {
                 var entryBase = rowBase + (rankNumber * 10) + 1;
-                var count = 0;
-                var subRank = 0;
+                var count     = 0;
+                var subRank   = 0;
                 for (var rankEntry = entryBase; rankEntry <= entryBase + 9; rankEntry++)
                 {
                     var rankEntryRow = Svc.Data.GetExcelSheet<MonsterNote>()
@@ -301,12 +294,12 @@ internal static class HuntDatabase
                         if (HuntMarks.TryGetValue(monsterTarget.BNpcName.Value.RowId, out var huntMark))
                         {
                             var newHuntMark = new HuntMark(huntMark)
-                            {
-                                NeededKills = rankEntryRow.Count[i],
-                                MonsterNoteId = gc.Unknown8,
-                                MonsterNoteSubRank = subRank,
-                                MonsterNoteCount = i
-                            };
+                                              {
+                                                      NeededKills        = rankEntryRow.Count[i],
+                                                      MonsterNoteId      = (int)gc.MonsterNote.RowId,
+                                                      MonsterNoteSubRank = subRank,
+                                                      MonsterNoteCount   = i
+                                              };
 
                             gcHuntLog.HuntMarks[rankNumber, count] = newHuntMark;
                         }

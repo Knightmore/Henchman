@@ -9,24 +9,24 @@ namespace Henchman.TaskManager;
 
 public static class TaskManager
 {
-    private static readonly LinkedList<TaskRecord> taskQueue = new();
-    private static readonly LinkedList<CancellationTokenSource> ctsQueue = new();
-    public static TaskRecord? CurrentTaskRecord;
-    private static CancellationTokenSource Cts = new();
-    public static List<string> TaskDescription = [];
-    private static Func<CancellationToken, Task>? currentTask;
-    private static TaskRecord? ChainedTaskRecord;
+    private static readonly LinkedList<TaskRecord>              taskQueue = new();
+    private static readonly LinkedList<CancellationTokenSource> ctsQueue  = new();
+    public static           TaskRecord?                         CurrentTaskRecord;
+    private static          CancellationTokenSource             Cts             = new();
+    public static           List<string>                        TaskDescription = [];
+    private static          Func<CancellationToken, Task>?      currentTask;
+    private static          TaskRecord?                         ChainedTaskRecord;
 
     /// <summary>
-    ///     General delay is 500 ms
+    ///     General delay is 250 ms
     /// </summary>
-    public static readonly int GeneralDelayMs = 500;
+    public static readonly int GeneralDelayMs = 250;
 
     public static bool Running => CurrentTaskRecord != null;
 
-    public static string TaskName => Running
-                                             ? CurrentTaskRecord!.Name
-                                             : "No Task running";
+    public static string? TaskName => Running
+                                              ? CurrentTaskRecord!.Name
+                                              : "No Task running";
 
     public static void EnqueueTask(TaskRecord task)
     {
@@ -43,9 +43,9 @@ public static class TaskManager
     {
         if (ChainedTaskRecord != null && CurrentTaskRecord == null)
         {
-            Cts = new CancellationTokenSource();
+            Cts               = new CancellationTokenSource();
             CurrentTaskRecord = ChainedTaskRecord;
-            currentTask = token => ChainedTaskRecord.Task(token);
+            currentTask       = token => ChainedTaskRecord.Task(token);
             ChainedTaskRecord = CurrentTaskRecord.ChainedTaskRecord;
 
             Run();
@@ -55,9 +55,9 @@ public static class TaskManager
             Cts.Dispose();
             taskQueue.RemoveFirst();
             ctsQueue.RemoveFirst();
-            Cts = cts;
+            Cts               = cts;
             CurrentTaskRecord = nextTask;
-            currentTask = token => CurrentTaskRecord.Task(token);
+            currentTask       = token => CurrentTaskRecord.Task(token);
             ChainedTaskRecord = CurrentTaskRecord.ChainedTaskRecord;
 
             Run();
@@ -74,20 +74,28 @@ public static class TaskManager
                                   {
                                       await currentTask.Invoke(Cts.Token)
                                                        .ConfigureAwait(true);
-                                      ChatPrint($"{CurrentTaskRecord!.Name} completed!");
+                                      ChatPrintInfo($"{CurrentTaskRecord!.Name} completed!");
                                   }
                               }
-                              catch (Exception ex)
+                              catch (Exception e)
                               {
-                                  if (ex is not OperationCanceledException)
-                                      Error($"Unexpected error in task execution: {ex}");
+                                  if (e is PluginErrorException)
+                                  {
+                                      Error(e.Message);
+                                      if (CurrentTaskRecord is { OnErrorTask: { } })
+                                          await CurrentTaskRecord.OnErrorTask.Invoke();
+                                  }
+                                  else if (e is not OperationCanceledException)
+                                      Error($"Unexpected error in task execution: {e}");
+
+                                  if (CurrentTaskRecord is { OnAbort: { } })
+                                      CurrentTaskRecord.OnAbort.Invoke();
 
                                   CancelAllTasks();
-                              }
-                              finally
+                              } finally
                               {
                                   CurrentTaskRecord = null;
-                                  currentTask = null;
+                                  currentTask       = null;
                                   TaskDescription.Clear();
                               }
                           }, Cts.Token)
@@ -101,7 +109,8 @@ public static class TaskManager
         ctsQueue.Clear();
         Vnavmesh.StopCompletely();
         CurrentTaskRecord = null;
-        currentTask = null;
+        ChainedTaskRecord = null;
+        currentTask       = null;
         TaskDescription.Clear();
         Bossmod.DisableAI();
         AutoRotation.Disable();

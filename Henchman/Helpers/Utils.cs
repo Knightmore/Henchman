@@ -1,41 +1,21 @@
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game;
 using Dalamud.Interface.Utility;
 using Dalamud.Utility;
 using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Reflection;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Henchman.Helpers;
 
-internal static class Utils
+public static class Utils
 {
     internal static bool IsPluginBusy => Running;
-
-    internal static unsafe byte? GetGearsetForClassJob(ClassJob cj)
-    {
-        byte? backup = null;
-        var gearsetModule = RaptureGearsetModule.Instance();
-        for (var i = 0; i < 100; i++)
-        {
-            var gearset = gearsetModule->GetGearset(i);
-            if (gearset == null) continue;
-            if (!gearset->Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists)) continue;
-            if (gearset->Id != i) continue;
-            if (gearset->ClassJob == cj.RowId) return gearset->Id;
-            if (backup == null && cj.ClassJobParent.RowId != 0 && gearset->ClassJob == cj.ClassJobParent.RowId) backup = gearset->Id;
-        }
-
-        return backup;
-    }
 
     internal static List<Vector3> SortListByDistance(List<Vector3> pointList)
     {
@@ -47,7 +27,7 @@ internal static class Utils
             return (dx * dx) + (dy * dy) + (dz * dz);
         }
 
-        var path = new List<Vector3> { Player.Position };
+        var path   = new List<Vector3> { Player.Position };
         var points = pointList.ToList();
 
         while (points.Count > 0)
@@ -84,7 +64,7 @@ internal static class Utils
         return LoadEmbeddedResource(resourceName, stream =>
                                                   {
                                                       using var reader = new StreamReader(stream);
-                                                      var json = reader.ReadToEnd();
+                                                      var       json   = reader.ReadToEnd();
                                                       return JsonSerializer.Deserialize<T>(json,
                                                                                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                                                   });
@@ -95,37 +75,18 @@ internal static class Utils
         var filePath = $"{Svc.PluginInterface.AssemblyLocation.Directory}\\Data\\{fileName}";
         Verbose(filePath);
         if (!File.Exists(filePath))
+        {
             Error($"File '{filePath}' not found.");
+            return default;
+        }
 
         using var stream = File.OpenRead(filePath);
         using var reader = new StreamReader(stream);
-        var json = reader.ReadToEnd();
+        var       json   = reader.ReadToEnd();
 
         return JsonSerializer.Deserialize<T>(json,
                                              new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
-
-
-    internal static async Task<T?> ReadRemoteJsonAsync<T>(string fileName)
-    {
-        var url = $"https://raw.githubusercontent.com/Knightmore/Henchman/refs/heads/main/Henchman/Data/{fileName}";
-        using var httpClient = new HttpClient();
-        try
-        {
-            var response = await httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<T>(json,
-                                                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        }
-        catch (Exception ex)
-        {
-            Error($"Error reading JSON from '{url}': {ex.Message}");
-            return default;
-        }
-    }
-
 
     public static string ExtractTextExtended(this ReadOnlySeString s) => s.ExtractText()
                                                                           .Replace("\u00AD", string.Empty)
@@ -143,6 +104,6 @@ internal static class Utils
         var iconSize = new Vector2(40, 40) * ImGuiHelpers.GlobalScale * scale;
         var texture = Svc.Texture.GetFromGameIcon(iconId)
                          .GetWrapOrEmpty();
-        ImGui.Image(texture.ImGuiHandle, iconSize);
+        ImGui.Image(texture.Handle, iconSize);
     }
 }

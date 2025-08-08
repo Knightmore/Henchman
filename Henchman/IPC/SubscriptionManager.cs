@@ -1,7 +1,7 @@
-using Dalamud.Plugin.Services;
-using ECommons.EzIpcManager;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Plugin.Services;
+using ECommons.EzIpcManager;
 
 namespace Henchman.IPC;
 

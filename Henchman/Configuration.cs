@@ -1,55 +1,75 @@
-using ECommons.Configuration;
+using System.Linq;
 using Henchman.Data;
 using Henchman.Features.RetainerVocate;
-using System.Linq;
 
 namespace Henchman;
 
 [Serializable]
-public class Configuration : IEzConfig
+public class Configuration
 {
-    /*
-     * On Your Mark
-     */
-
-    public Dictionary<string, bool> EnableHuntBills = HuntBoardOptions.ToDictionary(kvp => kvp, _ => false);
-    public bool DetourForOtherAB = false;
-    public bool DiscardOldBills = false;
-    public bool SkipFateMarks = false;
-
-    public uint MountId = 1;
     /*
      * General Player Config
      */
 
     public string AutoRotationPlugin = IPCNames.Wrath;
-    public bool UseChocoboInFights = false;
-    public bool UseMount = true;
-    public bool UseMountRoulette = true;
-    public bool UseOnlineMobData = false;
-    public bool UseMeleeRange = false;
-    public bool ReturnOnceDone = false;
-    public Lifestream.LifestreamDestination ReturnTo = Lifestream.LifestreamDestination.Home;
-    public int MinMountDistance = 50;
-    public int MinRunDistance = 20;
+
+    /*
+     * Bring Your B Game
+     */
+
+    public uint BRankToFarm;
+    public bool DetourForARanks = false;
+    public bool DiscardOldBills = false;
+
+    public Dictionary<ulong, bool> EnableCharacterForOCFishing = [];
+
+    /*
+     * On Your Mark
+     */
+
+    public Dictionary<string, bool> EnableHuntBills = HuntBoardOptions.ToDictionary(kvp => kvp, _ => false);
+
+    /*
+     * On A Boat
+     */
+
+    public bool HandleAR         = false;
+    public int  MinMountDistance = 50;
+    public int  MinRunDistance   = 20;
+
+    public uint   MountId         = 1;
+    public string OceanChar       = string.Empty;
+    public string OceanWorld      = string.Empty;
+    public bool   ProgressGCRanks = false;
+    public uint   QstClassJob     = 1;
 
     /*
      * Retainer Creator
      */
 
-    public int RetainerAmount = 1;
-    public NpcDatabase.StarterCity RetainerCity = NpcDatabase.StarterCity.LimsaLominsa;
-    public uint RetainerClass = 18;
-    public RetainerDetails.RetainerGender RetainerGender;
+    public int                                 RetainerAmount = 1;
+    public NpcDatabase.StarterCity             RetainerCity   = NpcDatabase.StarterCity.LimsaLominsa;
+    public uint                                RetainerClass  = 18;
+    public RetainerDetails.RetainerGender      RetainerGender;
     public RetainerDetails.RetainerPersonality RetainerPersonality = RetainerDetails.RetainerPersonality.Polite;
-    public RetainerDetails.RetainerRace RetainerRace;
-    public bool UseMaxRetainerAmount = true;
-    public bool SendOnFirstExploration = false;
-    public uint QstClassJob = 1;
+    public RetainerDetails.RetainerRace        RetainerRace;
+    public bool                                ReturnOnceDone         = false;
+    public bool                                ReturnOnError          = false;
+    public Lifestream.LifestreamDestination    ReturnTo               = Lifestream.LifestreamDestination.Home;
+    public bool                                SendOnFirstExploration = false;
 
     /*
-     * On Your B Game
+     * Bump On A Log
      */
-    public uint BRankToFarm;
+
+    public bool SkipDutyMarks    = false;
+    public bool SkipFateMarks    = false;
+    public int  StopAfterGCRank  = 3;
+    public int  StopAfterJobRank = 5;
     public bool TrackBRankSpots;
+    public bool UseChocoboInFights   = false;
+    public bool UseMaxRetainerAmount = true;
+    public bool UseMount             = true;
+    public bool UseMountRoulette     = true;
+    public bool WaitOnTitleMenu      = false;
 }

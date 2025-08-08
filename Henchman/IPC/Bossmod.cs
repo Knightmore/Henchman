@@ -59,7 +59,7 @@ public static class Bossmod
     public static void EnableRotation()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
-            SetActive("default");
+            SetActive("VBM Default");
     }
 
     public static void DisableRotation()

@@ -1,3 +1,5 @@
+using System.Linq;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.Configuration;
@@ -5,9 +7,7 @@ using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
 using Henchman.TaskManager;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
-using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.OnYourMark;
@@ -16,7 +16,7 @@ namespace Henchman.Features.OnYourMark;
 public class OnYourMarkUi : FeatureUI
 {
     private readonly OnYourMark feature = new();
-    public override string Name => "On Your Mark";
+    public override  string     Name => "On Your Mark";
 
     public override Action Help => () =>
                                    {
@@ -96,8 +96,8 @@ public class OnYourMarkUi : FeatureUI
                         {
                             var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                             var isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained(GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var availableMarkId = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var obtainedMarkId = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
+                            var availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
+                            var obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
                             var mobHuntOrderTypeOffset = isMarkBillObtained && availableMarkId != obtainedMarkId
                                                                  ? MobHunt.Instance()->ObtainedMarkId.ToArray()
                                                                  : MobHunt.Instance()->AvailableMarkId.ToArray();
@@ -115,7 +115,7 @@ public class OnYourMarkUi : FeatureUI
                                                                                                (byte)mark.SubrowId) ==
                                                                           mark.NeededKills);
 
-                            if (!MobHunt.Instance()->IsMarkBillUnlocked((byte)currentMobHuntType.RowId))
+                            if (!MobHunt.Instance()->IsMarkBillUnlocked((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId)))
                             {
                                 ImGuiEx.TextCentered(ImGuiColors.DalamudGrey, $"{title}");
                                 continue;
@@ -142,7 +142,7 @@ public class OnYourMarkUi : FeatureUI
                             if (ImGui.Checkbox($"Enable##{key}", ref enabled))
                             {
                                 C.EnableHuntBills[key] = enabled;
-                                configChanged = true;
+                                configChanged          = true;
                             }
 
                             ImGui.Spacing();
@@ -194,28 +194,31 @@ public class OnYourMarkUi : FeatureUI
             }
 
             using (var tab = ImRaii.TabItem("Settings"))
-            {
                 if (tab)
-                {
-                    ImGui.Text("Discard old Hunt Bills");
-                    ImGui.SameLine(250);
-                    configChanged |= ImGui.Checkbox("##oldHuntBills", ref C.DiscardOldBills);
-                    ImGui.Text("Detour if other A- or B-Ranks are nearby");
-                    ImGui.SameLine(250);
-                    configChanged |= ImGui.Checkbox("##ABDetour", ref C.DetourForOtherAB);
-                    ImGui.SameLine();
-                    ImGuiEx.HelpMarker("""
-                                       Will only try a detour once per Mark.
-                                       If your char dies while taking a detour, it will resume to find the original mark.
-                                       As a safety measure, this will only work up until Stormblood.
-                                       """);
-                    ImGui.Text("Skip Fate Marks");
-                    ImGui.SameLine(250);
-                    configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
-                }
-            }
+                    DrawSettings();
 
             if (configChanged) EzConfig.Save();
         }
+    }
+
+    private void DrawSettings()
+    {
+        var configChanged = false;
+        ImGui.Text("Discard old Hunt Bills");
+        ImGui.SameLine(250);
+        configChanged |= ImGui.Checkbox("##oldHuntBills", ref C.DiscardOldBills);
+        ImGui.Text("Detour if an A-Rank is nearby");
+        ImGui.SameLine(250);
+        configChanged |= ImGui.Checkbox("##ABDetour", ref C.DetourForARanks);
+        ImGui.SameLine();
+        ImGuiEx.HelpMarker("""
+                           Will only try a detour once per Mark.
+                           If your char dies while taking a detour, it will resume to find the original mark.
+                           As a safety measure, this will only work up until Stormblood.
+                           """);
+        ImGui.Text("Skip Fate Marks");
+        ImGui.SameLine(250);
+        configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
+        if (configChanged) EzConfig.Save();
     }
 }

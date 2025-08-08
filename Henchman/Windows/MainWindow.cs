@@ -1,12 +1,12 @@
 using System.IO;
 using System.Linq;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.Events;
 using ECommons.ImGuiMethods;
 using Henchman.Helpers;
-using ImGuiNET;
 #if PRIVATE
 using Henchman.Features.Private.Debugging;
 using Henchman.Features.Private.LGBInspector;
@@ -18,12 +18,10 @@ public class MainWindow : Window, IDisposable
 {
     private const uint SidebarWidth = 200;
 
-    private string selectedFeature = string.Empty;
-
     public MainWindow(Henchman plugin) : base($"{P.Name} - {P.GetType().Assembly.GetName().Version} ",
-                                              ImGuiWindowFlags.NoScrollbar |
+                                              ImGuiWindowFlags.NoScrollbar       |
                                               ImGuiWindowFlags.NoScrollWithMouse |
-                                              ImGuiWindowFlags.AlwaysAutoResize |
+                                              ImGuiWindowFlags.AlwaysAutoResize  |
                                               ImGuiWindowFlags.NoSavedSettings)
     {
 #if PRIVATE
@@ -38,19 +36,19 @@ public class MainWindow : Window, IDisposable
                     (2 *
                      ImGui.GetStyle()
                           .FramePadding.X);
-        Size = new Vector2(width, 600);
+        Size            = new Vector2(width, 600);
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(width, 600), MaximumSize = new Vector2(1920, 1080) };
-        SizeCondition = ImGuiCond.Always;
+        SizeCondition   = ImGuiCond.Always;
     }
 
-    private FeatureUI? SelectedFeature => FeatureSet.FirstOrDefault(t => t.Name == selectedFeature) ??
-                                          GeneralSet.FirstOrDefault(t => t.Name == selectedFeature);
+    private FeatureUI? SelectedFeature => FeatureSet.FirstOrDefault(t => t.Name == P!.SelectedFeature) ??
+                                          GeneralSet.FirstOrDefault(t => t.Name == P!.SelectedFeature);
 
     public void Dispose() { }
 
     public override void Draw()
     {
-        var region = ImGui.GetContentRegionAvail();
+        var region            = ImGui.GetContentRegionAvail();
         var topLeftSideHeight = region.Y;
         if (Running && CurrentTaskRecord != null)
         {
@@ -92,7 +90,7 @@ public class MainWindow : Window, IDisposable
                             throw new FileNotFoundException();
 
                         if (ThreadLoadImageHandler.TryGetTextureWrap(imagePath, out var logo))
-                            ImGuiEx.LineCentered("###Logo", () => { ImGui.Image(logo.ImGuiHandle, new Vector2(128f.Scale(), 128f.Scale())); });
+                            ImGuiEx.LineCentered("###Logo", () => { ImGui.Image(logo.Handle, new Vector2(128f.Scale(), 128f.Scale())); });
                     }
 
 
@@ -101,11 +99,11 @@ public class MainWindow : Window, IDisposable
 
                     foreach (var feature in FeatureSet.OrderBy(t => t.Name))
                     {
-                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", selectedFeature == feature.Name))
+                        if (ImGui.Selectable($"{feature.Name}###Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
                         {
-                            selectedFeature = selectedFeature != feature.Name
-                                                      ? feature.Name
-                                                      : string.Empty;
+                            P!.SelectedFeature = P!.SelectedFeature != feature.Name
+                                                         ? feature.Name
+                                                         : string.Empty;
                         }
                     }
 
@@ -114,11 +112,11 @@ public class MainWindow : Window, IDisposable
 
                     foreach (var feature in GeneralSet.OrderBy(t => t.Name))
                     {
-                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", selectedFeature == feature.Name))
+                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
                         {
-                            selectedFeature = selectedFeature != feature.Name
-                                                      ? feature.Name
-                                                      : string.Empty;
+                            P!.SelectedFeature = P!.SelectedFeature != feature.Name
+                                                         ? feature.Name
+                                                         : string.Empty;
                         }
                     }
                 }
@@ -196,8 +194,4 @@ public class MainWindow : Window, IDisposable
             }
         }
     }
-#if PRIVATE
-    public FeatureUI DebuggingUi = new DebuggingUI();
-    public FeatureUI LGBInspectorUi = new LGBInspectorUI();
-#endif
 }

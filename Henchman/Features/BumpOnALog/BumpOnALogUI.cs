@@ -1,14 +1,15 @@
+using System.Linq;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
-using System.Linq;
 using Action = System.Action;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 
@@ -17,14 +18,14 @@ namespace Henchman.Features.BumpOnALog;
 [Feature]
 public class BumpOnALogUi : FeatureUI
 {
-    private readonly BumpOnALog feature = new();
-    private int classMonsterNoteId;
-    private MonsterNoteRankInfo classMonsterNoteRankInfo;
-    private int currentClassRank;
-    private int currentGcRank;
-    private int gcMonsterNoteId;
-    private MonsterNoteRankInfo gcMonsterNoteRankInfo;
-    public override string Name => "Bump On A Log";
+    private readonly BumpOnALog          feature = new();
+    private          int                 classMonsterNoteId;
+    private          MonsterNoteRankInfo classMonsterNoteRankInfo;
+    private          int                 currentClassLogRank;
+    private          int                 currentGcLogRank;
+    private          int                 gcMonsterNoteId;
+    private          MonsterNoteRankInfo gcMonsterNoteRankInfo;
+    public override  string              Name => "Bump On A Log";
 
     public override Action Help => () =>
                                    {
@@ -41,6 +42,8 @@ public class BumpOnALogUi : FeatureUI
     [
             (IPCNames.vnavmesh, true),
             (IPCNames.Lifestream, true),
+            (IPCNames.AutoDuty, true),
+            (IPCNames.Questionable, false),
             (IPCNames.BossMod, false),
             (IPCNames.Wrath, false),
             (IPCNames.RotationSolverReborn, false)
@@ -54,9 +57,9 @@ public class BumpOnALogUi : FeatureUI
                                 .GetRow(PlayerState.Instance()->CurrentClassJobId)
                                 .MonsterNote.RowId.ToInt();
 
-        gcMonsterNoteId = Svc.Data.GetExcelSheet<GrandCompany>()
-                             .GetRow(PlayerState.Instance()->GrandCompany)
-                             .Unknown8;
+        gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
+                                  .GetRow(PlayerState.Instance()->GrandCompany)
+                                  .MonsterNote.Value.RowId;
 
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
@@ -71,6 +74,13 @@ public class BumpOnALogUi : FeatureUI
             {
                 if (tab)
                     DrawGcHuntLog();
+            }
+
+
+            using (var tab = ImRaii.TabItem("Settings"))
+            {
+                if (tab)
+                    DrawSettings();
             }
         }
     }
@@ -89,18 +99,18 @@ public class BumpOnALogUi : FeatureUI
         }
 
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
-        currentClassRank = classMonsterNoteRankInfo.Rank;
+        currentClassLogRank      = classMonsterNoteRankInfo.Rank;
 
-        ImGuiEx.TextCentered($"Current Rank: {currentClassRank + 1}");
+        ImGuiEx.TextCentered($"Current Log Rank: {currentClassLogRank + 1}");
 
         DrawHuntLog(classMonsterNoteRankInfo, ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks, false);
     }
 
     private unsafe void DrawGcHuntLog()
     {
-        gcMonsterNoteId = Svc.Data.Excel.GetSheet<GrandCompany>()
-                             .GetRow(PlayerState.Instance()->GrandCompany)
-                             .Unknown8;
+        gcMonsterNoteId = (int)Svc.Data.Excel.GetSheet<GrandCompany>()
+                                  .GetRow(PlayerState.Instance()->GrandCompany)
+                                  .MonsterNote.Value.RowId;
 
         if (gcMonsterNoteId == 127)
         {
@@ -113,13 +123,19 @@ public class BumpOnALogUi : FeatureUI
         ImGuiEx.TextCentered(gcRow.Name.ExtractText());
 
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
-        currentGcRank = gcMonsterNoteRankInfo.Rank;
+        currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
 
-        ImGuiEx.TextCentered($"Current Rank: {currentGcRank + 1}");
+        ImGuiEx.TextCentered($"Current Log Rank: {currentGcLogRank + 1}");
 
-        if (currentGcRank > 2)
+        if (currentGcLogRank > 2)
         {
             ImGuiEx.TextCentered(ImGuiColors.HealerGreen, "You finished all hunt log ranks for your grand company!");
+            return;
+        }
+
+        if ((currentGcLogRank == 1 && GetGrandCompanyRank() < 5) || (currentGcLogRank == 2 && GetGrandCompanyRank() < 9))
+        {
+            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, "The required Grand Company rank has not yet been unlocked!");
             return;
         }
 
@@ -141,8 +157,8 @@ public class BumpOnALogUi : FeatureUI
         if (ImGui.Button("Start"))
         {
             EnqueueTask(gcLog
-                            ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
-                            : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
+                                ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
+                                : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
         }
 
         var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
@@ -178,5 +194,41 @@ public class BumpOnALogUi : FeatureUI
                 }
             }
         }
+    }
+
+    private void DrawSettings()
+    {
+        var configChanged = false;
+
+        // Preparation if Dzemael and Aurum ever gets Duty support (in 7.5?)
+        /*
+        ImGui.Text("Stop after Job Log Rank");
+        ImGui.SameLine(200);
+        ImGui.SetNextItemWidth(120f);
+        configChanged |= ImGui.Combo("##jobRank", ref C.StopAfterJobRank, Enumerable.Range(1, 5)
+                                                                                         .Select(x => x.ToString())
+                                                                                         .ToArray(), 5);
+
+        ImGui.Text("Stop after GC Log Rank");
+        ImGui.SameLine(200);
+        ImGui.SetNextItemWidth(120f);
+        configChanged |= ImGui.Combo("##gcRank", ref C.StopAfterGCRank, Enumerable.Range(1, 3)
+                                                                                 .Select(x => x.ToString())
+                                                                                 .ToArray(), 3);
+
+        ImGui.Text("Progress GC Ranks");
+        ImGui.SameLine(200);
+        configChanged |= ImGui.Checkbox("##progressGCRanks", ref C.ProgressGCRanks);
+        ImGui.SameLine();
+        ImGuiEx.HelpMarker("""If your character has enough GrandCompany seals and the appropriate level,
+        'Bump On A Log' will progress through your GrankCompany ranks up until 2nd Lieutenant""");
+        */
+
+        ImGui.Text("Skip Duty Marks");
+        ImGui.SameLine(200);
+        configChanged |= ImGui.Checkbox("##skipDutyFateMarks", ref C.SkipDutyMarks);
+
+
+        if (configChanged) EzConfig.Save();
     }
 }

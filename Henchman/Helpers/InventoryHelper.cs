@@ -1,3 +1,4 @@
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
@@ -16,7 +17,7 @@ internal static class InventoryHelper
     internal static unsafe InventoryItem* GetItemInInventory(uint itemId)
     {
         InventoryContainer* container;
-        var inventoryManager = InventoryManager.Instance();
+        var                 inventoryManager = InventoryManager.Instance();
         foreach (var inventory in MainInventory)
         {
             container = inventoryManager->GetInventoryContainer(inventory);
@@ -52,8 +53,9 @@ internal static class InventoryHelper
         return true;
     }
 
-    internal static unsafe int GetInventoryItemCount(uint itemId)
-    {
-        return InventoryManager.Instance()->GetInventoryItemCount(itemId);
-    }
+    internal static unsafe int GetInventoryItemCount(uint itemId) => InventoryManager.Instance()->GetInventoryItemCount(itemId);
+
+    internal static unsafe uint GetGCSealAmount() => Player.GrandCompany == 0
+                                                             ? 0
+                                                             : InventoryManager.Instance()->GetCompanySeals((byte)Player.GrandCompany);
 }
