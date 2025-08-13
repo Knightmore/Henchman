@@ -11,9 +11,9 @@ internal static class HuntLogHelper
     {
         var gcMonsterNoteId = Svc.Data.GetExcelSheet<GrandCompany>()
                                  .GetRow((byte)Player.GrandCompany)
-                                 .MonsterNote.Value.RowId;
+                                 .MonsterNote.RowId.ToInt();
 
-        var gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[(int)gcMonsterNoteId];
+        var gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
 
         return gcMonsterNoteRankInfo.Rank;
     }

@@ -1,13 +1,13 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ECommons.EzIpcManager;
+//using Henchman.Features.Private.Multibox.Command;
 using Action = System.Action;
 
 
 namespace Henchman.IPC;
 
 [IPC(IPCNames.vnavmesh)]
-//[CommandGroup(IPCNames.vnavmesh)]
 public static class Vnavmesh
 {
     [EzIPC("Nav.IsReady")]
@@ -79,11 +79,11 @@ public static class Vnavmesh
     [EzIPC("Path.SetTolerance")]
     public static Action<float> PathSetTolerance;
 
-    [EzIPC("SimpleMove.PathfindAndMoveTo")]
-    //[Command("PathfindAndMove", IPCNames.vnavmesh)]
     //[Command]
+    [EzIPC("SimpleMove.PathfindAndMoveTo")]
     public static Func<Vector3, bool, bool> SimpleMovePathfindAndMoveTo;
 
+    //[Command]
     [EzIPC("SimpleMove.PathfindInProgress")]
     public static Func<bool> SimpleMovePathfindInProgress;
 
@@ -99,7 +99,7 @@ public static class Vnavmesh
     [EzIPC("DTR.SetShown")]
     public static Action<bool> DtrSetShown;
 
-    //[Command("Stop", IPCNames.vnavmesh)]
+    //[Command]
     public static void StopCompletely()
     {
         if(SubscriptionManager.IsInitialized(IPCNames.vnavmesh))

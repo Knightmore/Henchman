@@ -231,12 +231,12 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Player.Territory == nextTerritoryId, "Check for right territory", token);
     }
 
-    internal static async Task<bool> RoamUntilTargetNearby(List<Vector3> pointList, uint targetNameId, bool gotKilledWhileDetour, float distanceToSpot = 60f, CancellationToken token = default)
+    internal static async Task<bool> RoamUntilTargetNearby(List<Vector3> pointList, uint targetNameId, bool gotKilledWhileDetour, bool detourForARanks, float distanceToSpot = 60f, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        using var scope = new TaskDescriptionScope("Roam until Target nearby");
-        var       path  = Utils.SortListByDistance(pointList);
-
+        using var scope        = new TaskDescriptionScope("Roam until Target nearby");
+        var       path         = Utils.SortListByDistance(pointList);
+        uint      killedARanks = 0;
         foreach (var point in path)
         {
             if (C.UseMount && Player.DistanceTo(point) > C.MinMountDistance)
@@ -253,20 +253,16 @@ internal static class MovementTasks
 #endif
             await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
-
-            if (C.DetourForARanks && !gotKilledWhileDetour)
+            if (detourForARanks && !gotKilledWhileDetour)
             {
                 using var multiTaskToken = new CancellationTokenSource();
                 using var linkedCts      = CancellationTokenSource.CreateLinkedTokenSource(token, multiTaskToken.Token);
 
-                var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < distanceToSpot, $"Moving close to next roaming point: {point}!", linkedCts.Token);
+                var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < distanceToSpot, $"Moving close to next roaming point: {point}.", linkedCts.Token);
                 var scanningForARanks = WaitUntilAsync(() => Svc.Objects.OfType<IBattleNpc>()
-                                                                .Any(x => Svc.Objects.OfType<IBattleNpc>()
-                                                                             .FirstOrDefault(x => Svc.Data.GetExcelSheet<BNpcBase>()
-                                                                                                     .TryGetRow(x.DataId, out var row) &&
-                                                                                                  row.Rank == 2) is { Level: <= 70 } detourTarget), "Scanning for A-Ranks", linkedCts.Token);
+                                                                .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>().Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget, "Scanning for A-Ranks", linkedCts.Token);
 
-                var completedTask = await Task.WhenAny(playerCloseToPoint, scanningForARanks);
+                var completedTask = await Task.WhenAny(scanningForARanks, playerCloseToPoint);
                 linkedCts.Cancel();
                 await completedTask;
 
@@ -275,12 +271,34 @@ internal static class MovementTasks
                 if (completedTask == scanningForARanks)
                 {
                     if (Svc.Objects.OfType<IBattleNpc>()
-                           .FirstOrDefault(x => Svc.Data.GetExcelSheet<BNpcBase>()
-                                                   .TryGetRow(x.DataId, out var row) &&
-                                                row.Rank == 2) is { Level: <= 70 } detourTarget)
+                           .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
+                                                   .Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
                     {
+                        AutoRotation.Enable();
+                        Bossmod.EnableAI();
+
                         if (!await KillTarget(detourTarget, token))
+                        {
+                            AutoRotation.Disable();
+                            Bossmod.DisableAI();
                             return false;
+                        }
+
+                        killedARanks++;
+
+                        var isDummyTarget = targetNameId == int.MaxValue;
+                        var exVersion     = Svc.Data.GetExcelSheet<TerritoryType>().GetRow(Player.Territory).ExVersion.RowId;
+
+                        if ((isDummyTarget && exVersion == 0 && killedARanks == 1) ||
+                            (isDummyTarget && exVersion > 0  && killedARanks == 2))
+                        {
+                            AutoRotation.Disable();
+                            Bossmod.DisableAI();
+                            return true;
+                        }
+
+                        AutoRotation.Disable();
+                        Bossmod.DisableAI();
                     }
                 }
             }

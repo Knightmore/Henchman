@@ -6,6 +6,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.Automation;
 using ECommons.GameFunctions;
 using ECommons.GameHelpers;
+using ECommons.ImGuiMethods;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
@@ -208,7 +209,7 @@ internal static class CombatTasks
                     }
                     else if (mark.Positions.Count > 0)
                     {
-                        if (!await RoamUntilTargetNearby(mark.Positions, mark.BNpcNameRowId, gotKilledWhileDetour, token: token))
+                        if (!await RoamUntilTargetNearby(mark.Positions, mark.BNpcNameRowId, gotKilledWhileDetour, C.DetourForARanks, token: token))
                         {
                             gotKilledWhileDetour = true;
                             retries++;
@@ -259,17 +260,21 @@ internal static class CombatTasks
         foreach (var duty in duties)
         {
             Verbose(duty.ToString());
-            var  ADPathAvailable = AutoDuty.ContentHasPath(duty);
-            bool dutyUnlocked;
-            dutyUnlocked = UIState.IsInstanceContentUnlocked(duty);
+            var ADPathAvailable = AutoDuty.ContentHasPath(duty);
+            var dutyUnlocked    = UIState.IsInstanceContentUnlocked(duty);
 
-            if (dutyUnlocked)
+            if (dutyUnlocked && ADPathAvailable)
             {
                 AutoDuty.Run(duty, 0, false);
                 await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
             }
             else
             {
+                if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
+                {
+                    Warning("Questionable not enabled! Skipping duty!");
+                    
+                }
                 switch (duty)
                 {
                     case 1245:
@@ -282,90 +287,15 @@ internal static class CombatTasks
                         AutoDuty.Run(duty, 0, false);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
                         break;
+                    default:
+                        break;
                 }
                 // TODO: Add Dzemael and Aurum Vale once they have Duty Support.
             }
         }
     }
 
-    public static async Task FarmARank(Dictionary<uint, List<Vector3>> ARankPositions, CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        foreach (var territory in ARankPositions)
-        {
-            Verbose($"Look for A-Rank in: {territory.Key} - {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory.Key).PlaceName.Value.Name.ExtractText()}");
-            if (Player.Territory != territory.Key)
-            {
-                var closestAetheryte = GetAetheryte(territory.Key, territory.Value[0]);
-
-                if (closestAetheryte > 0)
-                    await TeleportTo(closestAetheryte, token);
-                else
-                {
-                    ErrorThrowIf(closestAetheryte == 0 || !IsAetheryteUnlocked(closestAetheryte),
-                                 $"You aren't attuned to any Aetheryte for the territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory.Key).PlaceName.Value.Name.ExtractText()} ({territory.Key})");
-                }
-
-                // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478)
-                {
-                    Verbose("In Idyllshire");
-                    await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
-                }
-            }
-
-            await RoamUntilTargetNearby(territory.Value, int.MaxValue, false, token: token);
-        }
-    }
-
-    public static async Task FarmBRank(HuntMark huntMark, CancellationToken token = default)
-    {
-        var retries = 0;
-        while (true)
-        {
-            token.ThrowIfCancellationRequested();
-            ErrorThrowIf(retries == 3, "Emergency Stop. Player already died three times");
-
-            Verbose($"Try: {retries}");
-            if (Player.Territory != huntMark.TerritoryId)
-            {
-                if (!huntMark.Positions.TryGetFirst(out var markPosition))
-                {
-                    Error($"HuntMark {huntMark.Name} has no valid position!");
-                    break;
-                }
-
-                var closestAetheryte = GetAetheryte(huntMark.TerritoryId, markPosition);
-
-                if (closestAetheryte > 0)
-                    await TeleportTo(closestAetheryte, token);
-                else
-                {
-                    ErrorThrowIf(closestAetheryte == 0 || !IsAetheryteUnlocked(closestAetheryte),
-                                 $"You aren't attuned to any Aetheryte for the Hunt Marks territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(huntMark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({huntMark.TerritoryId})");
-                }
-
-                // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478)
-                {
-                    Verbose("In Idyllshire");
-                    await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
-                }
-            }
-
-            if (!await RoamUntilTargetNearby(huntMark.Positions, huntMark.BNpcNameRowId, true, token: token))
-            {
-                retries++;
-                continue;
-            }
-
-            var killResult = await KillHuntMark(huntMark, token);
-
-            if (killResult == KillResult.Died) retries++;
-        }
-    }
-
-    private static async Task<KillResult> KillHuntMark(HuntMark huntMark, CancellationToken token = default)
+    internal static async Task<KillResult> KillHuntMark(HuntMark huntMark, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
 

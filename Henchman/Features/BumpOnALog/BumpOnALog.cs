@@ -43,7 +43,13 @@ internal class BumpOnALog
                                  .OrderBy(x => x!.TerritoryId)
                                  .ToList();
         await ProcessHuntMarks(overworldMarks, true, currentRank, gcLog, token);
-        if (gcLog && !C.SkipDutyMarks) await ProcessDutyMarks(dutyMarks, token);
+        if (gcLog && !C.SkipDutyMarks)
+        {
+            if(SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
+                await ProcessDutyMarks(dutyMarks, token);
+            else
+                Warning("AutoDuty not enabled! Skipping Duty Mobs.");
+        }
 
 
         /*while(currentRank <= (gcLog ? C.StopAfterGCRank : C.StopAfterJobRank))

@@ -173,7 +173,7 @@ internal static class HuntDatabase
         }
     }
 
-    internal static async Task ProcessHuntMarkJson(string filePath, Dictionary<uint, HuntMark> marksDict)
+    internal static void ProcessHuntMarkJson(string filePath, Dictionary<uint, HuntMark> marksDict)
     {
         try
         {
@@ -205,15 +205,15 @@ internal static class HuntDatabase
             ClassHuntRanks = new Dictionary<uint, HuntLog>();
             GcHuntRanks    = new Dictionary<uint, HuntLog>();
 
-            await ProcessHuntMarkJson("ARRHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("HWHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("StBHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("SHBHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("EWHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("DTHunt.json", HuntMarks);
-            await ProcessHuntMarkJson("BRanks.json", HuntMarks);
+            ProcessHuntMarkJson("ARRHunt.json", HuntMarks);
+            ProcessHuntMarkJson("HWHunt.json", HuntMarks);
+            ProcessHuntMarkJson("StBHunt.json", HuntMarks);
+            ProcessHuntMarkJson("SHBHunt.json", HuntMarks);
+            ProcessHuntMarkJson("EWHunt.json", HuntMarks);
+            ProcessHuntMarkJson("DTHunt.json", HuntMarks);
+            ProcessHuntMarkJson("BRanks.json", HuntMarks);
 
-            await ProcessHuntMarkJson("BRanks.json", BRanks);
+            ProcessHuntMarkJson("BRanks.json", BRanks);
         }
         catch (Exception e)
         {
@@ -319,12 +319,9 @@ internal static class HuntDatabase
 
     internal static void Initialize()
     {
-        Svc.Framework.Run(async () =>
-                          {
-                              await PopulateMarks();
-                              PopulateClassHuntLogs();
-                              PopulateGcHuntLogs();
-                          });
+        PopulateMarks();
+        PopulateClassHuntLogs();
+        PopulateGcHuntLogs();
     }
 
     internal enum GrandCompany

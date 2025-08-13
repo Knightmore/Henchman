@@ -1,4 +1,5 @@
 #if PRIVATE
+using Henchman.Features.General.Multibox;
 using Henchman.Features.Private.LGBInspector;
 using Henchman.Features.Private.MappingTheRealm;
 using Henchman.Features.Private.Debugging;
@@ -58,6 +59,10 @@ public class Henchman : IDalamudPlugin
         CancelAllTasks();
         Wrath.DisableWrath();
 
+#if PRIVATE
+        if(TryGetFeature<MultiboxUI>(out var Mutlibox))
+            Mutlibox.Dispose();
+#endif
         Svc.Framework.Update                     -= TaskManagerTick;
         Svc.Framework.Update                     -= SubscriptionManager.Subscribe;
         Svc.Framework.Update                     -= Tick;
@@ -68,6 +73,8 @@ public class Henchman : IDalamudPlugin
 
     private void Initialize()
     {
+        HuntDatabase.Initialize();
+
         EzConfig.Migrate<Configuration>();
         Config               =  EzConfig.Init<Configuration>();
         Svc.Framework.Update += TaskManagerTick;
@@ -77,7 +84,6 @@ public class Henchman : IDalamudPlugin
 #if PRIVATE
         MappingTheRealm.Initialize();
 #endif
-        HuntDatabase.Initialize();
 
         foreach (var type in GetType()
                             .Assembly.GetTypes()

@@ -42,7 +42,7 @@ public class BumpOnALogUi : FeatureUI
     [
             (IPCNames.vnavmesh, true),
             (IPCNames.Lifestream, true),
-            (IPCNames.AutoDuty, true),
+            (IPCNames.AutoDuty, false),
             (IPCNames.Questionable, false),
             (IPCNames.BossMod, false),
             (IPCNames.Wrath, false),
@@ -59,7 +59,7 @@ public class BumpOnALogUi : FeatureUI
 
         gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
                                   .GetRow(PlayerState.Instance()->GrandCompany)
-                                  .MonsterNote.Value.RowId;
+                                  .MonsterNote.RowId;
 
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
@@ -110,7 +110,7 @@ public class BumpOnALogUi : FeatureUI
     {
         gcMonsterNoteId = (int)Svc.Data.Excel.GetSheet<GrandCompany>()
                                   .GetRow(PlayerState.Instance()->GrandCompany)
-                                  .MonsterNote.Value.RowId;
+                                  .MonsterNote.RowId;
 
         if (gcMonsterNoteId == 127)
         {
