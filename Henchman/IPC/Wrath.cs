@@ -71,7 +71,7 @@ public static class Wrath
                                                    null
                                                   );
             if (Lease is null)
-                Warning("Failed to register for lease.");
+                FullWarning("Failed to register for lease.");
             return Lease;
         }
     }
@@ -87,7 +87,7 @@ public static class Wrath
         }
         catch (Exception e)
         {
-            Error("Unknown Wrath IPC error,"                +
+            FullError("Unknown Wrath IPC error,"                +
                   "probably inability to register a lease." +
                   "\n"                                      +
                   e.Message);

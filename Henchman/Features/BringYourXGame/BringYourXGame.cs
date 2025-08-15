@@ -35,7 +35,7 @@ internal class BringYourXGame
         if (C.BRankToFarm > 0 && BRanks.TryGetValue(C.BRankToFarm, out var huntMark))
             await FarmBRank(huntMark, token);
         else
-            Error("No valid B-Rank to farm picked!");
+            FullError("No valid B-Rank to farm picked!");
     }
 
     private static async Task FarmARank(Dictionary<uint, List<Vector3>> ARankPositions, CancellationToken token = default)
@@ -83,7 +83,7 @@ internal class BringYourXGame
             {
                 if (!huntMark.Positions.TryGetFirst(out var markPosition))
                 {
-                    Error($"HuntMark {huntMark.Name} has no valid position!");
+                    FullError($"HuntMark {huntMark.Name} has no valid position!");
                     break;
                 }
 

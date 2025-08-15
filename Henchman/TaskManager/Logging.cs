@@ -14,9 +14,14 @@ internal static class Logging
         ChatPrintInfo(message);
     }
 
-    internal static void Warning(string message)
+    internal static void FullWarning(string message)
     {
         ChatPrintWarning($"[{TaskName}] [{(TaskDescription.Count  == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+        PluginLog.Warning($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+    }
+
+    internal static void InternalWarning(string message)
+    {
         PluginLog.Warning($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
     }
 
@@ -24,7 +29,7 @@ internal static class Logging
     {
         if (condition)
         {
-            Warning(message);
+            FullWarning(message);
             return true;
         }
 
@@ -46,7 +51,12 @@ internal static class Logging
         }
     }
 
-    internal static void Error(string message)
+    internal static void InternalError(string message)
+    {
+        PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count                == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
+    }
+
+    internal static void FullError(string message)
     {
         Svc.Chat.PrintError($"[Henchman] [{TaskName} - {(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] Error - Check the logs!");
         PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count                == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
@@ -54,7 +64,7 @@ internal static class Logging
 
     internal static void ErrorIf(bool condition, string message)
     {
-        if (condition) Error(message);
+        if (condition) FullError(message);
     }
 
     internal static void Verbose(string message) => PluginLog.Verbose($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");

@@ -41,12 +41,12 @@ internal class IPCProvider
     [EzIPC]
     public void WrathComboCallback(int reason, string additionalInfo)
     {
-        Warning($"Lease was cancelled for reason {reason}. " +
+        FullWarning($"Lease was cancelled for reason {reason}. " +
                 $"Additional info: {additionalInfo}");
 
         if (reason == 0)
         {
-            Error("The user cancelled our lease." +
+            FullError("The user cancelled our lease." +
                   "We are suspended from creating a new lease for now.");
         }
     }

@@ -17,13 +17,13 @@ internal static class Memory
 
         if (InventoryHelper.GetInventoryItemCount((uint)baitItemId) == 0)
         {
-            Error($"Bait Id {baitItemId} not found in inventory.");
+            FullError($"Bait Id {baitItemId} not found in inventory.");
             return false;
         }
 
         if (Svc.Condition[ConditionFlag.Fishing])
         {
-            Warning("Can't change bait while fishing.");
+            FullWarning("Can't change bait while fishing.");
             return false;
         }
 

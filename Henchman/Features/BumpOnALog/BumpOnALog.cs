@@ -48,7 +48,7 @@ internal class BumpOnALog
             if(SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
                 await ProcessDutyMarks(dutyMarks, token);
             else
-                Warning("AutoDuty not enabled! Skipping Duty Mobs.");
+                FullWarning("AutoDuty not enabled! Skipping Duty Mobs.");
         }
 
 

@@ -47,11 +47,11 @@ public class RetainerVocateUi : FeatureUI
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            if (ImGui.Button("Create Retainers"))
+            if (ImGui.Button("Create Retainers") && !Running)
             {
-                feature.RunFullCreation(C.UseMaxRetainerAmount
-                                                ? 10
-                                                : (uint)C.RetainerAmount, C.RetainerClass, C.QstClassJob);
+                EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
+                                                                                 ? 10
+                                                                                 : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), "Retainer Vocate"));
             }
 
 
@@ -141,7 +141,7 @@ public class RetainerVocateUi : FeatureUI
                         {
                             EnqueueTask(new TaskRecord(token => feature.CreateRetainers(token, C.UseMaxRetainerAmount
                                                                                                        ? 10
-                                                                                                       : C.RetainerAmount), "Create Retainers"));
+                                                                                                       : C.RetainerAmount + 1), "Create Retainers"));
                         }
                     }
                 }
@@ -163,7 +163,7 @@ public class RetainerVocateUi : FeatureUI
                         Chat.Instance.SendMessage($"/gearset change {gearset.Value + 1}");
                         if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                         {
-                            Error("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
+                            FullError("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
                             return;
                         }
 
@@ -177,7 +177,7 @@ public class RetainerVocateUi : FeatureUI
                         EnqueueTask(new TaskRecord(feature.GoToRetainerVocate, "Go to Retainer Vocate"));
                     EnqueueTask(new TaskRecord(token => feature.BuyAndEquipRetainerGear(token, C.UseMaxRetainerAmount
                                                                                                        ? 10
-                                                                                                       : (uint)C.RetainerAmount, C.RetainerClass), "Buy and Equip Retainer Gear"));
+                                                                                                       : (uint)C.RetainerAmount + 1, C.RetainerClass), "Buy and Equip Retainer Gear"));
                 }
             }
         }

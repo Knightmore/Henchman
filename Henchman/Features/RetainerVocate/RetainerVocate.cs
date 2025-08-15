@@ -61,10 +61,11 @@ internal class RetainerVocate
      * Main Tasks
      */
 
-    internal void RunFullCreation(uint retainerAmount, uint retainerClassId, uint combatClass)
+    internal async Task RunFullCreation(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId= 0, uint combatClass = 0)
     {
-        EnqueueTask(new TaskRecord(GoToRetainerVocate, "Go To Retainer Vocate"));
-        EnqueueTask(new TaskRecord(token => CreateRetainers(token, (int)retainerAmount), "Create Retainers"));
+        Verbose(retainerAmount.ToString());
+        await GoToRetainerVocate(token);
+        await CreateRetainers(token, (int)retainerAmount);
         if (!QuestManager.IsQuestComplete(66968) && !QuestManager.IsQuestComplete(66969) && !QuestManager.IsQuestComplete(66970))
         {
             if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
@@ -73,17 +74,18 @@ internal class RetainerVocate
                 return;
             }
 
-            EnqueueTask(new TaskRecord(token => StartVentureQuest(token, combatClass), "Do Retainer Venture Quest"));
+            await StartVentureQuest(token, combatClass);
         }
 
-        EnqueueTask(new TaskRecord(token => BuyAndEquipRetainerGear(token, retainerAmount, retainerClassId), "Buy and Equip Retainer Gear"));
+        await BuyAndEquipRetainerGear(token, retainerAmount, retainerClassId);
     }
 
     internal async Task GoToRetainerVocate(CancellationToken token = default)
     {
         if (token.IsCancellationRequested) return;
-        var  retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
-        byte maxRetainerEntitlement;
+        using var scope              = new TaskDescriptionScope($"Go to Retainer Vocate");
+        var       retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
+        byte      maxRetainerEntitlement;
         unsafe
         {
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
@@ -129,14 +131,15 @@ internal class RetainerVocate
         {
             if (!C.UseMaxRetainerAmount)
             {
-                createRetainerAmount = openRetainerAmount >= C.RetainerAmount + 1
-                                               ? C.RetainerAmount + 1
+                createRetainerAmount = openRetainerAmount >= createRetainerAmount
+                                               ? createRetainerAmount
                                                : openRetainerAmount;
             }
             else
                 createRetainerAmount = openRetainerAmount;
         }
 
+        using var scope = new TaskDescriptionScope($"Create {createRetainerAmount} Retainer");
 
         for (var i = 0; i < createRetainerAmount; i++)
             await CreateSingleRetainer(token);
@@ -146,6 +149,7 @@ internal class RetainerVocate
 
     internal async Task StartVentureQuest(CancellationToken token = default, uint combatClass = 0)
     {
+        using var scope = new TaskDescriptionScope($"Do Venture Quest");
         if (combatClass == 0)
             combatClass = C.QstClassJob;
 
@@ -189,9 +193,10 @@ internal class RetainerVocate
 
     internal async Task BuyAndEquipRetainerGear(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0)
     {
-        byte maxRetainerEntitlement;
-        bool anyRetainerNoJob;
-        int  retainerAmountNoJob;
+        using var scope = new TaskDescriptionScope($"Buy and Equip Gear");
+        byte      maxRetainerEntitlement;
+        bool      anyRetainerNoJob;
+        int       retainerAmountNoJob;
         unsafe
         {
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
@@ -217,7 +222,8 @@ internal class RetainerVocate
 
     private async Task GoToVendor(uint retainerClassId, CancellationToken token = default)
     {
-        var vendorData = VendorData(retainerClassId);
+        using var scope      = new TaskDescriptionScope($"Go to Vendor");
+        var       vendorData = VendorData(retainerClassId);
         await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
 
         if (vendorData.ZoneTransitionPosition != null)
@@ -229,7 +235,8 @@ internal class RetainerVocate
     private async Task PurchaseStarterGear(uint retainerAmount, uint retainerClassId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        var vendorData = VendorData(retainerClassId);
+        using var scope      = new TaskDescriptionScope($"Purchase Starter Gear");
+        var       vendorData = VendorData(retainerClassId);
 
         await WaitUntilAsync(() => TargetNearestByDataId(vendorData.DataId, token), $"Target {vendorData.Name}", token);
         await WaitUntilAsync(() => ShopUtils.OpenShop(vendorData.DataId, VendorShop(MainHand(retainerClassId)
@@ -298,6 +305,7 @@ internal class RetainerVocate
     internal async Task AssignRetainerClassEquipMain(uint retainerAmount = 0, uint retainerClassId = 0, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        using var scope = new TaskDescriptionScope($"Assign Retainer Class");
         await MoveAndInteractWithClosestSummoningBell(token);
 
         uint retainerCount;
@@ -351,7 +359,6 @@ internal class RetainerVocate
                 classJob   = RetainerManager.Instance()->Retainers[pos].ClassJob;
                 nameString = RetainerManager.Instance()->Retainers[pos].NameString;
             }
-
             if (classJob != 0) continue;
             await WaitUntilAsync(() => SelectRetainerInList(pos, token), $"Select Retainer {nameString}", token);
             await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringAssignRetainerClass), "SelectString AssignClass", token);
@@ -363,6 +370,10 @@ internal class RetainerVocate
             await WaitUntilAsync(() => CloseRetainerCharacter(token), "CloseRetainerWindow", token);
             if (C.SendOnFirstExploration && InventoryHelper.GetInventoryItemCount(21072) > 2)
             {
+                unsafe
+                {
+                    classJob   = RetainerManager.Instance()->Retainers[pos].ClassJob;
+                }
                 await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringAssignVenture), "SelectString Assign Venture", token);
                 await WaitUntilAsync(() => TrySelectSpecificEntry([Lang.SelectStringVentureCategoryFieldExploration, Lang.SelectStringVentureCategoryHighlandExploration, Lang.SelectStringVentureCategoryWatersideExploration, Lang.SelectStringVentureCategoryWoodlandExploration]), "SelectString Retainer Gear", token);
                 await WaitUntilAsync(() => TrySelectFirstExplorationVenture(classJob), "SelectString Exploration Task", token);
@@ -585,12 +596,12 @@ internal class RetainerVocate
     {
         unsafe
         {
+            if (InventoryManager.Instance()->GetInventoryContainer(InventoryType.RetainerEquippedItems)->GetInventorySlot(0)->ItemId == mainHand.RowId)
+                return true;
+
             var itemCount = InventoryManager.Instance()->GetInventoryItemCount(mainHand.RowId, checkArmory: true);
 
             ErrorThrowIf(itemCount == 0, "No gear for Retainer in inventory found.");
-
-            if (InventoryManager.Instance()->GetInventoryContainer(InventoryType.RetainerEquippedItems)->GetInventorySlot(0)->ItemId == mainHand.RowId)
-                return true;
         }
 
         var inventoryTypes = new List<InventoryType>

@@ -23,7 +23,7 @@ internal static unsafe class ShopUtils
 
         if (selector->Target != vendor)
         {
-            Error($"Unexpected selector target {(ulong)selector->Target->GetGameObjectId():X} when trying to interact with {(ulong)vendor->GetGameObjectId():X}");
+            FullError($"Unexpected selector target {(ulong)selector->Target->GetGameObjectId():X} when trying to interact with {(ulong)vendor->GetGameObjectId():X}");
             return false;
         }
 
@@ -38,7 +38,7 @@ internal static unsafe class ShopUtils
             }
         }
 
-        Error($"Failed to find shop {shopId:X} in selector for {(ulong)vendor->GetGameObjectId():X}");
+        FullError($"Failed to find shop {shopId:X} in selector for {(ulong)vendor->GetGameObjectId():X}");
         return false;
     }
 
@@ -52,7 +52,7 @@ internal static unsafe class ShopUtils
 
         if (vendor == null)
         {
-            Error($"Failed to find vendor {dataId:X}");
+            FullError($"Failed to find vendor {dataId:X}");
             return false;
         }
 
@@ -89,13 +89,13 @@ internal static unsafe class ShopUtils
     {
         if (!EventFramework.Instance()->EventHandlerModule.EventHandlerMap.TryGetValuePointer(shopId, out var eh) || eh == null || eh->Value == null)
         {
-            Error($"Event handler for shop {shopId:X} not found");
+            FullError($"Event handler for shop {shopId:X} not found");
             return false;
         }
 
         if (eh->Value->Info.EventId.ContentId != EventHandlerContent.Shop)
         {
-            Error($"{shopId:X} is not a shop");
+            FullError($"{shopId:X} is not a shop");
             return false;
         }
 
@@ -107,13 +107,13 @@ internal static unsafe class ShopUtils
     {
         if (!EventFramework.Instance()->EventHandlerModule.EventHandlerMap.TryGetValuePointer(shopId, out var eh) || eh == null || eh->Value == null)
         {
-            Error($"Event handler for shop {shopId:X} not found");
+            FullError($"Event handler for shop {shopId:X} not found");
             return false;
         }
 
         if (eh->Value->Info.EventId.ContentId != EventHandlerContent.Shop)
         {
-            Error($"{shopId:X} is not a shop");
+            FullError($"{shopId:X} is not a shop");
             return false;
         }
 
@@ -130,7 +130,7 @@ internal static unsafe class ShopUtils
             }
         }
 
-        Error($"Did not find item {itemId} in shop {shopId:X}");
+        FullError($"Did not find item {itemId} in shop {shopId:X}");
         return false;
     }
 }

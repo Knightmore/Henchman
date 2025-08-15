@@ -81,12 +81,12 @@ public static class TaskManager
                               {
                                   if (e is PluginErrorException)
                                   {
-                                      Error(e.Message);
+                                      FullError(e.Message);
                                       if (CurrentTaskRecord is { OnErrorTask: { } })
                                           await CurrentTaskRecord.OnErrorTask.Invoke();
                                   }
                                   else if (e is not OperationCanceledException)
-                                      Error($"Unexpected error in task execution: {e}");
+                                      FullError($"Unexpected error in task execution: {e}");
 
                                   if (CurrentTaskRecord is { OnAbort: { } })
                                       CurrentTaskRecord.OnAbort.Invoke();

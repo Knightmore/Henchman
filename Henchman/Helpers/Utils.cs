@@ -76,7 +76,7 @@ public static class Utils
         Verbose(filePath);
         if (!File.Exists(filePath))
         {
-            Error($"File '{filePath}' not found.");
+            FullError($"File '{filePath}' not found.");
             return default;
         }
 

@@ -43,7 +43,7 @@ internal static class CombatTasks
                 {
                     if (!mark.Positions.TryGetFirst(out var markPosition))
                     {
-                        Error($"HuntMark {mark.Name} has no valid position!");
+                        FullError($"HuntMark {mark.Name} has no valid position!");
                         break;
                     }
 
@@ -202,7 +202,7 @@ internal static class CombatTasks
                             }
                         }
                         else
-                            Error($"HuntMark {mark.Name} has no positions!");
+                            FullError($"HuntMark {mark.Name} has no positions!");
 
                         if (killResult != KillResult.Died)
                             break;
@@ -272,7 +272,7 @@ internal static class CombatTasks
             {
                 if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                 {
-                    Warning("Questionable not enabled! Skipping duty!");
+                    FullWarning("Questionable not enabled! Skipping duty!");
                     
                 }
                 switch (duty)
@@ -427,7 +427,7 @@ internal static class CombatTasks
 
         if (Svc.Condition[ConditionFlag.Unconscious])
         {
-            Warning("Player died!");
+            FullWarning("Player died!");
             await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoReturnTo), "Waiting for resurrection yesno", token);
             await WaitWhileAsync(() => Svc.Condition[ConditionFlag.Unconscious], "Waiting for resurrection", token);
             return false;

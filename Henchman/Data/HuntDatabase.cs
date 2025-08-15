@@ -192,7 +192,7 @@ internal static class HuntDatabase
         }
         catch (Exception e)
         {
-            Error($"Could not process HuntMarks: {e.Message}");
+            FullError($"Could not process HuntMarks: {e.Message}");
         }
     }
 
@@ -217,7 +217,7 @@ internal static class HuntDatabase
         }
         catch (Exception e)
         {
-            Error($"Could not populate HuntMarks: {e.Message}");
+            FullError($"Could not populate HuntMarks: {e.Message}");
         }
     }
 

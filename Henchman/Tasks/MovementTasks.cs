@@ -107,8 +107,6 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
         var position = gameObject.Position;
 
-        //var navTask = await Vnavmesh.NavPathfind(Player.Position, position, false);
-
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.DistanceTo(position) > 25 && Player.Mounted && Player.CanFly), $"Could not find path to {gameObject.Position}");
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
@@ -120,7 +118,6 @@ internal static class MovementTasks
                 token.ThrowIfCancellationRequested();
 
                 if (gameObject.IsInAttackRange(gameObject.HitboxRadius))
-                        //if (IsPlayerInObjectRange2D(gameObject, gameObject.HitboxRadius))
                 {
                     Vnavmesh.StopCompletely();
                     break;
