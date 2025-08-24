@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using Action = System.Action;
 
-namespace Henchman.Features.OnYourBGame;
+namespace Henchman.Features.BringYourXGame;
 
 [Feature]
 public class BringYourXGameUI : FeatureUI
@@ -111,92 +111,83 @@ public class BringYourXGameUI : FeatureUI
         if (gameRank == "A")
         {
             var configChanged = false;
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                      .X /
-                                 2) -
-                                (ImGui.CalcTextSize("Start")
-                                      .X /
-                                 2));
-            if (ImGui.Button("Start")) EnqueueTask(new TaskRecord(feature.StartA, "Bring Your A Game"));
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                      .X /
-                                 2) - 
-                                55
-                                );
-            if (ImGui.Button("Select All"))
-            {
-                C.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
-                configChanged                = true;
-            }
+            ImGuiEx.LineCentered("###Start", () =>
+                                             {
+                                                 if (ImGui.Button("Start") && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartA, Name));
+                                             });
+            ImGuiEx.LineCentered("###Selector", () =>
+                                                {
+                                                    if (ImGui.Button("Select All"))
+                                                    {
+                                                        C.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
+                                                        configChanged                = true;
+                                                    }
 
-            ImGui.SameLine();
-            if (ImGui.Button("Deselect All"))
-            {
-                C.EnabledTerritoriesForARank.Clear();
-                configChanged = true;
-            }
+                                                    ImGui.SameLine();
+                                                    if (ImGui.Button("Deselect All"))
+                                                    {
+                                                        C.EnabledTerritoriesForARank.Clear();
+                                                        configChanged = true;
+                                                    }
+                                                });
 
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                      .X /
-                                 2) -
-                                20 -
-                                LongestTerritoryNameSize.X / 2
-                               );
+            ImGuiEx.LineCentered("###Table", () =>
+                                             {
+                                                 ImGui.BeginChild("TableContainer", new Vector2(70 + LongestTerritoryNameSize.X, 0), false);
+                                                 using (var table = ImRaii.Table("###ARankTerritories", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
+                                                 {
+                                                     ImGui.TableSetupColumn("###enabled", ImGuiTableColumnFlags.WidthFixed, 15f);
+                                                     ImGui.TableSetupColumn("Territory", ImGuiTableColumnFlags.WidthFixed, LongestTerritoryNameSize.X);
+                                                     ImGui.TableHeadersRow();
 
-            ImGui.BeginChild("TableContainer", new Vector2(70 + LongestTerritoryNameSize.X, 0), false);
-            using (var table = ImRaii.Table("###ARankTerritories", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
-            {
-                ImGui.TableSetupColumn("###enabled", ImGuiTableColumnFlags.WidthFixed, 15f);
-                ImGui.TableSetupColumn("Territory", ImGuiTableColumnFlags.WidthFixed, LongestTerritoryNameSize.X);
-                ImGui.TableHeadersRow();
+                                                     foreach (var territory in ARankTerritories)
+                                                     {
+                                                         ImGui.TableNextRow();
+                                                         ImGui.TableNextColumn();
+                                                         var enabled = C.EnabledTerritoriesForARank.Contains(territory);
+                                                         if (ImGui.Checkbox($"###{territory}", ref enabled))
+                                                         {
+                                                             if (enabled)
+                                                                 C.EnabledTerritoriesForARank.Add(territory);
+                                                             else
+                                                                 C.EnabledTerritoriesForARank.Remove(territory);
+                                                             configChanged = true;
+                                                         }
 
-                foreach (var territory in ARankTerritories)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    var enabled = C.EnabledTerritoriesForARank.Contains(territory);
-                    if (ImGui.Checkbox($"###{territory}", ref enabled))
-                    {
-                        if (enabled)
-                            C.EnabledTerritoriesForARank.Add(territory);
-                        else
-                            C.EnabledTerritoriesForARank.Remove(territory);
-                        configChanged = true;
-                    }
+                                                         ImGui.TableNextColumn();
+                                                         ImGui.Text(Svc.Data.GetExcelSheet<TerritoryType>()
+                                                                       .GetRow(territory)
+                                                                       .PlaceName.Value.Name.GetText());
+                                                     }
+                                                 }
 
-                    ImGui.TableNextColumn();
-                    ImGui.Text(Svc.Data.GetExcelSheet<TerritoryType>()
-                                  .GetRow(territory)
-                                  .PlaceName.Value.Name.GetText());
-                }
-            }
-            ImGui.EndChild();
+                                                 ImGui.EndChild();
+                                             });
+
 
             if (configChanged) EzConfig.Save();
         }
         else if (gameRank == "B")
         {
             var configChanged = false;
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                      .X /
-                                 2) -
-                                (ImGui.CalcTextSize("Start")
-                                      .X /
-                                 2));
-            if (ImGui.Button("Start"))
-            {
-                EnqueueTask(new TaskRecord(feature.StartB, "Bring Your B Game"));
-                if (C.TrackBRankSpots)
-                {
-                    if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
-                    {
-                        PossibleSpawnPoints.Clear();
-                        foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
-                        FoundSpawns.Clear();
-                    }
-                }
-            }
-
+            
+            ImGuiEx.LineCentered("###Start", () =>
+                                             {
+                                                 if (ImGui.Button("Start") && !IsTaskEnqueued(Name))
+                                                 {
+                                                     EnqueueTask(new TaskRecord(feature.StartB, Name));
+                                                     if (C.TrackBRankSpots)
+                                                     {
+                                                         if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
+                                                         {
+                                                             PossibleSpawnPoints.Clear();
+                                                             foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
+                                                             FoundSpawns.Clear();
+                                                         }
+                                                     }
+                                                 }
+                                             });
+            
             ImGui.Text("B-Rank to Farm:");
             ImGui.SameLine(150);
             ImGui.SetNextItemWidth(150f);

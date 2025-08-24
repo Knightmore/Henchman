@@ -49,6 +49,19 @@ internal static class HuntDatabase
                                                                                        }
                                                                                };
 
+    internal static Dictionary<string, uint> AethernetIdCloseToHuntboard = new()
+                                                                {
+                                                                        {
+                                                                                "Heavensward", 80
+                                                                        },
+                                                                        {
+                                                                                "Endwalker", 189
+                                                                        },
+                                                                        {
+                                                                                "Dawntrail", 221
+                                                                        },
+                                                                };
+
     internal static readonly List<string> HuntBoardOptions =
     [
             "A Realm Reborn1",

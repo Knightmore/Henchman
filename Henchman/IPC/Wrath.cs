@@ -71,7 +71,7 @@ public static class Wrath
                                                    null
                                                   );
             if (Lease is null)
-                FullWarning("Failed to register for lease.");
+                InternalWarning("Failed to register for lease.");
             return Lease;
         }
     }
@@ -87,7 +87,7 @@ public static class Wrath
         }
         catch (Exception e)
         {
-            FullError("Unknown Wrath IPC error,"                +
+            InternalError("Unknown Wrath IPC error,"                +
                   "probably inability to register a lease." +
                   "\n"                                      +
                   e.Message);
@@ -102,19 +102,16 @@ public static class Wrath
             var lease = (Guid)CurrentLease!;
             SetAutoRotationState(lease, true);
             var setJobReady = SetCurrentJobAutoRotationReady(lease);
-            SetAutoRotationConfigState(lease,
-                                       AutoRotationConfigOption.InCombatOnly, false);
-            SetAutoRotationConfigState(lease,
-                                       AutoRotationConfigOption.AutoRez, true);
-            SetAutoRotationConfigState(lease,
-                                       AutoRotationConfigOption.SingleTargetHPP, 60);
+            SetAutoRotationConfigState(lease, AutoRotationConfigOption.OnlyAttackInCombat, false);
+            SetAutoRotationConfigState(lease, AutoRotationConfigOption.InCombatOnly, false);
+            SetAutoRotationConfigState(lease, AutoRotationConfigOption.DPSRotationMode, 0);
 
             if (setJobReady == SetResult.Okay || setJobReady == SetResult.OkayWorking)
-                PluginLog.Information("Job has been made ready for Auto-Rotation.");
+                Log("Job has been made ready for Auto-Rotation.");
         }
         catch (Exception e)
         {
-            PluginLog.Error("Unknown Wrath IPC error,"                +
+            InternalError("Unknown Wrath IPC error,"                +
                             "probably inability to register a lease." +
                             "\n"                                      +
                             e.Message);
@@ -126,13 +123,14 @@ public static class Wrath
         if (!SubscriptionManager.IsInitialized(IPCNames.Wrath) || Lease == null) return;
         try
         {
-            SetAutoRotationState((Guid)Lease, false);
-            ReleaseControl((Guid)Lease);
+            var lease = (Guid)CurrentLease!;
+            SetAutoRotationState(lease, false);
+            ReleaseControl(lease);
             Lease = null;
         }
         catch (Exception e)
         {
-            PluginLog.Error("Unknown Wrath IPC error,"                +
+            InternalError("Unknown Wrath IPC error,"                +
                             "probably inability to register a lease." +
                             "\n"                                      +
                             e.Message);

@@ -66,12 +66,11 @@ public class OnYourMarkUi : FeatureUI
         var mobHuntOrderTypeEnumerator = Svc.Data.GetExcelSheet<MobHuntOrderType>()
                                             .GetEnumerator();
 
-        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                  .X /
-                             2) -
-                            10);
-        if (ImGui.Button("Start"))
-            EnqueueTask(new TaskRecord(feature.Start, "On Your Mark"));
+        ImGuiEx.LineCentered("###Start", () =>
+                                         {
+                                             if (ImGui.Button("Start") && !IsTaskEnqueued(Name))
+                                                 EnqueueTask(new TaskRecord(feature.Start, Name));
+                                         });
 
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)

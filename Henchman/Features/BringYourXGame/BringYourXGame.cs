@@ -1,12 +1,11 @@
-using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using Henchman.Models;
-using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ECommons.GameHelpers;
+using Henchman.Models;
+using Lumina.Excel.Sheets;
 
-namespace Henchman.Features.OnYourBGame;
+namespace Henchman.Features.BringYourXGame;
 
 internal class BringYourXGame
 {

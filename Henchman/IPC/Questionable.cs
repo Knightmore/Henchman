@@ -23,7 +23,7 @@ public static class Questionable
     {
         TextAdvanceManager.SetTemporary();
         StartSingleQuest(qstString);
-        TextAdvanceManager.UnsetTemporary();
         await WaitUntilAsync(() => QuestManager.IsQuestComplete(questId), $"Waiting for Quest '{Svc.Data.GetExcelSheet<Quest>().GetRow(questId).Name.GetText()}' to finish.", token);
+        TextAdvanceManager.UnsetTemporary();
     }
 }

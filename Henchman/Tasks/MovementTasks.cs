@@ -7,7 +7,8 @@ using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Features.OnYourBGame;
+using Henchman.Features.BringYourXGame;
+//using Henchman.Features.Private.Multibox.Command;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
@@ -324,6 +325,32 @@ internal static class MovementTasks
             }
         }
 
+        return true;
+    }
+}
+
+//[CommandGroup]
+internal static class MovementRPCs
+{
+    //[Command]
+    internal static async Task<bool> GoTo(uint territoryId, Vector3 position, string world, CancellationToken token = default)
+    {
+        if (token.IsCancellationRequested) return false;
+        using var scope       = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
+
+        if (Player.CurrentWorld != world)
+        {
+            if (Lifestream.ChangeWorld(world))
+                await WaitUntilAsync(() => !Lifestream.IsBusy(), "Waiting for World change", token);
+            else
+                return false;
+        }
+
+        var       aetheryteId = GetAetheryte(territoryId, position);
+        if (aetheryteId == 0 || !IsAetheryteUnlocked(aetheryteId)) return false;
+
+        await TeleportTo(aetheryteId, token);
+        await MoveTo(position, Player.CanMount, token);
         return true;
     }
 }

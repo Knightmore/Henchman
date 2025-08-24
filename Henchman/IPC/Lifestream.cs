@@ -63,6 +63,9 @@ public static class Lifestream
     [EzIPC]
     public static Func<uint, bool> AethernetTeleportById;
 
+    [EzIPC]
+    public static Func<string, bool> ChangeWorld;
+
     public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
         if (Player.Available && Player.Name == charName && Player.HomeWorld == worldName) return;

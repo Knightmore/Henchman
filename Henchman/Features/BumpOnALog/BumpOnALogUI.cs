@@ -150,16 +150,15 @@ public class BumpOnALogUi : FeatureUI
             return;
         }
 
-        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()
-                                  .X /
-                             2) -
-                            10);
-        if (ImGui.Button("Start"))
-        {
-            EnqueueTask(gcLog
-                                ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
-                                : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
-        }
+        ImGuiEx.LineCentered("###Start", () =>
+                                         {
+                                             if (ImGui.Button("Start") && !Running)
+                                             {
+                                                 EnqueueTask(gcLog
+                                                                     ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
+                                                                     : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
+                                             }
+                                         });
 
         var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
                                        .Select(col => huntMarks[rankInfo.Rank, col])

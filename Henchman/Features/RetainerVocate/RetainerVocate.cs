@@ -63,7 +63,6 @@ internal class RetainerVocate
 
     internal async Task RunFullCreation(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId= 0, uint combatClass = 0)
     {
-        Verbose(retainerAmount.ToString());
         await GoToRetainerVocate(token);
         await CreateRetainers(token, (int)retainerAmount);
         if (!QuestManager.IsQuestComplete(66968) && !QuestManager.IsQuestComplete(66969) && !QuestManager.IsQuestComplete(66970))
@@ -209,6 +208,9 @@ internal class RetainerVocate
         if (retainerAmount > retainerAmountNoJob)
             retainerAmount = (uint)retainerAmountNoJob;
 
+        Log(maxRetainerEntitlement.ToString());
+        Log(anyRetainerNoJob.ToString());
+
         if (maxRetainerEntitlement > 0 && anyRetainerNoJob)
         {
             if (retainerClassId == 0)
@@ -224,10 +226,10 @@ internal class RetainerVocate
     {
         using var scope      = new TaskDescriptionScope($"Go to Vendor");
         var       vendorData = VendorData(retainerClassId);
-        await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
+            await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
 
-        if (vendorData.ZoneTransitionPosition != null)
-            await MoveToNextZone(vendorData.ZoneTransitionPosition.Value, vendorData.TerritoryId, token);
+            if (vendorData.ZoneTransitionPosition != null && Player.Territory != vendorData.TerritoryId)
+                await MoveToNextZone(vendorData.ZoneTransitionPosition.Value, vendorData.TerritoryId, token);
 
         await MoveToStationaryObject(vendorData.InteractablePosition, vendorData.DataId, token: token);
     }
@@ -424,6 +426,14 @@ internal class RetainerVocate
                                  return (maxRetainerEntitlement > 0 && maxRetainerEntitlement == retainerCount) || await TrySelectSpecificEntry(Lang.SelectStringHireARetainer);
                              }, "Wait for Retainer data or select 'Hire A Retainer' string", token);
 
+        await Task.Delay(GeneralDelayMs * 4, token);
+
+        unsafe
+        {
+            var manager = RetainerManager.Instance();
+            maxRetainerEntitlement = manager->MaxRetainerEntitlement;
+            retainerCount          = manager->GetRetainerCount();
+        }
 
         if (maxRetainerEntitlement != retainerCount)
             await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);

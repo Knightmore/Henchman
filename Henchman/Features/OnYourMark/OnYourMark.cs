@@ -67,23 +67,17 @@ internal class OnYourMark
                     continue;
                 }
 
-                //Verbose($"InExpansionCategory Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
                 bool isMarkBillObtained;
-
                 unsafe
                 {
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
                 }
-
-                //Verbose($"IsObtained {isMarkBillObtained}");
+                
                 if (!isMarkBillObtained)
                 {
                     mobHuntOrderTypeEnumerator.MoveNext();
                     continue;
                 }
-
-
-                //Verbose($"IsMarkObtained: {isMarkBillObtained}");
 
                 var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()[Svc.Data.GetExcelSheet<MobHuntOrderType>()
                                                                                      .GetRow(currentMobHuntType.RowId)
@@ -95,8 +89,6 @@ internal class OnYourMark
                 {
                     allMobsKilled = mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)currentMobHuntType.RowId, (byte)x.SubrowId) == x.NeededKills);
                 }
-
-                //Verbose($"AllMobsKilled: {allMobsKilled}");
 
                 if (!allMobsKilled)
                 {
@@ -113,7 +105,6 @@ internal class OnYourMark
                             Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
                             if (tempMark.GetOpenMobHuntKills == 0)
                             {
-                                //Verbose($"Skipping {tempMark.Name}");
                                 continue;
                             }
 
@@ -248,13 +239,16 @@ internal class OnYourMark
                     huntboardTerritory = Telepo.Instance()->TeleportList.FirstOrNull(x => x.TerritoryId == location.TerritoryId);
                 }
 
-                //Verbose($"HuntBoard Territory is null: {huntboardTerritory == null}");
                 ErrorThrowIf(huntboardTerritory == null, "No aetheryte for huntboard found!");
-
 
                 var aetheryteId = huntboardTerritory!.Value.AetheryteId;
                 Verbose($"AetheryteId: {aetheryteId}");
                 await TeleportTo(aetheryteId, token);
+                if (AethernetIdCloseToHuntboard.TryGetValue(expansion, out var aethernetId))
+                {
+                    Lifestream.AethernetTeleportById(aethernetId);
+                    await WaitPulseConditionAsync(() => Lifestream.IsBusy(), "Waiting for teleport", token);
+                }
             }
         }
 

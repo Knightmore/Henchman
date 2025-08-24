@@ -13,7 +13,7 @@ internal static class AutoRotation
                 RotationSolverReborn.Enable();
                 break;
             case IPCNames.Wrath:
-                Wrath.EnableWrathAuto();
+                Wrath.EnableWrathAutoAndConfigureIt();
                 break;
         }
     }

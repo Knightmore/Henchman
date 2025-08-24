@@ -40,6 +40,7 @@ internal static class TextAdvanceManager
         if (EzSharedData.TryGet<HashSet<string>>("TextAdvance.StopRequests", out var data)) data.Remove(P.Name);
     }
 
-    internal static void SetTemporary()   => TemporarilyNeeded = true;
+    internal static void SetTemporary() => TemporarilyNeeded = true;
+
     internal static void UnsetTemporary() => TemporarilyNeeded = false;
 }

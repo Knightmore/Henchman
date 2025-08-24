@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
@@ -9,8 +10,8 @@ namespace Henchman.TaskManager;
 
 public static class TaskManager
 {
-    private static readonly LinkedList<TaskRecord>              taskQueue = new();
-    private static readonly LinkedList<CancellationTokenSource> ctsQueue  = new();
+    private static readonly Queue<TaskRecord>              taskQueue = new();
+    private static readonly Queue<CancellationTokenSource> ctsQueue  = new();
     public static           TaskRecord?                         CurrentTaskRecord;
     private static          CancellationTokenSource             Cts             = new();
     public static           List<string>                        TaskDescription = [];
@@ -30,37 +31,26 @@ public static class TaskManager
 
     public static void EnqueueTask(TaskRecord task)
     {
-        taskQueue.AddLast(task);
-        ctsQueue.AddLast(new CancellationTokenSource());
+        taskQueue.Enqueue(task);
+        ctsQueue.Enqueue(new CancellationTokenSource());
     }
 
     public static void EnqueueMultiTasks(TaskRecord[] tasks)
     {
-        foreach (var task in tasks) taskQueue.AddLast(task);
+        foreach (var task in tasks) taskQueue.Enqueue(task);
     }
 
     public static void TaskManagerTick(IFramework framework)
     {
         if (ChainedTaskRecord != null && CurrentTaskRecord == null)
         {
-            Cts               = new CancellationTokenSource();
-            CurrentTaskRecord = ChainedTaskRecord;
-            currentTask       = token => ChainedTaskRecord.Task(token);
-            ChainedTaskRecord = CurrentTaskRecord.ChainedTaskRecord;
-
-            Run();
+            StartTask(ChainedTaskRecord, new CancellationTokenSource());
         }
-        else if (CurrentTaskRecord == null && taskQueue.TryGetFirst(out var nextTask) && ctsQueue.TryGetFirst(out var cts))
+        else if (CurrentTaskRecord == null && taskQueue.TryDequeue(out var nextTask) && ctsQueue.TryDequeue(out var cts))
         {
             Cts.Dispose();
-            taskQueue.RemoveFirst();
-            ctsQueue.RemoveFirst();
-            Cts               = cts;
-            CurrentTaskRecord = nextTask;
-            currentTask       = token => CurrentTaskRecord.Task(token);
-            ChainedTaskRecord = CurrentTaskRecord.ChainedTaskRecord;
-
-            Run();
+           
+            StartTask(nextTask, cts);
         }
     }
 
@@ -86,7 +76,13 @@ public static class TaskManager
                                           await CurrentTaskRecord.OnErrorTask.Invoke();
                                   }
                                   else if (e is not OperationCanceledException)
+                                  {
                                       FullError($"Unexpected error in task execution: {e}");
+                                      InternalError($"""
+                                                    StackTrace:
+                                                    {e.StackTrace}
+                                                    """);
+                                  }
 
                                   if (CurrentTaskRecord is { OnAbort: { } })
                                       CurrentTaskRecord.OnAbort.Invoke();
@@ -102,8 +98,24 @@ public static class TaskManager
            .ConfigureAwait(true);
     }
 
+    private static void StartTask(TaskRecord task, CancellationTokenSource cts)
+    {
+        Cts               = cts;
+        CurrentTaskRecord = task;
+        currentTask       = token => task.Task(token);
+        ChainedTaskRecord = task.ChainedTaskRecord;
+        Run();
+    }
+
+    internal static bool IsTaskEnqueued(string taskName)
+    {
+        return taskQueue.Any(x => x.Name == taskName);
+    }
+
     public static void CancelAllTasks()
     {
+        foreach(var cts in ctsQueue)
+            cts.Cancel();
         Cts.Cancel();
         taskQueue.Clear();
         ctsQueue.Clear();

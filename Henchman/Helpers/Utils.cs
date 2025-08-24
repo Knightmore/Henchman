@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game;
@@ -9,7 +10,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Utility;
 using ECommons.GameHelpers;
 using Lumina.Text.ReadOnly;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+
 
 namespace Henchman.Helpers;
 
@@ -105,5 +106,22 @@ public static class Utils
         var texture = Svc.Texture.GetFromGameIcon(iconId)
                          .GetWrapOrEmpty();
         ImGui.Image(texture.Handle, iconSize);
+    }
+
+    public static string ToJson<TEnum>(this TEnum value) where TEnum : struct, Enum => JsonSerializer.Serialize(value, EnumAsStringOptions);
+    public static string ToJson<T>(this T value, JsonSerializerOptions? options = null) where T : struct => JsonSerializer.Serialize(value, options ?? JsonDefaults.Options);
+
+    public static readonly JsonSerializerOptions EnumAsStringOptions = new()
+                                                                       {
+                                                                                Converters = { new JsonStringEnumConverter() }
+                                                                        };
+    public static class JsonDefaults
+    {
+        public static readonly JsonSerializerOptions Options = new()
+                                                               {
+                                                                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                                                                       WriteIndented        = false,
+                                                                       NumberHandling       = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
+                                                               };
     }
 }

@@ -14,7 +14,7 @@ namespace Henchman.Features.RetainerVocate;
 [Feature]
 public class RetainerVocateUi : FeatureUI
 {
-    internal readonly RetainerVocate feature = new();
+    private readonly RetainerVocate feature = new();
     public override   string         Name => "Retainer Vocate";
 
     public override Action Help => () =>
@@ -47,11 +47,11 @@ public class RetainerVocateUi : FeatureUI
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            if (ImGui.Button("Create Retainers") && !Running)
+            if (ImGui.Button("Create Retainers") && !IsTaskEnqueued(Name))
             {
                 EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
                                                                                  ? 10
-                                                                                 : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), "Retainer Vocate"));
+                                                                                 : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
             }
 
 

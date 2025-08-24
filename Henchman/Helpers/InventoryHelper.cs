@@ -14,7 +14,7 @@ internal static class InventoryHelper
             InventoryType.Inventory4
     ];
 
-    internal static unsafe InventoryItem* GetItemInInventory(uint itemId)
+    internal static unsafe InventoryItem* GetItemInInventoryPtr(uint itemId)
     {
         InventoryContainer* container;
         var                 inventoryManager = InventoryManager.Instance();
@@ -40,6 +40,38 @@ internal static class InventoryHelper
         return null;
     }
 
+    internal static unsafe List<InventoryItem>?  GetItemsInInventory(uint itemId)
+    {
+        var                 itemList = new List<InventoryItem>();
+        InventoryContainer* container;
+        var                 inventoryManager = InventoryManager.Instance();
+        foreach (var inventory in MainInventory)
+        {
+            container = inventoryManager->GetInventoryContainer(inventory);
+            for (var i = 0; i < container->Size; i++)
+            {
+                var item = container->GetInventorySlot(i);
+                if (item->ItemId == itemId)
+                    itemList.Add(*item);
+            }
+        }
+
+        container = inventoryManager->GetInventoryContainer(InventoryType.KeyItems);
+        for (var i = 0; i < container->Size; i++)
+        {
+            var item = container->GetInventorySlot(i);
+            if (item->ItemId == itemId)
+                itemList.Add(*item);
+        }
+
+        return null;
+    }
+
+    public static unsafe InventoryItem GetItemSlot(InventoryType type, int slot)
+    {
+        return *InventoryManager.Instance()->GetInventoryContainer(type)->GetInventorySlot(slot);
+    }
+
     internal static unsafe void Discard(InventoryItem* item)
     {
         AgentInventoryContext.Instance()->DiscardItem(item, item->Container, item->Slot, 0);
@@ -47,7 +79,7 @@ internal static class InventoryHelper
 
     internal static unsafe bool Discard(uint itemId)
     {
-        var item = GetItemInInventory(itemId);
+        var item = GetItemInInventoryPtr(itemId);
         if (item == null) return false;
         Discard(item);
         return true;
