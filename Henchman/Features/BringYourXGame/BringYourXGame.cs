@@ -58,7 +58,6 @@ internal class BringYourXGame
                 // TODO: Switch to MappingTheRealm once/if ever released.
                 if (Player.Territory == 478)
                 {
-                    Verbose("In Idyllshire");
                     await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
                 }
             }
@@ -99,7 +98,6 @@ internal class BringYourXGame
                 // TODO: Switch to MappingTheRealm once/if ever released.
                 if (Player.Territory == 478)
                 {
-                    Verbose("In Idyllshire");
                     await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
                 }
             }

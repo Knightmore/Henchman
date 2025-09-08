@@ -137,14 +137,9 @@ internal class OnYourMark
             mobHuntOrderTypeOffset = MobHunt.Instance()->AvailableMarkId.ToArray();
         }
 
-        var huntTargets = new List<HuntMark>();
-
         foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>())
         {
             Verbose($"############### {expansion.Name.ExtractText()} ###############");
-            //Verbose($"InExpansion Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
-
-            //Verbose($"Current mobHuntTypeOrder: {mobHuntOrderTypeEnumerator.Current.RowId}");
             var enabledBillsSelectString = new List<string>();
 
             var configExpansionBills = C.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
@@ -159,7 +154,6 @@ internal class OnYourMark
                     continue;
                 }
 
-                //Verbose($"InExpansionCategory Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
                 var  currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                 bool isMarkBillUnlocked;
                 bool isMarkBillObtained;
@@ -177,9 +171,6 @@ internal class OnYourMark
                 if (!isMarkBillUnlocked)
                     continue;
 
-                //Verbose($"AvailableMarkId: {availableMarkId} | ObtainedMarkId: {obtainedMarkId} | IsMarkUnlocked: {isMarkBillUnlocked}");
-
-
                 var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()[Svc.Data.GetExcelSheet<MobHuntOrderType>()
                                                                                      .GetRow(currentMobHuntType.RowId)
                                                                                      .OrderStart.Value.RowId +
@@ -190,8 +181,6 @@ internal class OnYourMark
                 {
                     allMobsKilled = mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)currentMobHuntType.RowId, (byte)x.SubrowId) == x.NeededKills);
                 }
-
-                //Verbose($"AllMobsKilled: {allMobsKilled}");
 
                 if ((availableMarkId != obtainedMarkId && !isMarkBillObtained) || (!isMarkBillObtained && !allMobsKilled))
                 {

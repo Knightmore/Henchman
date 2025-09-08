@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -207,9 +208,6 @@ internal class RetainerVocate
 
         if (retainerAmount > retainerAmountNoJob)
             retainerAmount = (uint)retainerAmountNoJob;
-
-        Log(maxRetainerEntitlement.ToString());
-        Log(anyRetainerNoJob.ToString());
 
         if (maxRetainerEntitlement > 0 && anyRetainerNoJob)
         {
@@ -453,7 +451,16 @@ internal class RetainerVocate
 
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringHireARetainer), "SelectString HireARetainer", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
-        await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
+
+        string documentsPath  = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string gameFolderPath = Path.Combine(documentsPath, "My Games", "FINAL FANTASY XIV - A Realm Reborn");
+        var    appearanceFiles  = Directory.GetFiles(gameFolderPath, "FFXIV_CHARA_*");
+
+        if (appearanceFiles.Any())
+        {
+            await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
+        }
+        
         await WaitUntilAsync(() => SelectRetainerRaceAndGender((int)C.RetainerRace + (int)C.RetainerGender, token), "Select Retainer Race and Gender", token);
         await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
         await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
@@ -493,7 +500,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon) && IsAddonReady(charaMakeFeatureAddon))
             {
                 Callback.Fire(charaMakeFeatureAddon, true, -9, 0);
                 Debug("Randomize Retainer Look");
@@ -509,7 +516,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon) && IsAddonReady(charaMakeFeatureAddon))
             {
                 Callback.Fire(charaMakeFeatureAddon, true, 100);
                 Debug("Finish Retainer");
@@ -528,8 +535,8 @@ internal class RetainerVocate
             if (TryGetAddonByName<AtkUnitBase>("InputString", out var inputString) && IsAddonReady(inputString))
             {
                 Callback.Fire(inputString, true, 0, C.RetainerGender == RetainerDetails.RetainerGender.Male
-                                                            ? NameGenerator.GetMasculineName
-                                                            : NameGenerator.GetFeminineName, "");
+                                                            ? NameGenerator.GenerateMasculineName
+                                                            : NameGenerator.GenerateFeminineName, "");
                 Debug("Input Retainer Name");
                 return true;
             }
@@ -543,7 +550,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("RetainerCharacter", out var retainerCharacterAddon))
+            if (TryGetAddonByName<AtkUnitBase>("RetainerCharacter", out var retainerCharacterAddon) && IsAddonReady(retainerCharacterAddon))
             {
                 Callback.Fire(retainerCharacterAddon, true, -1);
                 Debug("Close Retainer Character window");
@@ -573,7 +580,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon))
+            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon))
             {
                 Debug(new AddonMaster.RetainerList(retainerListAddon).Retainers.Length.ToString());
                 Debug(pos.ToString());
@@ -591,7 +598,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon))
+            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon))
             {
                 Callback.Fire(retainerListAddon, true, -1);
                 return true;

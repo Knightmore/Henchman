@@ -74,7 +74,6 @@ public static class Utils
     internal static T? ReadLocalJsonFile<T>(string fileName)
     {
         var filePath = $"{Svc.PluginInterface.AssemblyLocation.Directory}\\Data\\{fileName}";
-        Verbose(filePath);
         if (!File.Exists(filePath))
         {
             FullError($"File '{filePath}' not found.");

@@ -49,7 +49,7 @@ internal static class CombatTasks
 
                     var closestAetheryte = GetAetheryte(mark.TerritoryId, markPosition);
                     // TODO: Switch to MappingTheRealm once/if ever released.
-                    if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && mark.TerritoryId is 139 or 154 or 155 or 180)
+                    if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && mark.TerritoryId is 139 or 152 or 154 or 155 or 180)
                     {
                         switch (mark.TerritoryId)
                         {
@@ -84,7 +84,17 @@ internal static class CombatTasks
 
                                 break;
                             }
+                            case 152:
+                            {
+                                ErrorThrowIf(!IsAetheryteUnlocked(3), $"You aren't attuned to Central Shroud Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
+                                await TeleportTo(3, token);
+                                await MoveToNextZone(new Vector3(390f, -3.3f, -186f), 152, token);
+                                await MoveTo(new Vector3(-191f, 4.44f, 297f), true, token);
+                                await InteractWithByDataId(4, token);
+                                break;
+                            }
                             case 154:
+                            {
                                 ErrorThrowIf(!IsAetheryteUnlocked(2), $"You aren't attuned to New Gridania Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
                                 await TeleportTo(2, token);
                                 await MoveToNextZone(new Vector3(-106f, 1.1f, 8f), 133, token);
@@ -94,6 +104,7 @@ internal static class CombatTasks
                                 await InteractWithByDataId(7, token);
                                 await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                 break;
+                            }
                             case 155:
                             {
                                 if (IsAetheryteUnlocked(7))
@@ -150,7 +161,6 @@ internal static class CombatTasks
                     // TODO: Switch to MappingTheRealm once/if ever released.
                     if (Player.Territory == 478)
                     {
-                        Verbose("In Idyllshire");
                         await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
                     }
                 }
@@ -256,10 +266,8 @@ internal static class CombatTasks
         var duties = huntMarks.Select(h => h!.TerritoryId)
                               .Distinct()
                               .ToList();
-        Verbose(duties.Count.ToString());
         foreach (var duty in duties)
         {
-            Verbose(duty.ToString());
             var ADPathAvailable = AutoDuty.ContentHasPath(duty);
             var dutyUnlocked    = UIState.IsInstanceContentUnlocked(duty);
 

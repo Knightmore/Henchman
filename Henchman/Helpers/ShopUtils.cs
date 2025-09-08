@@ -13,10 +13,7 @@ internal static unsafe class ShopUtils
 {
     internal static bool OpenShop(GameObject* vendor, uint shopId)
     {
-        Verbose("Trying to Interact");
         TargetSystem.Instance()->InteractWithObject(vendor, false);
-
-        Verbose("Interacted");
         var selector = EventHandlerSelector.Instance();
         if (selector->Target == null)
             return true;
@@ -29,7 +26,6 @@ internal static unsafe class ShopUtils
 
         for (var i = 0; i < selector->OptionsCount; ++i)
         {
-            Verbose(selector->Options[i].Handler->Info.EventId.Id.ToString());
             if (selector->Options[i].Handler->Info.EventId.Id == shopId)
             {
                 Log($"Selecting selector option {i} for shop {shopId:X}");

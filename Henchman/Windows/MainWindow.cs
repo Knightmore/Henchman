@@ -4,6 +4,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using ECommons.Configuration;
 using ECommons.Events;
 using ECommons.ImGuiMethods;
 using Henchman.Helpers;
@@ -18,14 +19,14 @@ public class MainWindow : Window, IDisposable
 {
     private const uint SidebarWidth = 200;
 
-    public MainWindow(Henchman plugin) : base($"{P.Name} - {P.GetType().Assembly.GetName().Version} ",
+    public MainWindow(Henchman plugin) : base($"{P.Name} - {P.GetType().Assembly.GetName().Version}##mainWindow",
                                               ImGuiWindowFlags.NoScrollbar       |
                                               ImGuiWindowFlags.NoScrollWithMouse |
                                               ImGuiWindowFlags.AlwaysAutoResize  |
                                               ImGuiWindowFlags.NoSavedSettings)
     {
 #if PRIVATE
-        var widthRation = 7f;
+        var widthRation = 5f;
 #else
         var widthRation = 5f;
 #endif
@@ -41,8 +42,11 @@ public class MainWindow : Window, IDisposable
         SizeCondition   = ImGuiCond.Always;
     }
 
-    private FeatureUI? SelectedFeature => FeatureSet.FirstOrDefault(t => t.Name == P!.SelectedFeature) ??
-                                          GeneralSet.FirstOrDefault(t => t.Name == P!.SelectedFeature);
+    private FeatureUI? SelectedFeature =>
+            FeatureSet.FirstOrDefault(t => t.Name == P!.SelectedFeatureName) ??
+            GeneralSet.FirstOrDefault(t => t.Name      == P!.SelectedFeatureName) ??
+            ExperimentalSet.FirstOrDefault(t => t.Name == P!.SelectedFeatureName);
+
 
     public void Dispose() { }
 
@@ -90,7 +94,22 @@ public class MainWindow : Window, IDisposable
                             throw new FileNotFoundException();
 
                         if (ThreadLoadImageHandler.TryGetTextureWrap(imagePath, out var logo))
-                            ImGuiEx.LineCentered("###Logo", () => { ImGui.Image(logo.Handle, new Vector2(128f.Scale(), 128f.Scale())); });
+                            ImGuiEx.LineCentered("###Logo", () =>
+                                                            {
+                                                                ImGui.Image(logo.Handle, new Vector2(128f.Scale(), 128f.Scale()));
+                                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                                                                {
+                                                                    P.ToggleMainUi();
+                                                                    C.SeparateWindows = !C.SeparateWindows;
+                                                                    P.ToggleMainUi();
+                                                                    if (P!.SelectedFeatureName != string.Empty)
+                                                                    {
+                                                                        P.FeatureWindow.SizeConstraints = SelectedFeature!.SizeConstraints;
+                                                                        P.FeatureWindow.IsOpen          = true;
+                                                                    }
+                                                                    EzConfig.Save();
+                                                                }
+                                                            });
                     }
 
 
@@ -99,11 +118,23 @@ public class MainWindow : Window, IDisposable
 
                     foreach (var feature in FeatureSet.OrderBy(t => t.Name))
                     {
-                        if (ImGui.Selectable($"{feature.Name}###Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
+                        if (ImGui.Selectable($"{feature.Name}###Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
                         {
-                            P!.SelectedFeature = P!.SelectedFeature != feature.Name
+                            P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
                                                          ? feature.Name
                                                          : string.Empty;
+                        }
+                    }
+                    ImGui.Separator();
+
+
+                    foreach (var feature in ExperimentalSet.OrderBy(t => t.Name))
+                    {
+                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
+                        {
+                            P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
+                                                             ? feature.Name
+                                                             : string.Empty;
                         }
                     }
 
@@ -112,15 +143,14 @@ public class MainWindow : Window, IDisposable
 
                     foreach (var feature in GeneralSet.OrderBy(t => t.Name))
                     {
-                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
+                        if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
                         {
-                            P!.SelectedFeature = P!.SelectedFeature != feature.Name
-                                                         ? feature.Name
-                                                         : string.Empty;
+                            P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
+                                                             ? feature.Name
+                                                             : string.Empty;
                         }
                     }
                 }
-
 
                 ImGui.PopStyleVar();
 

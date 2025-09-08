@@ -3,18 +3,25 @@ using System.Text.Json;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ECommons.GameHelpers;
 using Henchman.Helpers;
 using Henchman.Models;
 
 namespace Henchman.Features.General;
 
+[General]
 internal class MarkDatabaseUI : FeatureUI
 {
     public override string  Name        => "Mark Database";
     public override Action? Help        { get; }
     public override bool    LoginNeeded => true;
 
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(450, 500),
+                                                                                    MaximumSize = new Vector2(450, 800)
+                                                                            };
     public override void Draw()
     {
         ImGui.Text("Current Territory:");
@@ -76,7 +83,7 @@ internal class MarkDatabaseUI : FeatureUI
 
         ImGui.Separator();
 
-        using (var table = ImRaii.Table("###markTable", 3, ImGuiTableFlags.RowBg))
+        using (var table = ImRaii.Table("###markTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
         {
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);

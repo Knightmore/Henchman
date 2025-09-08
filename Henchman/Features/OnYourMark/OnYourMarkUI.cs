@@ -2,6 +2,7 @@ using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -46,7 +47,11 @@ public class OnYourMarkUi : FeatureUI
                                    };
 
     public override bool LoginNeeded => true;
-
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(700, 500),
+                                                                                    MaximumSize = new Vector2(700, 1000)
+                                                                            };
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
             (IPCNames.vnavmesh, true),

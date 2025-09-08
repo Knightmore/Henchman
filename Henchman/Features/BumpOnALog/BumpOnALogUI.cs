@@ -2,6 +2,7 @@ using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -50,6 +51,11 @@ public class BumpOnALogUi : FeatureUI
     ];
 
     public override bool LoginNeeded => true;
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(400, 500),
+                                                                                    MaximumSize = new Vector2(400, 500)
+                                                                            };
 
     public override unsafe void Draw()
     {

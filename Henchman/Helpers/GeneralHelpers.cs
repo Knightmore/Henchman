@@ -1,13 +1,14 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Map = Lumina.Excel.Sheets.Map;
 
 namespace Henchman.Helpers;
@@ -209,4 +210,6 @@ internal static class GeneralHelpers
                                                                                 .Where(i => i + 1 < points.Count)
                                                                                 .Select(i => Vector3.Distance(points[i], points[i + 1]))
                                                                                 .Sum();
+
+    internal static unsafe bool AddonReady(string addonName) => TryGetAddonByName<AtkUnitBase>(addonName, out var addon) && IsAddonReady(addon);
 }

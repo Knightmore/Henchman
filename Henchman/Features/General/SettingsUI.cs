@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -8,6 +9,7 @@ using Action = System.Action;
 
 namespace Henchman.Features.General;
 
+[General]
 internal class SettingsUI : FeatureUI
 {
     public Dictionary<string, string> AutoRotationCorrectedNames = new()
@@ -29,7 +31,11 @@ internal class SettingsUI : FeatureUI
     public override Action Help => () => { ImGui.Text("General Setting used through all implemented features."); };
 
     public override bool LoginNeeded => false;
-
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(400, 400),
+                                                                                    MaximumSize = new Vector2(500, 500)
+                                                                            };
     public override unsafe void Draw()
     {
         var configChanged = false;

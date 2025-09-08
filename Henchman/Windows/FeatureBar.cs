@@ -1,9 +1,12 @@
 using System.IO;
 using System.Linq;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using ECommons.Configuration;
 using ECommons.ImGuiMethods;
-using ImGuiNET;
+
+
 #if PRIVATE
 using Henchman.Features.Private.Debugging;
 using Henchman.Features.Private.LGBInspector;
@@ -17,22 +20,21 @@ public class FeatureBar : Window, IDisposable
 
     //private string    selectedFeature = string.Empty;
 
-    public FeatureBar() : base($"{P.Name} - {P.GetType().Assembly.GetName().Version} ",
-                                              ImGuiWindowFlags.NoScrollbar |
-                                              ImGuiWindowFlags.NoScrollWithMouse |
-                                              ImGuiWindowFlags.AlwaysAutoResize |
-                                              ImGuiWindowFlags.NoSavedSettings)
+    public FeatureBar() : base($"{P.Name} - {P.GetType().Assembly.GetName().Version}##featureBar ",
+                               ImGuiWindowFlags.NoScrollbar       |
+                               ImGuiWindowFlags.NoScrollWithMouse |
+                               ImGuiWindowFlags.AlwaysAutoResize  |
+                               ImGuiWindowFlags.NoSavedSettings)
     {
-
         var width = SidebarWidth +
                     ImGui.GetStyle()
                          .ItemSpacing.X +
-                    (2 *
+                    2 *
                      ImGui.GetStyle()
-                          .FramePadding.X);
+                          .FramePadding.X;
         //Size            = new Vector2(width, 600);
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(width, 400), MaximumSize = new Vector2(1920, 1080) };
-        SizeCondition = ImGuiCond.Always;
+        SizeCondition   = ImGuiCond.Always;
     }
 
     /*private FeatureUI? SelectedFeature => FeatureSet.FirstOrDefault(t => t.Name == P!.selectedFeature) ??
@@ -42,7 +44,7 @@ public class FeatureBar : Window, IDisposable
 
     public override void Draw()
     {
-        var region = ImGui.GetContentRegionAvail();
+        var region            = ImGui.GetContentRegionAvail();
         var topLeftSideHeight = region.Y;
 
         using (var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(5, 0)))
@@ -57,7 +59,18 @@ public class FeatureBar : Window, IDisposable
                     throw new FileNotFoundException();
 
                 if (ThreadLoadImageHandler.TryGetTextureWrap(imagePath, out var logo))
-                    ImGuiEx.LineCentered("###Logo", () => { ImGui.Image(logo.ImGuiHandle, new Vector2(128f.Scale(), 128f.Scale())); });
+                    ImGuiEx.LineCentered("###Logo", () =>
+                                                    {
+                                                        ImGui.Image(logo.Handle, new Vector2(128f.Scale(), 128f.Scale()));
+                                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                                                        {
+                                                            P.ToggleMainUi();
+                                                            P.FeatureWindow.IsOpen = false;
+                                                            C.SeparateWindows      = !C.SeparateWindows;
+                                                            P.ToggleMainUi();
+                                                            EzConfig.Save();
+                                                        }
+                                                    });
             }
 
 
@@ -66,7 +79,7 @@ public class FeatureBar : Window, IDisposable
 
             if (Running && CurrentTaskRecord != null)
             {
-                ImGuiEx.TextCentered($"Running Task:");
+                ImGuiEx.TextCentered("Running Task:");
                 ImGuiEx.TextCentered(TaskName);
                 ImGui.SameLine();
                 ImGuiEx.HelpMarker($"""
@@ -74,9 +87,6 @@ public class FeatureBar : Window, IDisposable
 
                                     {(TaskDescription.Count == 0 ? "No Description" : string.Join("\n", TaskDescription))}
                                     """);
-
-
-                ImGui.SameLine();
                 if (ImGui.Button("Abort")) CancelAllTasks();
             }
             else
@@ -86,26 +96,40 @@ public class FeatureBar : Window, IDisposable
 
             foreach (var feature in FeatureSet.OrderBy(t => t.Name))
             {
-                if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
+                if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
                 {
-                    P!.SelectedFeature = P!.SelectedFeature != feature.Name
+                    P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
                                               ? feature.Name
                                               : string.Empty;
-                    P.FeatureWindow.IsOpen = !P.SelectedFeature.IsNullOrEmpty();
+                    P.FeatureWindow.SizeConstraints = feature.SizeConstraints;
+                    P.FeatureWindow.IsOpen          = !P.SelectedFeatureName.IsNullOrEmpty();
+                }
+            }
+            ImGui.Separator();
+            
+            foreach (var feature in ExperimentalSet.OrderBy(t => t.Name))
+            {
+                if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
+                {
+                    P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
+                                                     ? feature.Name
+                                                     : string.Empty;
+                    P.FeatureWindow.SizeConstraints = feature.SizeConstraints;
+                    P.FeatureWindow.IsOpen          = !P.SelectedFeatureName.IsNullOrEmpty();
                 }
             }
 
             ImGui.Separator();
 
-
             foreach (var feature in GeneralSet.OrderBy(t => t.Name))
             {
-                if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeature == feature.Name))
+                if (ImGui.Selectable($"{feature.Name}##Selectable_{feature.Name}", P!.SelectedFeatureName == feature.Name))
                 {
-                    P!.SelectedFeature = P!.SelectedFeature != feature.Name
+                    P!.SelectedFeatureName = P!.SelectedFeatureName != feature.Name
                                                  ? feature.Name
                                                  : string.Empty;
-                    P.FeatureWindow.IsOpen = !P.SelectedFeature.IsNullOrEmpty();
+                    P.FeatureWindow.SizeConstraints = feature.SizeConstraints;
+                    P.FeatureWindow.IsOpen          = !P.SelectedFeatureName.IsNullOrEmpty();
                 }
             }
 

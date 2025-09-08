@@ -23,9 +23,7 @@ internal static class MovementTasks
         if (Player.Mounted) return true;
         using var scope = new TaskDescriptionScope("Mounting");
         await WaitUntilAsync(() => !Player.IsBusy, "Waiting for Player Status not busy!", token);
-        if (!Svc.Data.GetExcelSheet<TerritoryType>()
-                .GetRow(Svc.ClientState.TerritoryType)
-                .Mount)
+        if (!Player.CanMount)
         {
             Verbose("Can not mount in current territory.");
             return false;
@@ -55,7 +53,7 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Dismounting");
-        ;
+        
         if (!Player.Mounted) return;
 
         Verbose("Dismounting");
@@ -78,7 +76,9 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Move To Object");
+        if (Player.DistanceTo(interactablePosition) <= distance) return;
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
+        if (Player.DistanceTo(interactablePosition) >= 30f) await Mount(token);
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(interactablePosition, Player.Mounted && Player.CanFly), $"Could not find path to {interactablePosition}");
         if (!Player.Mounted && Player.DistanceTo(interactablePosition) > C.MinRunDistance) UseSprint();
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
@@ -147,8 +147,7 @@ internal static class MovementTasks
         if (mount) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {position}");
-        await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
-        await WaitUntilAsync(() => !Vnavmesh.PathIsRunning() && !Vnavmesh.NavPathfindInProgress() && Player.DistanceTo(position) < 1, "Wait for walking to destination", token);
+        await WaitPulseConditionAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to finish", token);
     }
 
     internal static async Task MoveToArea(Vector3 position, CancellationToken token = default)
@@ -235,6 +234,7 @@ internal static class MovementTasks
         using var scope        = new TaskDescriptionScope("Roam until Target nearby");
         var       path         = Utils.SortListByDistance(pointList);
         uint      killedARanks = 0;
+        await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !Player.IsBusy, "Wait for VNav/Player", token);
         foreach (var point in path)
         {
             if (C.UseMount && Player.DistanceTo(point) > C.MinMountDistance)
@@ -258,7 +258,8 @@ internal static class MovementTasks
 
                 var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < distanceToSpot, $"Moving close to next roaming point: {point}.", linkedCts.Token);
                 var scanningForARanks = WaitUntilAsync(() => Svc.Objects.OfType<IBattleNpc>()
-                                                                .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>().Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget, "Scanning for A-Ranks", linkedCts.Token);
+                                                                .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
+                                                                                        .Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget, "Scanning for A-Ranks", linkedCts.Token);
 
                 var completedTask = await Task.WhenAny(scanningForARanks, playerCloseToPoint);
                 linkedCts.Cancel();
@@ -285,7 +286,9 @@ internal static class MovementTasks
                         killedARanks++;
 
                         var isDummyTarget = targetNameId == int.MaxValue;
-                        var exVersion     = Svc.Data.GetExcelSheet<TerritoryType>().GetRow(Player.Territory).ExVersion.RowId;
+                        var exVersion = Svc.Data.GetExcelSheet<TerritoryType>()
+                                           .GetRow(Player.Territory)
+                                           .ExVersion.RowId;
 
                         if ((isDummyTarget && exVersion == 0 && killedARanks == 1) ||
                             (isDummyTarget && exVersion > 0  && killedARanks == 2))
@@ -336,7 +339,7 @@ internal static class MovementRPCs
     internal static async Task<bool> GoTo(uint territoryId, Vector3 position, string world, CancellationToken token = default)
     {
         if (token.IsCancellationRequested) return false;
-        using var scope       = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
+        using var scope = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
 
         if (Player.CurrentWorld != world)
         {
@@ -346,7 +349,7 @@ internal static class MovementRPCs
                 return false;
         }
 
-        var       aetheryteId = GetAetheryte(territoryId, position);
+        var aetheryteId = GetAetheryte(territoryId, position);
         if (aetheryteId == 0 || !IsAetheryteUnlocked(aetheryteId)) return false;
 
         await TeleportTo(aetheryteId, token);

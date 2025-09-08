@@ -1,0 +1,902 @@
+[
+  {
+    "Id": 1001027,
+    "ChocoboTaxiStandId": 1179669,
+    "TerritoryId": 129,
+    "Location": {
+      "X": 45.82275,
+      "Y": 19.97406,
+      "Z": -8.097595
+    }
+  },
+  {
+    "Id": 1001978,
+    "ChocoboTaxiStandId": 1179658,
+    "TerritoryId": 130,
+    "Location": {
+      "X": 55.35967,
+      "Y": 4.124078,
+      "Z": -143.8992
+    }
+  },
+  {
+    "Id": 1000136,
+    "ChocoboTaxiStandId": 1179650,
+    "TerritoryId": 132,
+    "Location": {
+      "X": 32.32222,
+      "Y": -0.05002153,
+      "Z": 70.31564
+    }
+  },
+  {
+    "Id": 1002721,
+    "ChocoboTaxiStandId": 1179670,
+    "TerritoryId": 134,
+    "Location": {
+      "X": 187.9367,
+      "Y": 98.52471,
+      "Z": -193.1733
+    }
+  },
+  {
+    "Id": 1002719,
+    "ChocoboTaxiStandId": 1179676,
+    "TerritoryId": 135,
+    "Location": {
+      "X": 503.1389,
+      "Y": 79.17908,
+      "Z": -74.80962
+    }
+  },
+  {
+    "Id": 1002720,
+    "ChocoboTaxiStandId": 1179675,
+    "TerritoryId": 135,
+    "Location": {
+      "X": 49.29806,
+      "Y": 29.3155,
+      "Z": 605.2917
+    }
+  },
+  {
+    "Id": 1002717,
+    "ChocoboTaxiStandId": 1179673,
+    "TerritoryId": 137,
+    "Location": {
+      "X": 12.93436,
+      "Y": 69.64355,
+      "Z": 21.32637
+    }
+  },
+  {
+    "Id": 1002718,
+    "ChocoboTaxiStandId": 1179677,
+    "TerritoryId": 137,
+    "Location": {
+      "X": 423.7469,
+      "Y": 18.52183,
+      "Z": 448.5948
+    }
+  },
+  {
+    "Id": 1002722,
+    "ChocoboTaxiStandId": 1179671,
+    "TerritoryId": 138,
+    "Location": {
+      "X": 667.7173,
+      "Y": 9.882255,
+      "Z": 487.3286
+    }
+  },
+  {
+    "Id": 1002723,
+    "ChocoboTaxiStandId": 1179672,
+    "TerritoryId": 138,
+    "Location": {
+      "X": 298.6616,
+      "Y": -24.99786,
+      "Z": 233.1584
+    }
+  },
+  {
+    "Id": 1002716,
+    "ChocoboTaxiStandId": 1179674,
+    "TerritoryId": 139,
+    "Location": {
+      "X": 413.3674,
+      "Y": 4.109592,
+      "Z": 88.74062
+    }
+  },
+  {
+    "Id": 1003732,
+    "ChocoboTaxiStandId": 1179659,
+    "TerritoryId": 140,
+    "Location": {
+      "X": 63.65807,
+      "Y": 45.20808,
+      "Z": -193.5759
+    }
+  },
+  {
+    "Id": 1004036,
+    "ChocoboTaxiStandId": 1179660,
+    "TerritoryId": 140,
+    "Location": {
+      "X": -415.7931,
+      "Y": 23.08685,
+      "Z": -335.7137
+    }
+  },
+  {
+    "Id": 1002295,
+    "ChocoboTaxiStandId": 1179661,
+    "TerritoryId": 140,
+    "Location": {
+      "X": -246.0823,
+      "Y": 32.44361,
+      "Z": 383.8406
+    }
+  },
+  {
+    "Id": 1001607,
+    "ChocoboTaxiStandId": 1179662,
+    "TerritoryId": 141,
+    "Location": {
+      "X": -2.704952,
+      "Y": -2.055626,
+      "Z": -158.4958
+    }
+  },
+  {
+    "Id": 1003935,
+    "ChocoboTaxiStandId": 1179663,
+    "TerritoryId": 145,
+    "Location": {
+      "X": -423.2201,
+      "Y": -39.06165,
+      "Z": 112.2323
+    }
+  },
+  {
+    "Id": 1004692,
+    "ChocoboTaxiStandId": 1179667,
+    "TerritoryId": 145,
+    "Location": {
+      "X": -532.0974,
+      "Y": -0.1068726,
+      "Z": -199.8474
+    }
+  },
+  {
+    "Id": 1004412,
+    "ChocoboTaxiStandId": 1179664,
+    "TerritoryId": 146,
+    "Location": {
+      "X": -176.196,
+      "Y": 26.90161,
+      "Z": -411.6122
+    }
+  },
+  {
+    "Id": 1004413,
+    "ChocoboTaxiStandId": 1179665,
+    "TerritoryId": 146,
+    "Location": {
+      "X": -309.2189,
+      "Y": 7.375896,
+      "Z": 417.8488
+    }
+  },
+  {
+    "Id": 1004152,
+    "ChocoboTaxiStandId": 1179666,
+    "TerritoryId": 147,
+    "Location": {
+      "X": 54.94769,
+      "Y": 3.999763,
+      "Z": 443.2287
+    }
+  },
+  {
+    "Id": 1004241,
+    "ChocoboTaxiStandId": 1179668,
+    "TerritoryId": 147,
+    "Location": {
+      "X": -41.30378,
+      "Y": 48,
+      "Z": -52.91935
+    }
+  },
+  {
+    "Id": 1002980,
+    "ChocoboTaxiStandId": 1179657,
+    "TerritoryId": 148,
+    "Location": {
+      "X": 22.962,
+      "Y": -8.000056,
+      "Z": 84.98597
+    }
+  },
+  {
+    "Id": 1002981,
+    "ChocoboTaxiStandId": 1179651,
+    "TerritoryId": 152,
+    "Location": {
+      "X": -194.2932,
+      "Y": 1.00334,
+      "Z": 278.0651
+    }
+  },
+  {
+    "Id": 1002982,
+    "ChocoboTaxiStandId": 1179653,
+    "TerritoryId": 153,
+    "Location": {
+      "X": 172.4772,
+      "Y": 8.347722,
+      "Z": -47.46599
+    }
+  },
+  {
+    "Id": 1002983,
+    "ChocoboTaxiStandId": 1179654,
+    "TerritoryId": 153,
+    "Location": {
+      "X": -207.4933,
+      "Y": 20.79546,
+      "Z": 346.9381
+    }
+  },
+  {
+    "Id": 1000600,
+    "ChocoboTaxiStandId": 1179652,
+    "TerritoryId": 153,
+    "Location": {
+      "X": -203.4791,
+      "Y": 8.960648,
+      "Z": -57.11456
+    }
+  },
+  {
+    "Id": 1002984,
+    "ChocoboTaxiStandId": 1179656,
+    "TerritoryId": 154,
+    "Location": {
+      "X": 1.233066,
+      "Y": -46.5248,
+      "Z": 238.5829
+    }
+  },
+  {
+    "Id": 1002985,
+    "ChocoboTaxiStandId": 1179655,
+    "TerritoryId": 154,
+    "Location": {
+      "X": 320.5818,
+      "Y": -6.272354,
+      "Z": -72.78946
+    }
+  },
+  {
+    "Id": 1006802,
+    "ChocoboTaxiStandId": 1179680,
+    "TerritoryId": 155,
+    "Location": {
+      "X": 195.8394,
+      "Y": 302.3493,
+      "Z": -167.8459
+    }
+  },
+  {
+    "Id": 1006801,
+    "ChocoboTaxiStandId": 1179679,
+    "TerritoryId": 155,
+    "Location": {
+      "X": 231.2523,
+      "Y": 222.1874,
+      "Z": 316.5895
+    }
+  },
+  {
+    "Id": 1006803,
+    "ChocoboTaxiStandId": 1179681,
+    "TerritoryId": 155,
+    "Location": {
+      "X": -473.8978,
+      "Y": 211,
+      "Z": -221.7772
+    }
+  },
+  {
+    "Id": 1006900,
+    "ChocoboTaxiStandId": 1179683,
+    "TerritoryId": 156,
+    "Location": {
+      "X": 427.5927,
+      "Y": -5.293147,
+      "Z": -462.4678
+    }
+  },
+  {
+    "Id": 1006901,
+    "ChocoboTaxiStandId": 1179682,
+    "TerritoryId": 156,
+    "Location": {
+      "X": 59.3728,
+      "Y": 20.69333,
+      "Z": -659.968
+    }
+  },
+  {
+    "Id": 1011226,
+    "ChocoboTaxiStandId": 1179685,
+    "TerritoryId": 397,
+    "Location": {
+      "X": 483.1342,
+      "Y": 217.9514,
+      "Z": 751.0815
+    }
+  },
+  {
+    "Id": 1012302,
+    "ChocoboTaxiStandId": 1179686,
+    "TerritoryId": 397,
+    "Location": {
+      "X": -266.2535,
+      "Y": 127.1339,
+      "Z": 16.17947
+    }
+  },
+  {
+    "Id": 1012304,
+    "ChocoboTaxiStandId": 1179687,
+    "TerritoryId": 398,
+    "Location": {
+      "X": 549.8383,
+      "Y": -51.27571,
+      "Z": 68.96717
+    }
+  },
+  {
+    "Id": 2005696,
+    "ChocoboTaxiStandId": 1179688,
+    "TerritoryId": 398,
+    "Location": {
+      "X": -209.3486,
+      "Y": -35.4085,
+      "Z": 162.9337
+    }
+  },
+  {
+    "Id": 2005697,
+    "ChocoboTaxiStandId": 1179689,
+    "TerritoryId": 399,
+    "Location": {
+      "X": -50.2,
+      "Y": 100.7,
+      "Z": -203
+    }
+  },
+  {
+    "Id": 2005698,
+    "ChocoboTaxiStandId": 1179690,
+    "TerritoryId": 400,
+    "Location": {
+      "X": 265.156,
+      "Y": -42.55743,
+      "Z": 565.6061
+    }
+  },
+  {
+    "Id": 2005699,
+    "ChocoboTaxiStandId": 1179691,
+    "TerritoryId": 400,
+    "Location": {
+      "X": -50.4167,
+      "Y": -8.866,
+      "Z": 146.5618
+    }
+  },
+  {
+    "Id": 2005700,
+    "ChocoboTaxiStandId": 1179692,
+    "TerritoryId": 400,
+    "Location": {
+      "X": -521.2197,
+      "Y": 50,
+      "Z": 362.0813
+    }
+  },
+  {
+    "Id": 1012303,
+    "ChocoboTaxiStandId": 1179694,
+    "TerritoryId": 401,
+    "Location": {
+      "X": -630.5486,
+      "Y": -119.6461,
+      "Z": 484.3669
+    }
+  },
+  {
+    "Id": 2005695,
+    "ChocoboTaxiStandId": 1179693,
+    "TerritoryId": 401,
+    "Location": {
+      "X": -621.5,
+      "Y": -58.5,
+      "Z": -319.4
+    }
+  },
+  {
+    "Id": 1011195,
+    "ChocoboTaxiStandId": 1179684,
+    "TerritoryId": 418,
+    "Location": {
+      "X": -163.428,
+      "Y": 2.171433,
+      "Z": -5.487687
+    }
+  },
+  {
+    "Id": 1019512,
+    "ChocoboTaxiStandId": 1179696,
+    "TerritoryId": 612,
+    "Location": {
+      "X": -603.357,
+      "Y": 130.1747,
+      "Z": -470.634
+    }
+  },
+  {
+    "Id": 1020801,
+    "ChocoboTaxiStandId": 1179697,
+    "TerritoryId": 612,
+    "Location": {
+      "X": 461.9973,
+      "Y": 114.211,
+      "Z": 230.1517
+    }
+  },
+  {
+    "Id": 1021500,
+    "ChocoboTaxiStandId": 1179703,
+    "TerritoryId": 613,
+    "Location": {
+      "X": 44.16141,
+      "Y": 0.7360184,
+      "Z": -563.2119
+    }
+  },
+  {
+    "Id": 1019174,
+    "ChocoboTaxiStandId": 1179704,
+    "TerritoryId": 613,
+    "Location": {
+      "X": 318.4404,
+      "Y": -119.3103,
+      "Z": -207.9042
+    }
+  },
+  {
+    "Id": 1019267,
+    "ChocoboTaxiStandId": 1179706,
+    "TerritoryId": 614,
+    "Location": {
+      "X": 276.1819,
+      "Y": 8.117543,
+      "Z": -404.079
+    }
+  },
+  {
+    "Id": 1019252,
+    "ChocoboTaxiStandId": 1179705,
+    "TerritoryId": 614,
+    "Location": {
+      "X": 468.5731,
+      "Y": 68.22892,
+      "Z": -76.64232
+    }
+  },
+  {
+    "Id": 1020836,
+    "ChocoboTaxiStandId": 1179698,
+    "TerritoryId": 620,
+    "Location": {
+      "X": 49.2458,
+      "Y": 118.3919,
+      "Z": -728.944
+    }
+  },
+  {
+    "Id": 1020865,
+    "ChocoboTaxiStandId": 1179699,
+    "TerritoryId": 620,
+    "Location": {
+      "X": -258.75,
+      "Y": 257.7096,
+      "Z": 721.2443
+    }
+  },
+  {
+    "Id": 1022982,
+    "ChocoboTaxiStandId": 1179700,
+    "TerritoryId": 621,
+    "Location": {
+      "X": -510.0633,
+      "Y": 8.682312,
+      "Z": 20.98108
+    }
+  },
+  {
+    "Id": 1023041,
+    "ChocoboTaxiStandId": 1179701,
+    "TerritoryId": 621,
+    "Location": {
+      "X": 635.8892,
+      "Y": 80,
+      "Z": 668.8181
+    }
+  },
+  {
+    "Id": 1019332,
+    "ChocoboTaxiStandId": 1179707,
+    "TerritoryId": 622,
+    "Location": {
+      "X": 569.0254,
+      "Y": -19.23943,
+      "Z": 269.9413
+    }
+  },
+  {
+    "Id": 1019383,
+    "ChocoboTaxiStandId": 1179708,
+    "TerritoryId": 622,
+    "Location": {
+      "X": 501.4787,
+      "Y": 39.57227,
+      "Z": -464.447
+    }
+  },
+  {
+    "Id": 1019418,
+    "ChocoboTaxiStandId": 1179709,
+    "TerritoryId": 622,
+    "Location": {
+      "X": 86.35071,
+      "Y": 116.043,
+      "Z": -37.39996
+    }
+  },
+  {
+    "Id": 1018995,
+    "ChocoboTaxiStandId": 1179702,
+    "TerritoryId": 628,
+    "Location": {
+      "X": -108.0097,
+      "Y": -7,
+      "Z": -65.83353
+    }
+  },
+  {
+    "Id": 1019442,
+    "ChocoboTaxiStandId": 1179695,
+    "TerritoryId": 635,
+    "Location": {
+      "X": 42.6823,
+      "Y": -1.192093E-07,
+      "Z": 24.52322
+    }
+  },
+  {
+    "Id": 1028314,
+    "ChocoboTaxiStandId": 1179723,
+    "TerritoryId": 813,
+    "Location": {
+      "X": 663.6119,
+      "Y": 45.41374,
+      "Z": -60.42229
+    }
+  },
+  {
+    "Id": 1028312,
+    "ChocoboTaxiStandId": 1179722,
+    "TerritoryId": 813,
+    "Location": {
+      "X": -589.0135,
+      "Y": 67.15491,
+      "Z": -173.8156
+    }
+  },
+  {
+    "Id": 1027959,
+    "ChocoboTaxiStandId": 1179712,
+    "TerritoryId": 814,
+    "Location": {
+      "X": 692.3943,
+      "Y": 28.11711,
+      "Z": 298.0428
+    }
+  },
+  {
+    "Id": 1027470,
+    "ChocoboTaxiStandId": 1179710,
+    "TerritoryId": 814,
+    "Location": {
+      "X": -412.2312,
+      "Y": 417.1398,
+      "Z": -599.4796
+    }
+  },
+  {
+    "Id": 1027431,
+    "ChocoboTaxiStandId": 1179711,
+    "TerritoryId": 814,
+    "Location": {
+      "X": -236.9573,
+      "Y": 21.46942,
+      "Z": 346.8223
+    }
+  },
+  {
+    "Id": 1027900,
+    "ChocoboTaxiStandId": 1179720,
+    "TerritoryId": 815,
+    "Location": {
+      "X": 281.8935,
+      "Y": 1.468582,
+      "Z": -265.3657
+    }
+  },
+  {
+    "Id": 1027868,
+    "ChocoboTaxiStandId": 1179724,
+    "TerritoryId": 815,
+    "Location": {
+      "X": 386.1906,
+      "Y": -26.84075,
+      "Z": 275.5016
+    }
+  },
+  {
+    "Id": 1027902,
+    "ChocoboTaxiStandId": 1179719,
+    "TerritoryId": 815,
+    "Location": {
+      "X": -492.6681,
+      "Y": 45.12946,
+      "Z": -284.9623
+    }
+  },
+  {
+    "Id": 2010636,
+    "ChocoboTaxiStandId": 1179716,
+    "TerritoryId": 816,
+    "Location": {
+      "X": -432.0865,
+      "Y": 64.2068,
+      "Z": 549.9009
+    }
+  },
+  {
+    "Id": 2010637,
+    "ChocoboTaxiStandId": 1179714,
+    "TerritoryId": 816,
+    "Location": {
+      "X": 50.3217,
+      "Y": 101.7473,
+      "Z": -850.6052
+    }
+  },
+  {
+    "Id": 2010638,
+    "ChocoboTaxiStandId": 1179715,
+    "TerritoryId": 816,
+    "Location": {
+      "X": 351.7007,
+      "Y": 84.1652,
+      "Z": -647.0517
+    }
+  },
+  {
+    "Id": 1027710,
+    "ChocoboTaxiStandId": 1179717,
+    "TerritoryId": 817,
+    "Location": {
+      "X": 506.543,
+      "Y": -6.594435,
+      "Z": -267.6097
+    }
+  },
+  {
+    "Id": 1027740,
+    "ChocoboTaxiStandId": 1179718,
+    "TerritoryId": 817,
+    "Location": {
+      "X": -105.9113,
+      "Y": -18.24823,
+      "Z": 271.1359
+    }
+  },
+  {
+    "Id": 1027265,
+    "ChocoboTaxiStandId": 1179721,
+    "TerritoryId": 819,
+    "Location": {
+      "X": 57.9945,
+      "Y": 36.24769,
+      "Z": -177.0935
+    }
+  },
+  {
+    "Id": 1029991,
+    "ChocoboTaxiStandId": 1179713,
+    "TerritoryId": 820,
+    "Location": {
+      "X": -106.7369,
+      "Y": -9.999162,
+      "Z": -54.8562
+    }
+  },
+  {
+    "Id": 1039521,
+    "ChocoboTaxiStandId": 1179732,
+    "TerritoryId": 956,
+    "Location": {
+      "X": 394.0336,
+      "Y": 166.2036,
+      "Z": -499.9312
+    }
+  },
+  {
+    "Id": 1039523,
+    "ChocoboTaxiStandId": 1179733,
+    "TerritoryId": 956,
+    "Location": {
+      "X": -29.46515,
+      "Y": -31.53013,
+      "Z": 17.10529
+    }
+  },
+  {
+    "Id": 1039525,
+    "ChocoboTaxiStandId": 1179734,
+    "TerritoryId": 956,
+    "Location": {
+      "X": -696.531,
+      "Y": -31.53043,
+      "Z": 272.3326
+    }
+  },
+  {
+    "Id": 1039529,
+    "ChocoboTaxiStandId": 1179726,
+    "TerritoryId": 957,
+    "Location": {
+      "X": 132.4606,
+      "Y": 5.387928,
+      "Z": 605.0671
+    }
+  },
+  {
+    "Id": 1039531,
+    "ChocoboTaxiStandId": 1179727,
+    "TerritoryId": 957,
+    "Location": {
+      "X": -469.8183,
+      "Y": 5.53548,
+      "Z": 32.07308
+    }
+  },
+  {
+    "Id": 1039533,
+    "ChocoboTaxiStandId": 1179728,
+    "TerritoryId": 957,
+    "Location": {
+      "X": 432.5914,
+      "Y": 3.148673,
+      "Z": -209.653
+    }
+  },
+  {
+    "Id": 1039535,
+    "ChocoboTaxiStandId": 1179729,
+    "TerritoryId": 958,
+    "Location": {
+      "X": -333.5149,
+      "Y": 22.37715,
+      "Z": 474.225
+    }
+  },
+  {
+    "Id": 1039537,
+    "ChocoboTaxiStandId": 1179730,
+    "TerritoryId": 958,
+    "Location": {
+      "X": 509.4448,
+      "Y": 10.87966,
+      "Z": -413.2814
+    }
+  },
+  {
+    "Id": 1039519,
+    "ChocoboTaxiStandId": 1179731,
+    "TerritoryId": 962,
+    "Location": {
+      "X": -43.02722,
+      "Y": 18,
+      "Z": -322.7847
+    }
+  },
+  {
+    "Id": 1039527,
+    "ChocoboTaxiStandId": 1179725,
+    "TerritoryId": 963,
+    "Location": {
+      "X": 79.23245,
+      "Y": -31.97063,
+      "Z": 221.0616
+    }
+  },
+  {
+    "Id": 1048551,
+    "ChocoboTaxiStandId": 1179735,
+    "TerritoryId": 1185,
+    "Location": {
+      "X": -282.6906,
+      "Y": -0.01531982,
+      "Z": 69.05442
+    }
+  },
+  {
+    "Id": 1048553,
+    "ChocoboTaxiStandId": 1179736,
+    "TerritoryId": 1187,
+    "Location": {
+      "X": 295.3087,
+      "Y": -170.8743,
+      "Z": -466.0935
+    }
+  },
+  {
+    "Id": 1048555,
+    "ChocoboTaxiStandId": 1179737,
+    "TerritoryId": 1187,
+    "Location": {
+      "X": 486.188,
+      "Y": 114.935,
+      "Z": 654.1801
+    }
+  },
+  {
+    "Id": 1048557,
+    "ChocoboTaxiStandId": 1179738,
+    "TerritoryId": 1188,
+    "Location": {
+      "X": -201.6319,
+      "Y": 2.47811,
+      "Z": -404.8669
+    }
+  },
+  {
+    "Id": 1048559,
+    "ChocoboTaxiStandId": 1179739,
+    "TerritoryId": 1188,
+    "Location": {
+      "X": 491.2382,
+      "Y": 112.9984,
+      "Z": 192.9706
+    }
+  },
+  {
+    "Id": 1048561,
+    "ChocoboTaxiStandId": 1179740,
+    "TerritoryId": 1188,
+    "Location": {
+      "X": -450.8124,
+      "Y": 121.6325,
+      "Z": 323.1461
+    }
+  }
+]

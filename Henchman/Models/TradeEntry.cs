@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace Henchman.Models
 {
+    public enum TradeSession
+    {
+        Boss,
+        Henchman
+    }
     public class TradeEntry
     {
         public uint      Id;
@@ -17,6 +22,7 @@ namespace Henchman.Models
     {
         Give,
         Keep,
+        AskFor,
         AskUntil
     }
 }

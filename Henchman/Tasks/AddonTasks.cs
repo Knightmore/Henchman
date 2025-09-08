@@ -51,7 +51,7 @@ internal class AddonTasks
         return false;
     }
 
-    /*internal static async Task<bool> GenericYesNo(bool accept)
+    internal static async Task<bool> GenericYesNo(bool accept)
     {
         if (TryGetAddonMaster<AddonMaster.SelectYesno>(out var addon) && addon.IsAddonReady)
         {
@@ -65,7 +65,7 @@ internal class AddonTasks
 
         await Task.Delay(100);
         return false;
-    }*/
+    }
 
     internal static async Task<bool> RegexYesNo(bool accept, ReadOnlySeString text)
     {
@@ -164,6 +164,21 @@ internal class AddonTasks
         }
 
         await Task.Delay(100);
+        return false;
+    }
+
+    internal static async Task<bool> IsTradeAffirmed()
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon))
+            {
+                var check = addon->UldManager.NodeList[31]->GetAsAtkComponentNode()->Component->UldManager.NodeList[0]->GetAsAtkImageNode();
+                return check->AtkResNode.Color.A == 0xFF;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs);
         return false;
     }
 }

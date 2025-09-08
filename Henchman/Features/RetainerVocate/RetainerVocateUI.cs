@@ -1,5 +1,6 @@
 using System.Linq;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
@@ -12,7 +13,7 @@ using Action = System.Action;
 namespace Henchman.Features.RetainerVocate;
 
 [Feature]
-public class RetainerVocateUi : FeatureUI
+public class RetainerVocateUI : FeatureUI
 {
     private readonly RetainerVocate feature = new();
     public override   string         Name => "Retainer Vocate";
@@ -38,7 +39,11 @@ public class RetainerVocateUi : FeatureUI
             (IPCNames.Lifestream, true),
             (IPCNames.Questionable, true)
     ];
-
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(400, 500),
+                                                                                    MaximumSize = new Vector2(400, 500)
+                                                                            };
     public override unsafe void Draw()
     {
         var configChanged = false;
@@ -47,12 +52,15 @@ public class RetainerVocateUi : FeatureUI
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            if (ImGui.Button("Create Retainers") && !IsTaskEnqueued(Name))
-            {
-                EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
-                                                                                 ? 10
-                                                                                 : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
-            }
+            ImGuiEx.LineCentered("###Start", () =>
+                                             {
+                                                 if (ImGui.Button("Create Retainers") && !IsTaskEnqueued(Name))
+                                                 {
+                                                     EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
+                                                                                                                                  ? 10
+                                                                                                                                  : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
+                                                 }
+                                             });
 
 
             ImGui.Text("Fill all retainer slots");

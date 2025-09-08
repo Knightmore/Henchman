@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/13.0.0">
     <PropertyGroup>
-        <Version>1.0.1.5</Version>
+        <Version>1.0.2.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -40,6 +40,9 @@
         <None Include="Data\BRanks.json">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <None Include="Data\ChocoboTaxiStands.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
         <Content Include="Images\Henchman.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
@@ -49,10 +52,14 @@
         <Compile Remove="Features\Private\**\*.cs" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(Configuration)' == 'Private'">
+        
+    </ItemGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj" />
       <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
-      
+      <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>

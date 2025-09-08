@@ -24,15 +24,17 @@ public class Henchman : IDalamudPlugin
 
     internal static Henchman? P;
 
-    public static readonly HashSet<FeatureUI> FeatureSet = [];
-    public static readonly HashSet<FeatureUI> GeneralSet = [];
+    public static readonly HashSet<FeatureUI> FeatureSet      = [];
+    public static readonly HashSet<FeatureUI> ExperimentalSet = [];
+    public static readonly HashSet<FeatureUI> GeneralSet      = [];
+    
 
     public readonly WindowSystem  WindowSystem = new("Henchman");
     public          Configuration Config;
     private         FeatureBar    featureBar;
     internal        FeatureWindow FeatureWindow;
     private         MainWindow    mainWindow;
-    internal        string        SelectedFeature = string.Empty;
+    internal        string        SelectedFeatureName = string.Empty;
 
     public Henchman(IDalamudPluginInterface pluginInterface)
     {
@@ -51,8 +53,8 @@ public class Henchman : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
 
         mainWindow.Dispose();
-        //featureBar.Dispose();
-        //FeatureWindow.Dispose();
+        featureBar.Dispose();
+        FeatureWindow.Dispose();
 
         Svc.Commands.RemoveHandler(CommandName);
 
@@ -93,22 +95,29 @@ public class Henchman : IDalamudPlugin
             FeatureSet.Add(instance);
         }
 
-        GeneralSet.Add(new SettingsUI());
-        GeneralSet.Add(new RequirementsUI());
-        GeneralSet.Add(new MarkDatabaseUI());
-#if PRIVATE
-        GeneralSet.Add(new DebuggingUI());
-        GeneralSet.Add(new LGBInspectorUI());
-#endif
+        foreach (var type in GetType()
+                            .Assembly.GetTypes()
+                            .Where(type => type.GetCustomAttribute<ExperimentalAttribute>() != null))
+        {
+            var instance = (FeatureUI)Activator.CreateInstance(type)!;
+            ExperimentalSet.Add(instance);
+        }
 
+        foreach (var type in GetType()
+                            .Assembly.GetTypes()
+                            .Where(type => type.GetCustomAttribute<GeneralAttribute>() != null))
+        {
+            var instance = (FeatureUI)Activator.CreateInstance(type)!;
+            GeneralSet.Add(instance);
+        }
 
         mainWindow = new MainWindow(this);
-        //featureBar = new FeatureBar();
-        //FeatureWindow = new FeatureWindow();
+        featureBar = new FeatureBar();
+        FeatureWindow = new FeatureWindow();
 
         WindowSystem.AddWindow(mainWindow);
-        //WindowSystem.AddWindow(featureBar);
-        //WindowSystem.AddWindow(FeatureWindow);
+        WindowSystem.AddWindow(featureBar);
+        WindowSystem.AddWindow(FeatureWindow);
 
 
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -141,8 +150,10 @@ public class Henchman : IDalamudPlugin
 
     public void ToggleMainUi()
     {
-        mainWindow.Toggle();
-        //featureBar.Toggle();
+        if(!C.SeparateWindows)
+            mainWindow.Toggle();
+        else
+            featureBar.Toggle();
     }
 
     public static bool TryGetFeature<T>(out T result) where T : FeatureUI

@@ -11,6 +11,7 @@ using Lumina.Excel.Sheets;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using Dalamud.Interface.Windowing;
 using Action = System.Action;
 
 namespace Henchman.Features.BringYourXGame;
@@ -29,17 +30,18 @@ public class BringYourXGameUI : FeatureUI
                                                                 .Select(x => x.TerritoryId)
                                                                 .ToImmutableSortedSet();
 
-    private Vector2 LongestTerritoryNameSize => ImGui.CalcTextSize(Svc.Data.GetExcelSheet<TerritoryType>()
+    /*private Vector2 LongestTerritoryNameSize => ImGui.CalcTextSize(Svc.Data.GetExcelSheet<TerritoryType>()
                                                    .Where(x => ARankTerritories.Contains(x.RowId))
                                                    .OrderByDescending(x => x.PlaceName.Value.Name.GetText()
                                                                             .Length)
-                                                   .First().PlaceName.Value.Name.GetText());
+                                                   .First().PlaceName.Value.Name.GetText());*/
 
     internal List<Vector3> FoundSpawns = [];
     private  string        gameRank    = "X";
     private  Map           map;
 
     internal        List<Vector3> PossibleSpawnPoints = [];
+    internal        uint          SpawnsRecordedFor   = 0;
     public override string        Name => $"Bring Your {gameRank} Game";
 
 
@@ -69,12 +71,19 @@ public class BringYourXGameUI : FeatureUI
 
     public override bool LoginNeeded => false;
 
+    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
+                                                                            {
+                                                                                    MinimumSize = new Vector2(400, 500),
+                                                                                    MaximumSize = new Vector2(600, 500)
+                                                                            };
+
+
     public override void Draw()
     {
         if (gameRank == "X")
         {
             gameRank           = "A";
-            P!.SelectedFeature = Name;
+            P!.SelectedFeatureName = Name;
         }
 
         string[] ranks = ["A", "B"];
@@ -97,7 +106,7 @@ public class BringYourXGameUI : FeatureUI
                     if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         gameRank           = rank;
-                        P!.SelectedFeature = Name;
+                        P!.SelectedFeatureName = Name;
                     }
                 }
             }
@@ -133,11 +142,10 @@ public class BringYourXGameUI : FeatureUI
 
             ImGuiEx.LineCentered("###Table", () =>
                                              {
-                                                 ImGui.BeginChild("TableContainer", new Vector2(70 + LongestTerritoryNameSize.X, 0), false);
-                                                 using (var table = ImRaii.Table("###ARankTerritories", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
+                                                 using (var table = ImRaii.Table("###ARankTerritories", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY, new Vector2(300,300)))
                                                  {
-                                                     ImGui.TableSetupColumn("###enabled", ImGuiTableColumnFlags.WidthFixed, 15f);
-                                                     ImGui.TableSetupColumn("Territory", ImGuiTableColumnFlags.WidthFixed, LongestTerritoryNameSize.X);
+                                                     ImGui.TableSetupColumn("###enabled", ImGuiTableColumnFlags.WidthFixed, 35);
+                                                     ImGui.TableSetupColumn("Territory", ImGuiTableColumnFlags.WidthFixed, 200);
                                                      ImGui.TableHeadersRow();
 
                                                      foreach (var territory in ARankTerritories)
@@ -160,8 +168,6 @@ public class BringYourXGameUI : FeatureUI
                                                                        .PlaceName.Value.Name.GetText());
                                                      }
                                                  }
-
-                                                 ImGui.EndChild();
                                              });
 
 
@@ -180,9 +186,13 @@ public class BringYourXGameUI : FeatureUI
                                                      {
                                                          if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
                                                          {
-                                                             PossibleSpawnPoints.Clear();
-                                                             foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
-                                                             FoundSpawns.Clear();
+                                                             if (SpawnsRecordedFor != C.BRankToFarm)
+                                                             {
+                                                                 SpawnsRecordedFor = C.BRankToFarm;
+                                                                 PossibleSpawnPoints.Clear();
+                                                                 foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
+                                                                 FoundSpawns.Clear();
+                                                             }
                                                          }
                                                      }
                                                  }
@@ -281,7 +291,7 @@ public class BringYourXGameUI : FeatureUI
     {
         using (var leftChild = ImRaii.Child("###leftChild", regionSize with { X = regionSize.X / 2 }, false, ImGuiWindowFlags.NoDecoration))
         {
-            using (var possibleTable = ImRaii.Table("###possibleSpawns", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
+            using (var possibleTable = ImRaii.Table("###possibleSpawns", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY))
             {
                 ImGui.TableSetupColumn("Possible Positions", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableHeadersRow();
@@ -308,7 +318,7 @@ public class BringYourXGameUI : FeatureUI
     {
         using (var leftChild = ImRaii.Child("###rightChild", regionSize with { X = regionSize.X / 2 }, false, ImGuiWindowFlags.NoDecoration))
         {
-            using (var foundTable = ImRaii.Table("###foundSpawns", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
+            using (var foundTable = ImRaii.Table("###foundSpawns", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY))
             {
                 ImGui.TableSetupColumn("Spawned Positions", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableHeadersRow();
