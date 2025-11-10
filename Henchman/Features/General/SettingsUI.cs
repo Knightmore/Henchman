@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
@@ -9,7 +10,7 @@ using Action = System.Action;
 
 namespace Henchman.Features.General;
 
-[General]
+[Feature]
 internal class SettingsUI : FeatureUI
 {
     public Dictionary<string, string> AutoRotationCorrectedNames = new()
@@ -26,16 +27,14 @@ internal class SettingsUI : FeatureUI
             IPCNames.Wrath
     ];
 
-    public override string Name => "Settings";
+    public override string          Name     => "Settings";
+    public override string          Category => Henchman.Category.System;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.Cog;
 
     public override Action Help => () => { ImGui.Text("General Setting used through all implemented features."); };
 
     public override bool LoginNeeded => false;
-    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
-                                                                            {
-                                                                                    MinimumSize = new Vector2(400, 400),
-                                                                                    MaximumSize = new Vector2(500, 500)
-                                                                            };
+
     public override unsafe void Draw()
     {
         var configChanged = false;
@@ -63,7 +62,6 @@ internal class SettingsUI : FeatureUI
         ImGui.SetNextItemWidth(120f);
         configChanged |= ImGui.InputInt("##runForDistance", ref C.MinRunDistance);
 
-        //configChanged |= ImGui.Checkbox("Try for melee range in combat##meleeRange", ref C.UseMeleeRange);
         configChanged |= ImGui.Checkbox("Return to once feature is finished:", ref C.ReturnOnceDone);
         ImGui.SameLine(240);
         ImGui.SetNextItemWidth(120f);

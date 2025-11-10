@@ -1,15 +1,20 @@
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Utility;
 using ECommons.ImGuiMethods;
+using Henchman.Windows.Layout;
 
 namespace Henchman.Helpers;
 
 internal static class ImGuiHelper
 {
+    private static readonly Dictionary<string, float> CenteredWidths = new();
+
     private static string HeaderText => """
                                         For some optional plugins such as Auto Rotations, you can select your preferred option in the plugin settings.
                                         If no settings are available, you'll need to manually configure alternatives for any optional plugins.
@@ -18,14 +23,17 @@ internal static class ImGuiHelper
                                         Don't have both enabled at the same time. Henchman is not actively preventing you from being stupid! 
                                         """;
 
-    public static void HelpMarker(Action textAction, Vector4? color = null, string symbolOverride = null, bool sameLine = true) => InfoMarker(textAction, color, symbolOverride, sameLine);
-
-    public static void InfoMarker(Action textAction, Vector4? color = null, string symbolOverride = null, bool sameLine = true)
+    public static void HelpMarker(Action textAction, Vector4? color = null, string symbolOverride = null, bool sameLine = true, float xOffset = 0f)
     {
         if (sameLine) ImGui.SameLine();
+
+        if (xOffset > 0)
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + xOffset);
+
         ImGui.PushFont(UiBuilder.IconFont);
         ColoredText(color ?? ImGuiColors.DalamudGrey3, symbolOverride ?? FontAwesomeIcon.InfoCircle.ToIconString());
         ImGui.PopFont();
+
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
@@ -35,6 +43,7 @@ internal static class ImGuiHelper
             ImGui.EndTooltip();
         }
     }
+
 
     public static void ColoredText(Vector4 col, string s)
     {
@@ -113,7 +122,8 @@ internal static class ImGuiHelper
         }
     }
 
-    public static Vector2 GetLongestStringSize(IEnumerable<string> strings) => ImGui.CalcTextSize(strings.OrderByDescending(s => s.Length).First());
+    public static Vector2 GetLongestStringSize(IEnumerable<string> strings) => ImGui.CalcTextSize(strings.OrderByDescending(s => s.Length)
+                                                                                                         .First());
 
     public static void AnimatedRainbowTextCentered(string text)
     {
@@ -170,5 +180,85 @@ internal static class ImGuiHelper
                        _ => new Vector4(v, p, q, 255)
                } /
                255f;
+    }
+
+    public static void DrawLink(string label, string title, string url)
+    {
+        ImGui.TextUnformatted(label);
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+
+            using var tooltip = ImRaii.Tooltip();
+            if (tooltip.Success)
+            {
+                ImGuiEx.Text(EzColor.White, title);
+
+                var pos = ImGui.GetCursorPos();
+                ImGui.GetWindowDrawList()
+                     .AddText(
+                              UiBuilder.IconFont, 12,
+                              ImGui.GetWindowPos() + pos + new Vector2(2),
+                              Theme.TextSecondary.ToUint(),
+                              FontAwesomeIcon.ExternalLinkAlt.ToIconString()
+                             );
+                ImGui.SetCursorPos(pos + new Vector2(20, 0));
+                ImGuiEx.Text(Theme.TextSecondary.ToUint(), url);
+            }
+        }
+
+        if (ImGui.IsItemClicked()) Task.Run(() => Util.OpenLink(url));
+    }
+
+    public static void DrawCentered(Action func) => DrawCentered(GetCallStackID(), func);
+
+    public static void DrawCentered(string id, Action draw)
+    {
+        if (CenteredWidths.TryGetValue(id, out var cachedWidth))
+        {
+            var regionWidth = ImGui.GetContentRegionAvail()
+                                   .X;
+            var offset = (regionWidth - cachedWidth) * 0.5f;
+            if (offset > 0)
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+        }
+
+        ImGui.BeginGroup();
+        draw();
+        ImGui.EndGroup();
+
+        if (!CenteredWidths.ContainsKey(id))
+        {
+            var measuredWidth = ImGui.GetItemRectSize()
+                                     .X;
+            CenteredWidths[id] = measuredWidth;
+        }
+    }
+
+    public class ColumnScope : IDisposable
+    {
+        private readonly int expected;
+        private          int actual;
+
+        public ColumnScope(int expected)
+        {
+            this.expected = expected;
+            actual        = 0;
+            ImGui.TableNextRow();
+        }
+
+        public void Dispose()
+        {
+#if DEBUG
+            ErrorIf(actual != expected, $"Column mismatch: used {actual}, expected {expected}");
+#endif
+        }
+
+        public void TableNextColumn()
+        {
+            ImGui.TableNextColumn();
+            actual++;
+        }
     }
 }

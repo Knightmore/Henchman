@@ -2,6 +2,7 @@ using System.Linq;
 using System.Text.Json;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.GameHelpers;
@@ -10,18 +11,15 @@ using Henchman.Models;
 
 namespace Henchman.Features.General;
 
-[General]
+[Feature]
 internal class MarkDatabaseUI : FeatureUI
 {
-    public override string  Name        => "Mark Database";
-    public override Action? Help        { get; }
-    public override bool    LoginNeeded => true;
+    public override string          Name        => "Mark Database";
+    public override string          Category    => Henchman.Category.System;
+    public override FontAwesomeIcon Icon        => FontAwesomeIcon.Database;
+    public override Action?         Help        { get; }
+    public override bool            LoginNeeded => true;
 
-    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
-                                                                            {
-                                                                                    MinimumSize = new Vector2(450, 500),
-                                                                                    MaximumSize = new Vector2(450, 800)
-                                                                            };
     public override void Draw()
     {
         ImGui.Text("Current Territory:");

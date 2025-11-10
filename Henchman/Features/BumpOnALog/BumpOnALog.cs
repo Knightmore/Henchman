@@ -10,18 +10,18 @@ namespace Henchman.Features.BumpOnALog;
 
 internal class BumpOnALog
 {
-    internal async Task StartGCRank(CancellationToken token = default)
+    internal async Task StartGCRank(CancellationToken token = default, bool doDutyMarks = false)
     {
-        await Process(true, token);
+        await Process(true, doDutyMarks, token);
     }
 
     internal async Task StartClassRank(CancellationToken token = default)
     {
-        await Process(false, token);
+        await Process(false, token: token);
     }
 
 
-    private async Task Process(bool gcLog, CancellationToken token)
+    private async Task Process(bool gcLog, bool doDutyMarks = false, CancellationToken token = default)
     {
         byte grandCompany;
         var currentRank = gcLog
@@ -43,7 +43,7 @@ internal class BumpOnALog
                                  .OrderBy(x => x!.TerritoryId)
                                  .ToList();
         await ProcessHuntMarks(overworldMarks, true, currentRank, gcLog, token);
-        if (gcLog && !C.SkipDutyMarks)
+        if (gcLog && (!C.SkipDutyMarks || doDutyMarks))
         {
             if(SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
                 await ProcessDutyMarks(dutyMarks, token);

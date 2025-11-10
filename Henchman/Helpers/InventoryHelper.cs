@@ -6,7 +6,7 @@ namespace Henchman.Helpers;
 
 internal static class InventoryHelper
 {
-    private static readonly InventoryType[] MainInventory =
+    internal static readonly InventoryType[] MainInventory =
     [
             InventoryType.Inventory1,
             InventoryType.Inventory2,
@@ -85,9 +85,27 @@ internal static class InventoryHelper
         return true;
     }
 
+    public static unsafe uint GetItemAmountInNeedOfRepair(int durability = 0)
+    {
+        var amount    = 0u;
+        var  container = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
+        for (var i = 0; i < container->Size; i++)
+        {
+            var item = container->GetInventorySlot(i);
+            if (item is null) continue;
+            if (Convert.ToInt32(Convert.ToDouble(item->Condition) / 30000.0 * 100.0) <= durability)
+                amount++;
+        }
+        return amount;
+    }
+
     internal static unsafe int GetInventoryItemCount(uint itemId) => InventoryManager.Instance()->GetInventoryItemCount(itemId);
 
     internal static unsafe uint GetGCSealAmount() => Player.GrandCompany == 0
                                                              ? 0
                                                              : InventoryManager.Instance()->GetCompanySeals((byte)Player.GrandCompany);
+
+    internal static unsafe void SetTradeGilAmount(uint amount) => InventoryManager.Instance()->SetTradeGilAmount(amount);
+    internal static unsafe void SendTradeRequest(uint entityId) => InventoryManager.Instance()->SendTradeRequest(entityId);
+    internal static unsafe void RefuseTrade() => InventoryManager.Instance()->RefuseTrade();
 }

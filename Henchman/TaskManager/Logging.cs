@@ -67,7 +67,9 @@ internal static class Logging
         if (condition) FullError(message);
     }
 
-    internal static void Verbose(string message) => PluginLog.Verbose($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+    internal static void Verbose(string message) => PluginLog.Verbose($"[{TaskName}]  {(TaskDescription.Count > 0 ? "[" + TaskDescription.Last() + "]" : "")} {message}");
+
+    internal static void VerboseSpecific(string sender, string message) => PluginLog.Verbose($"[{sender}] {message}");
 
     internal static void Debug(string message) => PluginLog.Debug($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
 

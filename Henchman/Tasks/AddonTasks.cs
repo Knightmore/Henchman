@@ -4,6 +4,7 @@ using ECommons.Automation.UIInput;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Henchman.Data;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
 using Lumina.Text.ReadOnly;
@@ -116,6 +117,24 @@ internal class AddonTasks
         return false;
     }
 
+    internal static async Task<bool> TrySelectEntryNumber(int entryNumber)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AddonSelectString>("SelectString", out var addon) && IsAddonReady(&addon->AtkUnitBase))
+            {
+                var selectString = new AddonMaster.SelectString(addon);
+                selectString.Entries[entryNumber].Select();
+                Log($"TrySelectEntryNumber: selecting {entryNumber}");
+                return true;
+            }
+        }
+
+        await Task.Delay(100);
+        return false;
+    }
+
+
     internal static async Task<bool> TrySelectFirstExplorationVenture(uint retainerClassId)
     {
         unsafe
@@ -167,18 +186,49 @@ internal class AddonTasks
         return false;
     }
 
-    internal static async Task<bool> IsTradeAffirmed()
+    internal static async Task<bool> TryConfirmContentsFinder()
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon))
+            if (TryGetAddonByName<AddonContentsFinderConfirm>("ContentsFinderConfirm", out var addon) && IsAddonReady(&addon->AtkUnitBase))
             {
-                var check = addon->UldManager.NodeList[31]->GetAsAtkComponentNode()->Component->UldManager.NodeList[0]->GetAsAtkImageNode();
-                return check->AtkResNode.Color.A == 0xFF;
+                addon->CommenceButton->ClickAddonButton(&addon->AtkUnitBase);
+                return true;
             }
         }
 
-        await Task.Delay(GeneralDelayMs);
+        await Task.Delay(100);
+        return false;
+    }
+
+    internal static async Task<bool> TryGetSpecificSelectOk(ReadOnlySeString text)
+    {
+        if (TryGetAddonMaster<AddonMaster.SelectOk>(out var addon) && addon.IsAddonReady)
+        {
+            if (text.ToRegex()
+                    .IsMatch(addon.Text))
+            {
+                return true;
+            }
+        }
+
+        await Task.Delay(100);
+        return false;
+    }
+
+    internal static async Task<bool> ConfirmSpecificSelectOk(ReadOnlySeString text)
+    {
+        if (TryGetAddonMaster<AddonMaster.SelectOk>(out var addon) && addon is { IsAddonReady: true, IsVisible: true })
+        {
+            if (text.ToRegex()
+                    .IsMatch(addon.Text))
+            {
+                addon.Ok();
+                return true;
+            }
+        }
+
+        await Task.Delay(100);
         return false;
     }
 }

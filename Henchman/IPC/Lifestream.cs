@@ -1,10 +1,12 @@
-using System.Threading;
-using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.EzIpcManager;
 using ECommons.GameHelpers;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
+using Henchman.TaskManager;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.IPC;
 
@@ -69,14 +71,35 @@ public static class Lifestream
     public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
         if (Player.Available && Player.Name == charName && Player.HomeWorld == worldName) return;
+        bool inTitleMenu = false;
+        unsafe
+        {
+            inTitleMenu = TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var addon) && addon->IsVisible;
+        }
         if (!Player.Available)
         {
-            ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
-            await WaitUntilAsync(() => Player.Available, "Waiting for login", token);
-            return;
+            if(inTitleMenu)
+            {
+                ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
+                await WaitUntilAsync(() => Player.Available && !Player.IsBusy, "Waiting for login", token);
+                return;
+            }
+
+            await WaitUntilAsync(() => Player.Available, "Wait for player avaialable", token);
         }
 
-        Chat.SendMessage("/logout");
+        while (true)
+        {
+            unsafe
+            {
+                if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out var _))
+                    break;
+            }
+
+            Chat.SendMessage("/logout");
+            await Task.Delay(1000, token);
+        }
+
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
         await WaitUntilAsync(() =>
                              {
@@ -87,7 +110,7 @@ public static class Lifestream
                              }, "Wait for title screen", token);
 
         ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
-        await WaitUntilAsync(() => Player.Available, "Waiting for login", token);
+        await WaitUntilAsync(() => Player.Available && !Player.IsBusy, "Waiting for login", token);
     }
 
     public static async Task<bool> LifestreamReturn(LifestreamDestination destination, bool returnCriteria, CancellationToken token = default)
@@ -96,6 +119,7 @@ public static class Lifestream
             return false;
         if (!returnCriteria)
             return false;
+        using var scope = new TaskDescriptionScope($"Returning to {destination}");
         switch (destination)
         {
             case LifestreamDestination.Home:
@@ -124,6 +148,7 @@ public static class Lifestream
         }
 
         await Task.Delay(GeneralDelayMs, token);
+        await WaitWhileAsync(() => IsBusy(), "Wait for Lifestream", token);
         return true;
     }
 }

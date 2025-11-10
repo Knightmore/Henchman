@@ -258,7 +258,7 @@ internal class OnYourMark
                             .First(x => x.Name.GetText() == expansion)
                             .RowId +
                          1;
-        Verbose($"Go To: {location.Position} - ({location.TerritoryId}): DataId {huntBoardId}");
+        Verbose($"Go To: {location.Position} - ({location.TerritoryId}): BaseId: {huntBoardId}");
         await MoveToStationaryObject(location.Position, huntBoardId, token: token);
         foreach (var bill in billsSelectString)
         {
@@ -272,8 +272,8 @@ internal class OnYourMark
     private async Task GatherHuntBills(uint huntBoardId, string billSelect, string num, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        await InteractWithByDataId(huntBoardId, token);
-        await WaitUntilAsync(() => Svc.Targets.Target != null && Svc.Targets.Target.DataId == huntBoardId, "Waiting for Huntboard Target", token);
+        await InteractWithByBaseId(huntBoardId, token);
+        await WaitUntilAsync(() => Svc.Targets.Target != null && Svc.Targets.Target.BaseId == huntBoardId, "Waiting for Huntboard Target", token);
         await WaitUntilAsync(() => TrySelectSpecificEntry(billSelect), $"SelectString {billSelect}", token);
         await WaitUntilAsync(() => ClickAddonButton($"Mobhunt{num}", 21), "Click Accept", token);
         await Task.Delay(GeneralDelayMs * 4, token)

@@ -1,5 +1,5 @@
-using System.Linq;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -7,8 +7,11 @@ using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
+using Henchman.Models;
 using Henchman.TaskManager;
+using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.OnYourMark;
@@ -16,8 +19,10 @@ namespace Henchman.Features.OnYourMark;
 [Feature]
 public class OnYourMarkUi : FeatureUI
 {
-    private readonly OnYourMark feature = new();
-    public override  string     Name => "On Your Mark";
+    private readonly OnYourMark      feature = new();
+    public override  string          Name     => "On Your Mark";
+    public override  string          Category => Henchman.Category.Combat;
+    public override  FontAwesomeIcon Icon     => FontAwesomeIcon.Bullseye;
 
     public override Action Help => () =>
                                    {
@@ -47,11 +52,7 @@ public class OnYourMarkUi : FeatureUI
                                    };
 
     public override bool LoginNeeded => true;
-    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
-                                                                            {
-                                                                                    MinimumSize = new Vector2(700, 500),
-                                                                                    MaximumSize = new Vector2(700, 1000)
-                                                                            };
+
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
             (IPCNames.vnavmesh, true),
@@ -71,12 +72,16 @@ public class OnYourMarkUi : FeatureUI
         var mobHuntOrderTypeEnumerator = Svc.Data.GetExcelSheet<MobHuntOrderType>()
                                             .GetEnumerator();
 
-        ImGuiEx.LineCentered("###Start", () =>
-                                         {
-                                             if (ImGui.Button("Start") && !IsTaskEnqueued(Name))
-                                                 EnqueueTask(new TaskRecord(feature.Start, Name));
-                                         });
-
+        ImGuiHelper.DrawCentered("##MarkStart", () => Layout.DrawButton(() =>
+                           {
+                               if (ImGui.Button("Start", new(70, 30)) && !IsTaskEnqueued(Name))
+                                   EnqueueTask(new TaskRecord(feature.Start, Name, onDone: () => {
+                                                                                               Bossmod.DisableAI();
+                                                                                               AutoRotation.Disable();
+                                                                                               ResetCurrentTarget();
+                                                                                           }));
+                           }));
+        
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
@@ -203,6 +208,29 @@ public class OnYourMarkUi : FeatureUI
 
             if (configChanged) EzConfig.Save();
         }
+    }
+
+    private unsafe void DrawMarkTable(SubrowCollection<MobHuntOrder> mobHunt, MobHuntOrderType currentType)
+    {
+        var table = new Table<MobHuntOrder>(
+                                        "##HuntTable",
+                                        new List<TableColumn<MobHuntOrder>>
+                                        {
+                                                new("Name", h => Utils.ToTitleCaseExtended(h.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage)),
+                                                new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, ColumnAlignment.Center),
+                                                new("Finished", h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
+                                                                                                      (byte)h.SubrowId) ==
+                                                                     h.NeededKills ? FontAwesomeIcon.Check.ToIconString()
+                                                                             : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
+                                                    h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
+                                                                                         (byte)h.SubrowId) ==
+                                                         h.NeededKills ?  Theme.SuccessGreen
+                                                                 : Theme.ErrorRed)
+                                        },
+                                        () => mobHunt
+                                       );
+
+        table.Draw();
     }
 
     private void DrawSettings()

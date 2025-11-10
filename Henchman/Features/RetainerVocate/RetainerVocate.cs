@@ -1,7 +1,3 @@
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.GameFunctions;
@@ -10,12 +6,18 @@ using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.RetainerVocate;
 
@@ -62,7 +64,7 @@ internal class RetainerVocate
      * Main Tasks
      */
 
-    internal async Task RunFullCreation(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId= 0, uint combatClass = 0)
+    internal async Task RunFullCreation(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId= 0, uint combatClass = 0, bool firstExploration = false)
     {
         await GoToRetainerVocate(token);
         await CreateRetainers(token, (int)retainerAmount);
@@ -100,11 +102,11 @@ internal class RetainerVocate
                 await MoveToNextZone(retainerVocateData.ZoneTransitionPosition.Value, retainerVocateData.TerritoryId, token);
         }
 
-        if (Player.DistanceTo(retainerVocateData.InteractablePosition) > 5f) await MoveToStationaryObject(retainerVocateData.InteractablePosition, retainerVocateData.DataId, token: token);
+        if (Player.DistanceTo(retainerVocateData.InteractablePosition) > 5f) await MoveToStationaryObject(retainerVocateData.InteractablePosition, retainerVocateData.BaseId, token: token);
 
         if (maxRetainerEntitlement == 0)
         {
-            await CheckForRetainerEntitlement(retainerVocateData.DataId, token);
+            await CheckForRetainerEntitlement(retainerVocateData.BaseId, token);
 
             await WaitUntilAsync(() => !Player.IsBusy, "Wait for not busy", token);
         }
@@ -155,13 +157,13 @@ internal class RetainerVocate
 
         var classJob = Svc.Data.GetExcelSheet<ClassJob>()
                           .GetRow(combatClass);
-        var gearset = GetGearsetForClassJob(classJob);
+
         if (Player.JobId != classJob.RowId)
-            ErrorThrowIf(gearset == null, $"No gearset assigned for the chosen class {classJob.Name.ExtractText()}");
-
-
-        Svc.Commands.ProcessCommand($"/gearset change {gearset.Value + 1}");
-
+        {
+            var changedGearSet = ChangeToHighestGearsetForClassJobId(classJob.JobIndex);
+            ErrorThrowIf(changedGearSet == null, $"No gearset assigned for the chosen class {classJob.Name.ExtractText()}");
+        }
+        
         byte startTown;
         unsafe
         {
@@ -191,7 +193,7 @@ internal class RetainerVocate
         }
     }
 
-    internal async Task BuyAndEquipRetainerGear(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0)
+    internal async Task BuyAndEquipRetainerGear(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0, bool firstExploration = false)
     {
         using var scope = new TaskDescriptionScope($"Buy and Equip Gear");
         byte      maxRetainerEntitlement;
@@ -215,7 +217,7 @@ internal class RetainerVocate
                 retainerClassId = C.RetainerClass;
             await GoToVendor(retainerClassId, token);
             await PurchaseStarterGear(retainerAmount, retainerClassId, token);
-            await AssignRetainerClassEquipMain(retainerAmount, retainerClassId, token);
+            await AssignRetainerClassEquipMain(retainerAmount, retainerClassId, firstExploration, token);
         }
     }
 
@@ -229,7 +231,7 @@ internal class RetainerVocate
             if (vendorData.ZoneTransitionPosition != null && Player.Territory != vendorData.TerritoryId)
                 await MoveToNextZone(vendorData.ZoneTransitionPosition.Value, vendorData.TerritoryId, token);
 
-        await MoveToStationaryObject(vendorData.InteractablePosition, vendorData.DataId, token: token);
+        await MoveToStationaryObject(vendorData.InteractablePosition, vendorData.BaseId, token: token);
     }
 
     private async Task PurchaseStarterGear(uint retainerAmount, uint retainerClassId, CancellationToken token = default)
@@ -238,8 +240,8 @@ internal class RetainerVocate
         using var scope      = new TaskDescriptionScope($"Purchase Starter Gear");
         var       vendorData = VendorData(retainerClassId);
 
-        await WaitUntilAsync(() => TargetNearestByDataId(vendorData.DataId, token), $"Target {vendorData.Name}", token);
-        await WaitUntilAsync(() => ShopUtils.OpenShop(vendorData.DataId, VendorShop(MainHand(retainerClassId)
+        await WaitUntilAsync(() => TargetNearestByBaseId(vendorData.BaseId, token), $"Target {vendorData.Name}", token);
+        await WaitUntilAsync(() => EventUtils.OpenEventHandler(vendorData.BaseId, VendorShop(MainHand(retainerClassId)
                                                                                            .RowId)
                                                              .RowId), "Open Shop", token);
         await WaitUntilAsync(() => TrySelectSpecificEntry(GilShop(MainHand(retainerClassId)
@@ -270,39 +272,16 @@ internal class RetainerVocate
                 await Task.Delay(GeneralDelayMs * 2, token)
                           .ConfigureAwait(true);
             }
-            /*if (C.UseMaxRetainerAmount)
-            {
-                for (var i = 0;
-                     i <=
-                     retainerAmount -
-                     1;
-                     i++)
-                {
-                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(GilShop(retainerClassId)
-                                                                                .RowId, MainHand(retainerClassId)
-                                                                                .RowId, 1), $"Buy Item {MainHand(retainerClassId).Name.ExtractText()}", token);
-                    await Task.Delay(GeneralDelayMs, token)
-                              .ConfigureAwait(true);
-                }
-            }
-            else
-            {
-                for (var i = 0; i <= C.RetainerAmount; i++)
-                {
-                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(GilShop(retainerClassId)
-                                                                                .RowId, MainHand(retainerClassId)
-                                                                                .RowId, 1), $"Buy Item {MainHand(retainerClassId).Name.ExtractText()}", token);
-                    await Task.Delay(GeneralDelayMs, token)
-                              .ConfigureAwait(true);
-                }
-            }*/
         }
 
         await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
+        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(VendorShop(MainHand(retainerClassId)
+                                                                                         .RowId)
+                                                                              .RowId), "Waiting for transaction", token);
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringCancel), "SelectString Cancel", token);
     }
 
-    internal async Task AssignRetainerClassEquipMain(uint retainerAmount = 0, uint retainerClassId = 0, CancellationToken token = default)
+    internal async Task AssignRetainerClassEquipMain(uint retainerAmount = 0, uint retainerClassId = 0, bool firstExploration = false, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope($"Assign Retainer Class");
@@ -321,7 +300,7 @@ internal class RetainerVocate
 
         if (retainerClassId != 0)
         {
-            ErrorThrowIf(retainerClassId is not (>= 1 and <= 7 or >= 16 and <= 18 or 26 or 29), "No valid retainer class id passed!");
+            ErrorThrowIf(retainerClassId is not (>= 1 and <= 7 or >= 16 and <= 18 or 26), "No valid retainer class id passed!");
             classEntry = Svc.Data.GetExcelSheet<ClassJob>()
                             .GetRow(retainerClassId)
                             .Name.ExtractText();
@@ -368,7 +347,7 @@ internal class RetainerVocate
             await WaitUntilAsync(() => EquipRetainer(MainHand(retainerClassId), token),
                                  $"Equip {MainHand(retainerClassId).Name.ExtractText()} to Retainer {nameString}", token);
             await WaitUntilAsync(() => CloseRetainerCharacter(token), "CloseRetainerWindow", token);
-            if (C.SendOnFirstExploration && InventoryHelper.GetInventoryItemCount(21072) > 2)
+            if ((C.SendOnFirstExploration || firstExploration) && InventoryHelper.GetInventoryItemCount(21072) > 2)
             {
                 unsafe
                 {
@@ -399,9 +378,9 @@ internal class RetainerVocate
         await WaitUntilAsync(InteractWithSummoningBell, "Interact with Summoning Bell", token);
     }
 
-    private async Task CheckForRetainerEntitlement(uint dataId, CancellationToken token = default)
+    private async Task CheckForRetainerEntitlement(uint baseId, CancellationToken token = default)
     {
-        await WaitUntilAsync(() => TargetNearestByDataId(dataId, token), "Target Retainer Vocate", token);
+        await WaitUntilAsync(() => TargetNearestByBaseId(baseId, token), "Target Retainer Vocate", token);
         await Task.Delay(GeneralDelayMs * 2, token)
                   .ConfigureAwait(true);
         unsafe
@@ -441,7 +420,7 @@ internal class RetainerVocate
     {
         var retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
 
-        await WaitUntilAsync(() => TargetNearestByDataId(retainerVocateData.DataId, token), "Target Retainer Vocate", token);
+        await WaitUntilAsync(() => TargetNearestByBaseId(retainerVocateData.BaseId, token), "Target Retainer Vocate", token);
         await Task.Delay(GeneralDelayMs * 2, token)
                   .ConfigureAwait(true);
         unsafe
@@ -500,7 +479,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon) && IsAddonReady(charaMakeFeatureAddon))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon) )
             {
                 Callback.Fire(charaMakeFeatureAddon, true, -9, 0);
                 Debug("Randomize Retainer Look");
@@ -516,7 +495,7 @@ internal class RetainerVocate
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon) && IsAddonReady(charaMakeFeatureAddon))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
             {
                 Callback.Fire(charaMakeFeatureAddon, true, 100);
                 Debug("Finish Retainer");

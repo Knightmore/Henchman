@@ -17,7 +17,7 @@ public static class NpcDatabase
                                                                                      StarterCity.Gridania, new NpcData
                                                                                                            {
                                                                                                                    Name                   = "Parnell",
-                                                                                                                   DataId                 = 1000233,
+                                                                                                                   BaseId                 = 1000233,
                                                                                                                    AetheryteId            = 2,
                                                                                                                    AetheryteTerritoryId   = 132,
                                                                                                                    TerritoryId            = 133,
@@ -29,7 +29,7 @@ public static class NpcDatabase
                                                                                      StarterCity.Uldah, new NpcData
                                                                                                         {
                                                                                                                 Name                 = "Chachabi",
-                                                                                                                DataId               = 1001963,
+                                                                                                                BaseId               = 1001963,
                                                                                                                 AetheryteId          = 9,
                                                                                                                 AetheryteTerritoryId = 130,
                                                                                                                 TerritoryId          = 131, // Steps of Thal
@@ -43,7 +43,7 @@ public static class NpcDatabase
                                                                                      StarterCity.LimsaLominsa, new NpcData
                                                                                                                {
                                                                                                                        Name                   = "Frydwyb",
-                                                                                                                       DataId                 = 1003275,
+                                                                                                                       BaseId                 = 1003275,
                                                                                                                        AetheryteId            = 8,
                                                                                                                        TerritoryId            = 129,
                                                                                                                        InteractablePosition   = new Vector3(-146.17f, 18.21f, 16.89f),
@@ -59,7 +59,7 @@ public static class NpcDatabase
                                                                                           StarterCity.Gridania, new NpcData
                                                                                                                 {
                                                                                                                         Name                 = "Geraint",
-                                                                                                                        DataId               = 1000217,
+                                                                                                                        BaseId               = 1000217,
                                                                                                                         AetheryteId          = 2,
                                                                                                                         AetheryteTerritoryId = 132,
                                                                                                                         TerritoryId          = 133,
@@ -72,7 +72,7 @@ public static class NpcDatabase
                                                                                           StarterCity.Uldah, new NpcData
                                                                                                              {
                                                                                                                      Name                 = "Jealous Juggernaut",
-                                                                                                                     DataId               = 1000217,
+                                                                                                                     BaseId               = 1000217,
                                                                                                                      AetheryteId          = 9,
                                                                                                                      AetheryteTerritoryId = 130,
                                                                                                                      TerritoryId          = 131, // Steps of Thal
@@ -85,7 +85,7 @@ public static class NpcDatabase
                                                                                           StarterCity.LimsaLominsa, new NpcData
                                                                                                                     {
                                                                                                                             Name        = "Faezghim",
-                                                                                                                            DataId      = 1001205,
+                                                                                                                            BaseId      = 1001205,
                                                                                                                             AetheryteId = 8,
                                                                                                                             TerritoryId = 129,
                                                                                                                             InteractablePosition =
@@ -101,7 +101,7 @@ public static class NpcDatabase
                                                                                        StarterCity.Gridania, new NpcData
                                                                                                              {
                                                                                                                      Name                   = "Admiranda",
-                                                                                                                     DataId                 = 1000218,
+                                                                                                                     BaseId                 = 1000218,
                                                                                                                      AetheryteId            = 2,
                                                                                                                      AetheryteTerritoryId   = 132,
                                                                                                                      TerritoryId            = 133,
@@ -113,7 +113,7 @@ public static class NpcDatabase
                                                                                        StarterCity.Uldah, new NpcData
                                                                                                           {
                                                                                                                   Name                   = "Yoyobasa",
-                                                                                                                  DataId                 = 1001973,
+                                                                                                                  BaseId                 = 1001973,
                                                                                                                   AetheryteId            = 9,
                                                                                                                   AetheryteTerritoryId   = 130,
                                                                                                                   TerritoryId            = 131, // Steps of Thal
@@ -125,7 +125,7 @@ public static class NpcDatabase
                                                                                        StarterCity.LimsaLominsa, new NpcData
                                                                                                                  {
                                                                                                                          Name                   = "Syneyhil",
-                                                                                                                         DataId                 = 1003254,
+                                                                                                                         BaseId                 = 1003254,
                                                                                                                          AetheryteId            = 8,
                                                                                                                          TerritoryId            = 129,
                                                                                                                          InteractablePosition   = new Vector3(-246.66f, 16.2f, 40.09f),

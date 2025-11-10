@@ -1,8 +1,8 @@
 using System.Linq;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
+using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
@@ -19,14 +20,16 @@ namespace Henchman.Features.BumpOnALog;
 [Feature]
 public class BumpOnALogUi : FeatureUI
 {
-    private readonly BumpOnALog          feature = new();
-    private          int                 classMonsterNoteId;
-    private          MonsterNoteRankInfo classMonsterNoteRankInfo;
-    private          int                 currentClassLogRank;
-    private          int                 currentGcLogRank;
-    private          int                 gcMonsterNoteId;
-    private          MonsterNoteRankInfo gcMonsterNoteRankInfo;
-    public override  string              Name => "Bump On A Log";
+    internal readonly BumpOnALog          feature = new();
+    private           int                 classMonsterNoteId;
+    private           MonsterNoteRankInfo classMonsterNoteRankInfo;
+    private           int                 currentClassLogRank;
+    private           int                 currentGcLogRank;
+    private           int                 gcMonsterNoteId;
+    private           MonsterNoteRankInfo gcMonsterNoteRankInfo;
+    public override   string              Name     => "Bump On A Log";
+    public override   string              Category => Henchman.Category.Combat;
+    public override   FontAwesomeIcon     Icon     => FontAwesomeIcon.List;
 
     public override Action Help => () =>
                                    {
@@ -51,11 +54,6 @@ public class BumpOnALogUi : FeatureUI
     ];
 
     public override bool LoginNeeded => true;
-    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
-                                                                            {
-                                                                                    MinimumSize = new Vector2(400, 500),
-                                                                                    MaximumSize = new Vector2(400, 500)
-                                                                            };
 
     public override unsafe void Draw()
     {
@@ -95,7 +93,6 @@ public class BumpOnALogUi : FeatureUI
     {
         var classJobRow = Svc.Data.Excel.GetSheet<ClassJob>()
                              .GetRow(PlayerState.Instance()->CurrentClassJobId);
-        ImGuiEx.TextCentered(classJobRow.NameEnglish.ExtractText());
 
         classMonsterNoteId = classJobRow.MonsterNote.RowId.ToInt();
         if (classMonsterNoteId is -1 or 127)
@@ -107,7 +104,20 @@ public class BumpOnALogUi : FeatureUI
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
         currentClassLogRank      = classMonsterNoteRankInfo.Rank;
 
-        ImGuiEx.TextCentered($"Current Log Rank: {currentClassLogRank + 1}");
+        Layout.DrawInfoBox(() =>
+                           {
+                               if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
+                           },
+                           () =>
+                           {
+                               ImGui.Text(classJobRow.NameEnglish.ExtractText());
+                               ImGui.SameLine();
+
+                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {currentClassLogRank + 1}");
+                               
+                           });
+
+        ImGui.Spacing();
 
         DrawHuntLog(classMonsterNoteRankInfo, ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks, false);
     }
@@ -126,12 +136,26 @@ public class BumpOnALogUi : FeatureUI
 
         var gcRow = Svc.Data.Excel.GetSheet<GrandCompany>()
                        .GetRow(PlayerState.Instance()->GrandCompany);
-        ImGuiEx.TextCentered(gcRow.Name.ExtractText());
 
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
         currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
 
-        ImGuiEx.TextCentered($"Current Log Rank: {currentGcLogRank + 1}");
+        Layout.DrawInfoBox(() =>
+                           {
+                               if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord((token) => feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () => {
+                                                                                                                                                                                              Bossmod.DisableAI();
+                                                                                                                                                                                              AutoRotation.Disable();
+                                                                                                                                                                                              ResetCurrentTarget();
+                                                                                                                                                                                          }));
+                           }, () =>
+                              {
+                                  ImGui.Text(gcRow.Name.ExtractText());
+                                  ImGui.SameLine();
+
+                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {currentGcLogRank}");
+                              });
+
+        ImGui.Spacing();
 
         if (currentGcLogRank > 2)
         {
@@ -156,56 +180,41 @@ public class BumpOnALogUi : FeatureUI
             return;
         }
 
-        ImGuiEx.LineCentered("###Start", () =>
-                                         {
-                                             if (ImGui.Button("Start") && !Running)
-                                             {
-                                                 EnqueueTask(gcLog
-                                                                     ? new TaskRecord(feature.StartGCRank, "Bump On A Log - GC Log")
-                                                                     : new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
-                                             }
-                                         });
-
         var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
                                        .Select(col => huntMarks[rankInfo.Rank, col])
                                        .Where(mark => mark != null)
                                        .ToArray();
 
+        DrawHuntTable(huntMarksArray);
+    }
 
-        using (var table = ImRaii.Table("###HuntRankTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
-        {
-            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableSetupColumn("Finished", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableHeadersRow();
+    private void DrawHuntTable(HuntMark[] marks)
+    {
+        var table = new Table<HuntMark>(
+                                        "##HuntTable",
+                                        new List<TableColumn<HuntMark>>
+                                        {
+                                                new("Name", h => Utils.ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
+                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, ColumnAlignment.Center),
+                                                new("Finished", h => h.GetOpenMonsterNoteKills == 0
+                                                                             ? FontAwesomeIcon.Check.ToIconString()
+                                                                             : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
+                                                    h => h.GetOpenMonsterNoteKills == 0
+                                                                 ? Theme.SuccessGreen
+                                                                 : Theme.ErrorRed)
+                                        },
+                                        () => marks,
+                                        h => h.IsCurrentTarget
+                                       );
 
-            foreach (var huntMark in huntMarksArray)
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGuiEx.Text(Utils.ToTitleCaseExtended(huntMark?.Name, Svc.ClientState.ClientLanguage));
-                ImGui.TableNextColumn();
-                if (huntMark != null)
-                {
-                    ImGuiEx.TextCentered($"{huntMark.GetCurrentMonsterNoteKills}/{huntMark.NeededKills}");
-                    ImGui.TableNextColumn();
-                    var markFinished = huntMark.GetOpenMonsterNoteKills == 0;
-                    FontAwesome.Print(markFinished
-                                              ? ImGuiColors.HealerGreen
-                                              : ImGuiColors.DalamudRed,
-                                      markFinished
-                                              ? FontAwesome.Check
-                                              : FontAwesome.Cross);
-                }
-            }
-        }
+        table.Draw();
     }
 
     private void DrawSettings()
     {
         var configChanged = false;
 
-        // Preparation if Dzemael and Aurum ever gets Duty support (in 7.5?)
+        // Preparation once Dzemael and Aurum gets Duty support (in 7.4)
         /*
         ImGui.Text("Stop after Job Log Rank");
         ImGui.SameLine(200);

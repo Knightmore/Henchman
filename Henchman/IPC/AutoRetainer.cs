@@ -37,6 +37,9 @@ public static class AutoRetainer
     [EzIPC("PluginState.%m")]
     public static Func<bool> IsBusy;
 
+    [EzIPC("PluginState.%m")]
+    public static Action AbortAllTasks;
+
     public static event OnCharacterReadyToPostprocessDelegate OnCharacterReadyToPostProcess;
 
     [EzIPCEvent]

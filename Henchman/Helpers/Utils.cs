@@ -108,7 +108,11 @@ public static class Utils
     }
 
     public static string ToJson<TEnum>(this TEnum value) where TEnum : struct, Enum => JsonSerializer.Serialize(value, EnumAsStringOptions);
-    public static string ToJson<T>(this T value, JsonSerializerOptions? options = null) where T : struct => JsonSerializer.Serialize(value, options ?? JsonDefaults.Options);
+    public static TEnum FromJsonEnum<TEnum>(this string json, JsonSerializerOptions? options = null) where TEnum : struct, Enum => JsonSerializer.Deserialize<TEnum>(json, options ?? EnumAsStringOptions);
+
+    public static string ToJson<T>(this T value, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Serialize(value, options ?? JsonDefaults.Options);
+
+    public static T FromJson<T>(this string json, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Deserialize<T>(json, options ?? JsonDefaults.Options)!;
 
     public static readonly JsonSerializerOptions EnumAsStringOptions = new()
                                                                        {
@@ -120,7 +124,7 @@ public static class Utils
                                                                {
                                                                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                                                                        WriteIndented        = false,
-                                                                       NumberHandling       = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
-                                                               };
+                                                                       NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
     }
 }

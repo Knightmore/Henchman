@@ -1,6 +1,7 @@
 [submodule "AutoRetainerAPI"]
 	path = AutoRetainerAPI
 	url = https://github.com/PunishXIV/AutoRetainerAPI
+	branch = main
 [submodule "ECommons"]
 	path = ECommons
 	url = https://github.com/NightmareXIV/ECommons

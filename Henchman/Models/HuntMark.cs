@@ -65,6 +65,8 @@ public class HuntMark
                                                                                                      .OrderStart.Value.RowId +
                                                                                                   ((uint)MobHunt.Instance()->ObtainedMarkId[MobHuntRowId] - 1)][MobHuntSubRowId];
 
+    public bool IsCurrentTarget = false;
+
     public Fate Fate => Svc.Data.GetExcelSheet<Fate>()
                            .GetRow(FateId);
 

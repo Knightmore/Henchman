@@ -10,9 +10,9 @@ namespace Henchman.Tasks;
 
 internal static class WorldTasks
 {
-    internal static async Task InteractWithByDataId(uint dataId, CancellationToken token = default)
+    internal static async Task InteractWithByBaseId(uint baseId, CancellationToken token = default)
     {
-        await WaitUntilAsync(() => TargetNearestByDataId(dataId, token), $"Target {dataId}", token);
+        await WaitUntilAsync(() => TargetNearestByBaseId(baseId, token), $"Target {baseId}", token);
         await Task.Delay(GeneralDelayMs * 2, token);
         unsafe
         {
@@ -20,7 +20,7 @@ internal static class WorldTasks
         }
     }
 
-    internal static async Task<IGameObject> GetNearestGameObjectByDataId(uint dataId, CancellationToken token = default)
+    internal static async Task<IGameObject> GetNearestGameObjectByBaseId(uint baseId, CancellationToken token = default)
     {
         IGameObject? gameObject = null;
         while (gameObject == null)
@@ -28,7 +28,7 @@ internal static class WorldTasks
             token.ThrowIfCancellationRequested();
             if (!IsOccupied())
             {
-                gameObject = Svc.Objects.Where(obj => obj.DataId == dataId && obj.IsTargetable)
+                gameObject = Svc.Objects.Where(obj => obj.BaseId == baseId && obj.IsTargetable)
                                 .OrderBy(x => Player.DistanceTo(x))
                                 .FirstOrDefault();
 
@@ -84,9 +84,9 @@ internal static class WorldTasks
         return gameObject;
     }
 
-    internal static Task<bool> IsPlayerInObjectRange(uint dataId, float distance = 5f)
+    internal static Task<bool> IsPlayerInObjectRange(uint baseId, float distance = 5f)
     {
-        var x = Svc.Objects.Where(obj => obj.DataId == dataId && obj.IsTargetable)
+        var x = Svc.Objects.Where(obj => obj.BaseId == baseId && obj.IsTargetable)
                    .OrderBy(x => Player.DistanceTo(x))
                    .FirstOrDefault();
         return x == null
@@ -132,12 +132,12 @@ internal static class WorldTasks
         return false;
     }
 
-    internal static async Task<bool> TargetNearestByDataId(uint dataId, CancellationToken token = default)
+    internal static async Task<bool> TargetNearestByBaseId(uint baseId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         if (!IsOccupied())
         {
-            var x = Svc.Objects.Where(obj => obj.DataId == dataId && obj.IsTargetable)
+            var x = Svc.Objects.Where(obj => obj.BaseId == baseId && obj.IsTargetable)
                        .OrderBy(x => Player.DistanceTo(x))
                        .FirstOrDefault();
             if (x != null)
@@ -152,12 +152,12 @@ internal static class WorldTasks
     }
 
 
-    internal static async Task<bool> TargetNearestByDataId(IEnumerable<uint> dataId, CancellationToken token = default)
+    internal static async Task<bool> TargetNearestByBaseId(IEnumerable<uint> baseId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         if (!IsOccupied())
         {
-            var x = Svc.Objects.Where(obj => dataId.Contains(obj.DataId) && obj.IsTargetable)
+            var x = Svc.Objects.Where(obj => baseId.Contains(obj.BaseId) && obj.IsTargetable)
                        .OrderBy(x => Player.DistanceTo(x))
                        .FirstOrDefault();
             if (x != null)

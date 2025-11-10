@@ -7,9 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
-using static Henchman.Features.Experimental.Chocobokeep.ChocobokeepUI;
+using static Henchman.Features.Chocobokeep.ChocobokeepUI;
 
-namespace Henchman.Features.Experimental.Chocobokeep
+namespace Henchman.Features.Chocobokeep
 {
     internal class Chocobokeep
     {
@@ -45,7 +45,7 @@ namespace Henchman.Features.Experimental.Chocobokeep
             {
                 await TeleportTo(closestAetheryte, token);
                 await MoveToStationaryObject(keep.Location, keep.Id, true, 2f, token);
-                await InteractWithByDataId(keep.Id, token);
+                await InteractWithByBaseId(keep.Id, token);
                 await WaitUntilAsync(() => TrySelectSpecificEntry(Svc.Data.GetExcelSheet<Addon>()
                                                                      .GetRow(622)
                                                                      .Text.ExtractText()), "SelectString 'Nothing'", token);

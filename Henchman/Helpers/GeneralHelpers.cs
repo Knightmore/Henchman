@@ -2,6 +2,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -34,7 +35,7 @@ internal static class GeneralHelpers
     internal static        bool  IsPlayerInPositionRange3D(Vector3   position, float distance = 5f) => Player.DistanceTo(position) < distance;
     internal static        bool  IsPlayerInPositionRange2D(Vector2   position, float distance = 5f) => Player.DistanceTo(position) < distance;
 
-    internal static unsafe byte? GetGearsetForClassJob(ClassJob cj)
+    internal static unsafe byte? GetFirstGearsetForClassJob(ClassJob cj)
     {
         byte? backup        = null;
         var   gearsetModule = RaptureGearsetModule.Instance();
@@ -49,6 +50,27 @@ internal static class GeneralHelpers
         }
 
         return backup;
+    }
+
+    internal static unsafe bool ChangeToHighestGearsetForClassJobId(uint classJobId)
+    {
+        var gearsetModule = RaptureGearsetModule.Instance();
+        var filtered = gearsetModule->Entries.ToArray()
+                                             .Where(x => x.ClassJob == classJobId);
+
+        var gearset = filtered.Any()
+                              ? filtered.MaxBy(x => x.ItemLevel)
+                              : (RaptureGearsetModule.GearsetEntry?)null;
+
+
+        if (gearset != null)
+        {
+            Verbose($"Highest set is {gearset.Value.Id + 1}");
+            RaptureGearsetModule.Instance()->EquipGearset(gearset.Value.Id + 1);
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -125,6 +147,10 @@ internal static class GeneralHelpers
     }
 
     internal static unsafe byte GetGrandCompanyRank() => PlayerState.Instance()->GetGrandCompanyRank();
+
+    internal static unsafe void ChangeBait(int baitId) => ((FishingEventHandler*)EventFramework.Instance()->GetEventHandlerById(0x150001))->ChangeBait(baitId);
+
+
 
     /*
      * TODO: Switch to MappingTheRealm once/if ever released.

@@ -105,4 +105,38 @@ internal static class Lang
                                                                                                                        ? row.ReadStringColumn(1)
                                                                                                                             .ExtractText()
                                                                                                                        : "";
+
+    internal static string TradeText => Svc.Data.GetExcelSheet<Addon>().GetRow(102223).Text.ExtractText();
+
+    internal static string SelectStringBoardOCShip => Svc.Data.GetExcelSheet<RawRow>(name: "custom/006/CtsIkdEntrance_00663")
+                                                             .GetRow(4)
+                                                             .ReadStringColumn(1)
+                                                             .ExtractText();
+
+    internal static ReadOnlySeString SelectYesNoEmbark => Svc.Data.GetExcelSheet<RawRow>(name: "custom/006/CtsIkdEntrance_00663")
+                                                                      .GetRow(10)
+                                                                      .ReadStringColumn(1);
+
+    internal static ReadOnlySeString SelectOkCongested => Svc.Data.GetExcelSheet<Error>()
+                                                   .GetRow(13206)
+                                                   .Unknown0;
+
+    internal static string SelectStringSkipCutscene => Svc.Data.GetExcelSheet<Addon>()
+                                                         .GetRow(281)
+                                                         .Text.ExtractText();
+
+    internal static string SelectStringMouseKeyboard => Svc.Data.GetExcelSheet<Addon>()
+                                                           .GetRow(3392)
+                                                           .Text.ExtractText();
+    internal static ReadOnlySeString DialogueNameTaken => Svc.Data.GetExcelSheet<Error>()
+                                                             .GetRow(13004)
+                                                             .Unknown0;
+
+    internal static string SelectYesnoNewGame => Svc.Data.GetExcelSheet<Lobby>()
+                                                           .GetRow(32)
+                                                           .Text.ExtractText();
+
+    internal static string SelectYesnoLeaveQueue => Svc.Data.GetExcelSheet<Lobby>()
+                                                    .GetRow(1800)
+                                                    .Text.ExtractText();
 }

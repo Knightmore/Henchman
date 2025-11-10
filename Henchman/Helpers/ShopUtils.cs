@@ -11,50 +11,6 @@ namespace Henchman.Helpers;
 
 internal static unsafe class ShopUtils
 {
-    internal static bool OpenShop(GameObject* vendor, uint shopId)
-    {
-        TargetSystem.Instance()->InteractWithObject(vendor, false);
-        var selector = EventHandlerSelector.Instance();
-        if (selector->Target == null)
-            return true;
-
-        if (selector->Target != vendor)
-        {
-            FullError($"Unexpected selector target {(ulong)selector->Target->GetGameObjectId():X} when trying to interact with {(ulong)vendor->GetGameObjectId():X}");
-            return false;
-        }
-
-        for (var i = 0; i < selector->OptionsCount; ++i)
-        {
-            if (selector->Options[i].Handler->Info.EventId.Id == shopId)
-            {
-                Log($"Selecting selector option {i} for shop {shopId:X}");
-                EventFramework.Instance()->InteractWithHandlerFromSelector(i);
-                return true;
-            }
-        }
-
-        FullError($"Failed to find shop {shopId:X} in selector for {(ulong)vendor->GetGameObjectId():X}");
-        return false;
-    }
-
-    internal static bool OpenShop(uint dataId, uint shopId)
-    {
-        if (Svc.Targets.Target != null && Svc.Targets.Target.DataId == dataId)
-            return OpenShop(TargetSystem.Instance()->Target, shopId);
-        var vendor = Svc.Objects.Where(x => x.DataId == dataId && x.IsTargetable)
-                        .OrderBy(x => Player.DistanceTo(x))
-                        .FirstOrDefault();
-
-        if (vendor == null)
-        {
-            FullError($"Failed to find vendor {dataId:X}");
-            return false;
-        }
-
-        return OpenShop(vendor.Struct(), shopId);
-    }
-
     internal static bool CloseShop()
     {
         var agent = AgentShop.Instance();

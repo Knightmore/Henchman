@@ -1,5 +1,6 @@
 using System.Linq;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ECommons.Automation;
 using ECommons.Configuration;
@@ -7,6 +8,7 @@ using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Henchman.Helpers;
 using Henchman.TaskManager;
+using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
@@ -15,8 +17,10 @@ namespace Henchman.Features.RetainerVocate;
 [Feature]
 public class RetainerVocateUI : FeatureUI
 {
-    private readonly RetainerVocate feature = new();
-    public override   string         Name => "Retainer Vocate";
+    internal readonly RetainerVocate  feature = new();
+    public override  string          Name     => "Retainer Vocate";
+    public override  string          Category => Henchman.Category.Economy;
+    public override  FontAwesomeIcon Icon     => FontAwesomeIcon.ConciergeBell;
 
     public override Action Help => () =>
                                    {
@@ -39,11 +43,6 @@ public class RetainerVocateUI : FeatureUI
             (IPCNames.Lifestream, true),
             (IPCNames.Questionable, true)
     ];
-    public override Window.WindowSizeConstraints SizeConstraints { get; } = new Window.WindowSizeConstraints
-                                                                            {
-                                                                                    MinimumSize = new Vector2(400, 500),
-                                                                                    MaximumSize = new Vector2(400, 500)
-                                                                            };
     public override unsafe void Draw()
     {
         var configChanged = false;
@@ -52,15 +51,15 @@ public class RetainerVocateUI : FeatureUI
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            ImGuiEx.LineCentered("###Start", () =>
+            ImGuiHelper.DrawCentered("###Start", () => Layout.DrawButton(() =>
                                              {
-                                                 if (ImGui.Button("Create Retainers") && !IsTaskEnqueued(Name))
+                                                 if (ImGui.Button("Start", new Vector2(70,30)) && !IsTaskEnqueued(Name))
                                                  {
                                                      EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
                                                                                                                                   ? 10
                                                                                                                                   : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
                                                  }
-                                             });
+                                             }));
 
 
             ImGui.Text("Fill all retainer slots");
@@ -109,7 +108,7 @@ public class RetainerVocateUI : FeatureUI
                                                                                                   ? s.GetRow(C.RetainerClass)
                                                                                                      .Abbreviation.ExtractText()
                                                                                                   : string.Empty, x => x.Abbreviation.ExtractText(),
-                                                  x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26 or 29))
+                                                  x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26))
             {
                 C.RetainerClass = selected.RowId;
                 configChanged   = true;
@@ -160,7 +159,7 @@ public class RetainerVocateUI : FeatureUI
                 {
                     var classJob = Svc.Data.GetExcelSheet<ClassJob>()
                                       .GetRow(C.QstClassJob);
-                    var gearset = GetGearsetForClassJob(classJob);
+                    var gearset = GetFirstGearsetForClassJob(classJob);
                     ImGui.NewLine();
                     ImGui.Text("Questionable:");
                     ImGui.Text("An Ill-conceived Venture");
@@ -168,7 +167,7 @@ public class RetainerVocateUI : FeatureUI
                         ImGuiEx.Text(EzColor.Red, "You have no gearset registered for your chosen class.");
                     else if (ImGui.Button("Run Quest") && !Questionable.IsRunning() && !Utils.IsPluginBusy)
                     {
-                        Chat.Instance.SendMessage($"/gearset change {gearset.Value + 1}");
+                        ChangeToHighestGearsetForClassJobId(C.QstClassJob);
                         if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                         {
                             FullError("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");

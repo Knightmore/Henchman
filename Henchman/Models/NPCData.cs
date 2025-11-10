@@ -4,7 +4,7 @@ public class NpcData
 {
     public uint     AetheryteId;
     public uint     AetheryteTerritoryId;
-    public uint     DataId;
+    public uint     BaseId;
     public Vector3  InteractablePosition;
     public string   Name;
     public uint     TerritoryId;

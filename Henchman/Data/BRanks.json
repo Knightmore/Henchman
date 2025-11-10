@@ -5719,6 +5719,14 @@
         "TerritoryId": 813,
         "FateId": 0
     },
+	{
+	  "BnpcName": 8908,
+	  "X": -675.25323,
+	  "Y": 69.01726,
+	  "Z": 57.41838,
+	  "TerritoryId": 813,
+	  "FateId": 0
+	},
     {
         "BnpcName": 8909,
         "X": 176,

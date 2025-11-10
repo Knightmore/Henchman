@@ -21,7 +21,7 @@ namespace Henchman.Tasks;
 
 internal static class CombatTasks
 {
-    public static async Task ProcessHuntMarks(List<HuntMark?> huntMarks, bool huntLog = false, int currentRank = 0, bool gcLog = false, CancellationToken token = default)
+    public static async Task ProcessHuntMarks(List<HuntMark> huntMarks, bool huntLog = false, int currentRank = 0, bool gcLog = false, CancellationToken token = default)
     {
         Verbose("Process Hunt Marks");
         foreach (var mark in huntMarks)
@@ -35,7 +35,7 @@ internal static class CombatTasks
             var         retries              = 0;
             KillResult? killResult           = KillResult.Default;
             var         gotKilledWhileDetour = false;
-
+            mark.IsCurrentTarget = true;
             while (retries < 3)
             {
                 Verbose($"Try: {retries}");
@@ -69,7 +69,7 @@ internal static class CombatTasks
                                     if (!IsAetheryteUnlocked(12))
                                     {
                                         await MoveTo(new Vector3(-15f, 70.6f, 7f), true, token);
-                                        await InteractWithByDataId(12, token);
+                                        await InteractWithByBaseId(12, token);
                                         await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                     }
 
@@ -77,7 +77,7 @@ internal static class CombatTasks
                                     {
                                         await MoveToNextZone(new Vector3(82f, 80f, -125f), 139, token);
                                         await MoveTo(new Vector3(427f, 4.11f, 92f), true, token);
-                                        await InteractWithByDataId(15, token);
+                                        await InteractWithByBaseId(15, token);
                                         await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                     }
                                 }
@@ -90,7 +90,7 @@ internal static class CombatTasks
                                 await TeleportTo(3, token);
                                 await MoveToNextZone(new Vector3(390f, -3.3f, -186f), 152, token);
                                 await MoveTo(new Vector3(-191f, 4.44f, 297f), true, token);
-                                await InteractWithByDataId(4, token);
+                                await InteractWithByBaseId(4, token);
                                 break;
                             }
                             case 154:
@@ -101,7 +101,7 @@ internal static class CombatTasks
                                 await MoveToNextZone(new Vector3(-208f, 10.4f, -95f), 154, token);
 
                                 await MoveTo(new Vector3(-34f, -40.45f, 232f), true, token);
-                                await InteractWithByDataId(7, token);
+                                await InteractWithByBaseId(7, token);
                                 await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                 break;
                             }
@@ -122,7 +122,7 @@ internal static class CombatTasks
                                 }
 
                                 await MoveTo(new Vector3(229f, 312f, -238f), true, token);
-                                await InteractWithByDataId(23, token);
+                                await InteractWithByBaseId(23, token);
                                 await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                 break;
                             }
@@ -133,7 +133,7 @@ internal static class CombatTasks
                                 await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
                                 await MoveToNextZone(new Vector3(-339f, 48.60f, -19f), 180, token);
                                 await MoveTo(new Vector3(-114f, 64.65f, -216f), true, token);
-                                await InteractWithByDataId(16, token);
+                                await InteractWithByBaseId(16, token);
                                 await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                                 break;
                             }
@@ -256,6 +256,8 @@ internal static class CombatTasks
                     if (killResult == KillResult.Died) retries++;
                 }
             }
+
+            mark.IsCurrentTarget = false;
         }
     }
 
@@ -276,7 +278,7 @@ internal static class CombatTasks
                 AutoDuty.Run(duty, 0, false);
                 await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
             }
-            else
+            else if (!dutyUnlocked && ADPathAvailable)
             {
                 if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                 {
@@ -288,17 +290,32 @@ internal static class CombatTasks
                     case 1245:
                         await Questionable.CompleteQuest("697", 66233, token);
                         AutoDuty.Run(duty, 0, false);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
                     case 1267:
                         await Questionable.CompleteQuest("764", 66300, token);
                         AutoDuty.Run(duty, 0, false);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
+                        break;
+                    case 1303:
+                        await Questionable.CompleteQuest("921", 66457, token);
+                        AutoDuty.Run(duty, 0, false);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
+                        await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
                     default:
                         break;
                 }
                 // TODO: Add Dzemael and Aurum Vale once they have Duty Support.
+            }
+            else
+            {
+                FullWarning($"There is no AutoDuty Path for Duty {Svc.Data.Excel.GetSheet<TerritoryType>().GetRow(duty).PlaceName.Value.Name.ExtractText()}");
             }
         }
     }
@@ -373,6 +390,7 @@ internal static class CombatTasks
             Verbose($"Mobs to kill left: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
             await Task.Delay(GeneralDelayMs * 4, token);
             await HandleHaters(token);
+            await Task.Delay(GeneralDelayMs * 2, token);
 
             if (huntLog)
             {

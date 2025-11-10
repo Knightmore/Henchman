@@ -13,6 +13,7 @@ namespace Henchman.Models
     }
     public class TradeEntry
     {
+        public bool      Enabled;
         public uint      Id;
         public TradeMode Mode;
         public uint      Amount;
@@ -23,6 +24,6 @@ namespace Henchman.Models
         Give,
         Keep,
         AskFor,
-        AskUntil
+        AskUntil,
     }
 }

@@ -2,9 +2,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
-#if PRIVATE
-using Henchman.Features.Private.OnABoat;
-#endif
 
 namespace Henchman.TaskManager;
 
@@ -17,6 +14,15 @@ public static class TaskManager
     public static           List<string>                        TaskDescription = [];
     private static          Func<CancellationToken, Task>?      currentTask;
     private static          TaskRecord?                         ChainedTaskRecord;
+
+    private static readonly ManualResetEventSlim ResumeEvent = new(true);
+
+    public static bool IsPaused => !ResumeEvent.IsSet;
+    public static void Pause()  => ResumeEvent.Reset();
+    public static void Resume() => ResumeEvent.Set();
+
+    public static ManualResetEventSlim ResumeHandle => ResumeEvent;
+
 
     /// <summary>
     ///     General delay is 250 ms
@@ -62,9 +68,12 @@ public static class TaskManager
                               {
                                   if (currentTask != null)
                                   {
+                                      P!.StatusWindow.IsOpen = true;
                                       await currentTask.Invoke(Cts.Token)
                                                        .ConfigureAwait(true);
                                       ChatPrintInfo($"{CurrentTaskRecord!.Name} completed!");
+                                      if (CurrentTaskRecord is { OnDone: { } })
+                                          CurrentTaskRecord.OnDone.Invoke();
                                   }
                               }
                               catch (Exception e)
@@ -75,17 +84,17 @@ public static class TaskManager
                                       if (CurrentTaskRecord is { OnErrorTask: { } })
                                           await CurrentTaskRecord.OnErrorTask.Invoke();
                                   }
-                                  else if (e is not OperationCanceledException)
+                                  /*else if (e is not OperationCanceledException)
                                   {
                                       FullError($"Unexpected error in task execution: {e}");
                                       InternalError($"""
                                                     StackTrace:
                                                     {e.StackTrace}
                                                     """);
-                                  }
+                                  }*/
 
-                                  if (CurrentTaskRecord is { OnAbort: { } })
-                                      CurrentTaskRecord.OnAbort.Invoke();
+                                  if (CurrentTaskRecord is { OnDone: { } })
+                                      CurrentTaskRecord.OnDone.Invoke();
 
                                   CancelAllTasks();
                               } finally
@@ -114,7 +123,9 @@ public static class TaskManager
 
     public static void CancelAllTasks()
     {
-        foreach(var cts in ctsQueue)
+        if (CurrentTaskRecord is { OnAbort: { } })
+            CurrentTaskRecord.OnAbort.Invoke();
+        foreach (var cts in ctsQueue)
             cts.Cancel();
         Cts.Cancel();
         taskQueue.Clear();
@@ -124,13 +135,5 @@ public static class TaskManager
         ChainedTaskRecord = null;
         currentTask       = null;
         TaskDescription.Clear();
-        Bossmod.DisableAI();
-        AutoRotation.Disable();
-#if PRIVATE
-        if (TryGetFeature<OnABoatUI>(out var onABoat))
-        {
-            onABoat.feature.UnsubscribeEvents();
-        }
-#endif
     }
 }

@@ -337,6 +337,51 @@ internal static class HuntDatabase
         PopulateGcHuntLogs();
     }
 
+    internal static void ResetCurrentTarget()
+    {
+        foreach (var huntMarksValue in HuntMarks.Values)
+        {
+            huntMarksValue.IsCurrentTarget = false;
+        }
+
+        foreach (var bRanksValue in BRanks.Values)
+        {
+            bRanksValue.IsCurrentTarget = false;
+        }
+
+        foreach (var huntLog in ClassHuntRanks.Values)
+        {
+            for (int row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
+            {
+                for (int col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
+                {
+                    var mark = huntLog.HuntMarks[row, col];
+
+                    if (mark != null)
+                    {
+                        mark.IsCurrentTarget = false;
+                    }
+                }
+            }
+        }
+
+        foreach (var huntLog in GcHuntRanks.Values)
+        {
+            for (int row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
+            {
+                for (int col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
+                {
+                    var mark = huntLog.HuntMarks[row, col];
+
+                    if (mark != null)
+                    {
+                        mark.IsCurrentTarget = false;
+                    }
+                }
+            }
+        }
+    }
+
     internal enum GrandCompany
     {
         Maelstrom = 1,

@@ -1,13 +1,14 @@
-using Dalamud.Interface.Windowing;
+using Dalamud.Interface;
 
 namespace Henchman;
 
 public abstract class FeatureUI
 {
-    public abstract string                                    Name            { get; }
-    public abstract Action?                                   Help            { get; }
-    public abstract bool                                      LoginNeeded     { get; }
-    public virtual  List<(string pluginName, bool mandatory)> Requirements    { get; } = new();
-    public abstract  Window.WindowSizeConstraints              SizeConstraints { get; }
+    public abstract string                                    Name         { get; }
+    public abstract string                                    Category     { get; }
+    public abstract FontAwesomeIcon                           Icon         { get; }
+    public abstract Action?                                   Help         { get; }
+    public abstract bool                                      LoginNeeded  { get; }
+    public virtual  List<(string pluginName, bool mandatory)> Requirements { get; } = new();
     public abstract void                                      Draw();
 }

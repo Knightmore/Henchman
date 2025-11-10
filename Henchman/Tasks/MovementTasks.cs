@@ -2,16 +2,19 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
+using ECommons.GameFunctions;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Features.BringYourXGame;
-//using Henchman.Features.Private.Multibox.Command;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using Henchman.Multibox.Command;
 
 namespace Henchman.Tasks;
 
@@ -69,13 +72,13 @@ internal static class MovementTasks
 
     internal static async Task MoveToStationaryObject(
             Vector3           interactablePosition,
-            uint              dataId,
+            uint              baseId,
             bool              stopAtDistance = false,
             float             distance       = 5f,
             CancellationToken token          = default)
     {
         token.ThrowIfCancellationRequested();
-        using var scope = new TaskDescriptionScope("Move To Object");
+        using var scope = new TaskDescriptionScope($"Move To Object {baseId}");
         if (Player.DistanceTo(interactablePosition) <= distance) return;
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
         if (Player.DistanceTo(interactablePosition) >= 30f) await Mount(token);
@@ -84,14 +87,14 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
         if (stopAtDistance)
         {
-            await WaitUntilAsync(() => IsPlayerInObjectRange(dataId, distance), "Check for distance", token);
+            await WaitUntilAsync(() => IsPlayerInObjectRange(baseId, distance), "Check for distance", token);
             Vnavmesh.StopCompletely();
         }
         else
         {
             await WaitUntilAsync(() => !Vnavmesh.PathIsRunning()         &&
                                        !Vnavmesh.NavPathfindInProgress() &&
-                                       IsPlayerInObjectRange(dataId, distance)
+                                       IsPlayerInObjectRange(baseId, distance)
                                               .Result, "Wait for walking to Object", token);
         }
     }
@@ -143,11 +146,41 @@ internal static class MovementTasks
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope($"Move To {position}");
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
-        if (Player.DistanceTo(position) < 5) return;
+        if (Player.DistanceTo(position) < 1) return;
         if (mount) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {position}");
         await WaitPulseConditionAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to finish", token);
+    }
+
+    internal static async Task MoveCloseToPlayer(Vector3 position, ulong CID, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        using var scope = new TaskDescriptionScope($"Move To {position}");
+        await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
+        // TODO: Figure out why a delay is now needed to not fail the pathfinding... Only happened with never vnav versions and happens exactly the moment the mesh is loaded (0% -> Ready)
+        await Task.Delay(2 * GeneralDelayMs, token);
+        if (Player.DistanceTo(position) < 5) return;
+        if (Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
+        if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
+        ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {position}");
+        await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to finish", token);
+        await WaitUntilAsync(() =>
+                             {
+                                 unsafe
+                                 {
+                                     if (Svc.Objects.OfType<IPlayerCharacter>().TryGetFirst(x => x.Struct()->ContentId == CID, out var boss))
+                                     {
+                                         if (Player.DistanceTo(boss.Position) < 3)
+                                         {
+                                             Vnavmesh.StopCompletely();
+                                             return true;
+                                         }
+                                     }
+                                 }
+
+                                 return false;
+                             }, "Wait until close to player", token);
     }
 
     internal static async Task MoveToArea(Vector3 position, CancellationToken token = default)
@@ -155,7 +188,7 @@ internal static class MovementTasks
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope($"Move To Area {position}");
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
-
+        
         if (Player.DistanceTo(position) < 5) return;
         if (C.UseMount      && Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
@@ -259,7 +292,7 @@ internal static class MovementTasks
                 var playerCloseToPoint = WaitUntilAsync(() => Player.DistanceTo(point.ToVector2()) < distanceToSpot, $"Moving close to next roaming point: {point}.", linkedCts.Token);
                 var scanningForARanks = WaitUntilAsync(() => Svc.Objects.OfType<IBattleNpc>()
                                                                 .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
-                                                                                        .Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget, "Scanning for A-Ranks", linkedCts.Token);
+                                                                                        .Any(y => y.BNpcBase.RowId == x.BaseId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget, "Scanning for A-Ranks", linkedCts.Token);
 
                 var completedTask = await Task.WhenAny(scanningForARanks, playerCloseToPoint);
                 linkedCts.Cancel();
@@ -271,7 +304,7 @@ internal static class MovementTasks
                 {
                     if (Svc.Objects.OfType<IBattleNpc>()
                            .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
-                                                   .Any(y => y.BNpcBase.RowId == x.DataId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
+                                                   .Any(y => y.BNpcBase.RowId == x.BaseId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
                     {
                         AutoRotation.Enable();
                         Bossmod.EnableAI();
@@ -332,13 +365,13 @@ internal static class MovementTasks
     }
 }
 
-//[CommandGroup]
+[CommandGroup]
 internal static class MovementRPCs
 {
-    //[Command]
-    internal static async Task<bool> GoTo(uint territoryId, Vector3 position, string world, CancellationToken token = default)
+    [Command]
+    internal static async Task<bool> GoToPlayer(uint territoryId, Vector3 position, string world, ulong CID, CancellationToken token = default)
     {
-        if (token.IsCancellationRequested) return false;
+        //if (token.IsCancellationRequested) return false;
         using var scope = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
 
         if (Player.CurrentWorld != world)
@@ -353,7 +386,7 @@ internal static class MovementRPCs
         if (aetheryteId == 0 || !IsAetheryteUnlocked(aetheryteId)) return false;
 
         await TeleportTo(aetheryteId, token);
-        await MoveTo(position, Player.CanMount, token);
+        await MoveCloseToPlayer(position, CID, token);
         return true;
     }
 }
