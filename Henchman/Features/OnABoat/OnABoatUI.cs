@@ -23,7 +23,23 @@ internal class OnABoatUI : FeatureUI
     public override string          Category => Henchman.Category.Economy;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.Sailboat;
 
-    public override Action? Help => () => { };
+    // TODO: Fill help
+    public override Action? Help => () =>
+                                    {
+                                        ImGui.Text("""
+                                                   AutoRetainer Mode:
+                                                   - Enable all your characters that you want to cycle through for ocean fishing.
+                                                   - On A Boat will always log into the character with the lowest fisher level.
+                                                        
+                                                   Single Character Mode:
+                                                   - Just enter your character name, pick its world and On A Boat will level only with that character.
+
+                                                   If you don't have completed the ocean fishing quest already, it will be done for you. (Requires Questionable)
+                                                   To take less travelling time, it will attune to the Arcanists' Guild aetheryte to use the athernet next time.
+                                                   """);
+
+                                        ImGuiHelper.DrawRequirements(Requirements);
+                                    };
 
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
@@ -156,7 +172,7 @@ internal class OnABoatUI : FeatureUI
                                                             new("Inv.", x => x.InventorySpace.ToString(), 75, ColumnAlignment.Center)
                                                     },
                                                     () => feature.GetCurrentARCharacterData()
-                                                                 .Where(x => x.ClassJobLevelArray[17] >= 10),
+                                                                 .Where(x => x.ClassJobLevelArray[17] >= 1),
                                                     x => x.CID == Player.CID,
                                                     new Vector2(500, 0)
                                                    );

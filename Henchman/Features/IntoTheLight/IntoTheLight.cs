@@ -53,7 +53,9 @@ internal class IntoTheLight
             {
                 await WaitUntilAsync(() => SelectIfUsePreset(C.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
                 if (C.LightCharacters[index].PresetId != 255)
+                {
                     await WaitUntilAsync(() => SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
+                }
             }
 
             if (C.LightCharacters[index].PresetId == 255)
@@ -215,9 +217,9 @@ internal class IntoTheLight
 
     private unsafe bool SelectPreset(byte presetPosition)
     {
-        if (TryGetAddonByName<AtkUnitBase>("CharaMakeDataImport", out var charaMakeDataImportAddon) && IsAddonReady(charaMakeDataImportAddon))
+        if (TryGetAddonByName<AtkUnitBase>("CharaMakeDataImport", out var charaMakeDataImportAddon) && charaMakeDataImportAddon->IsFullyLoaded())
         {
-            Callback.Fire(charaMakeDataImportAddon, true, 102, presetPosition, false);
+            Callback.Fire(charaMakeDataImportAddon, true, 102, (int)presetPosition, false);
             return true;
         }
 
@@ -378,20 +380,19 @@ internal class IntoTheLight
             for (var i = 0; i < list->GetItemCount(); i++)
             {
                 var fiveContains = list->ItemRendererList[i].AtkComponentListItemRenderer->GetTextNodeById(5)->GetText()
-                                          .ToString() ==
-                                   Svc.Data.GetExcelSheet<World>()
-                                      .GetRow(worldId)
-                                      .Name.ExtractText();
+                                          .ToString().Contains(Svc.Data.GetExcelSheet<World>()
+                                                                  .GetRow(worldId)
+                                                                  .Name.ExtractText(), StringComparison.OrdinalIgnoreCase);
                 var sixContains = list->ItemRendererList[i].AtkComponentListItemRenderer->GetTextNodeById(6)->GetText()
-                                         .ToString() ==
-                                  Svc.Data.GetExcelSheet<World>()
-                                     .GetRow(worldId)
-                                     .Name.ExtractText();
+                                 .ToString()
+                                 .Contains(Svc.Data.GetExcelSheet<World>()
+                                              .GetRow(worldId)
+                                              .Name.ExtractText(), StringComparison.OrdinalIgnoreCase);
                 var sevenContains = list->ItemRendererList[i].AtkComponentListItemRenderer->GetTextNodeById(7)->GetText()
-                                           .ToString() ==
-                                    Svc.Data.GetExcelSheet<World>()
-                                       .GetRow(worldId)
-                                       .Name.ExtractText();
+                                   .ToString()
+                                   .Contains(Svc.Data.GetExcelSheet<World>()
+                                                .GetRow(worldId)
+                                                .Name.ExtractText(), StringComparison.OrdinalIgnoreCase);
                 if (fiveContains || sixContains || sevenContains)
                 {
                     ErrorThrowIf(list->ItemRendererList[i].AtkComponentListItemRenderer->GetResNodeById(4)->Alpha_2 == 127, "Server not open for new characters.");

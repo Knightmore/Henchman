@@ -230,7 +230,7 @@ internal partial class TestyTrader
                                                       };
 
                                 await MessageHandler.WriteMessageAsync(pipe, CommandType.Feature, finishedMessage.ToJson(), token);
-                                await Lifestream.LifestreamReturn(C.ReturnTo, true, token);
+                                await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
                                 return;
                             case 0 when !serverDone.Value:
                                 await WaitUntilAsync(() => TestyTraderTasks.OpenTrade(bossEID, token), "Opening Trade", token);

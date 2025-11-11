@@ -238,4 +238,18 @@ internal static class GeneralHelpers
                                                                                 .Sum();
 
     internal static unsafe bool AddonReady(string addonName) => TryGetAddonByName<AtkUnitBase>(addonName, out var addon) && IsAddonReady(addon);
+
+    public static Vector2 GetRandomPoint(Vector2 A, Vector2 B)
+    {
+        var rand = new Random();
+        var  minX = Math.Min(A.X, B.X);
+        var  maxX = Math.Max(A.X, B.X);
+        var  minY = Math.Min(A.Y, B.Y);
+        var  maxY = Math.Max(A.Y, B.Y);
+
+        var randomX = (float)(minX + (rand.NextDouble() * (maxX - minX)));
+        var randomY = (float)(minY + (rand.NextDouble() * (maxY - minY)));
+
+        return new Vector2(randomX, randomY);
+    }
 }

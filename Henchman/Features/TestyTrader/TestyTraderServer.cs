@@ -162,6 +162,7 @@ internal partial class TestyTrader
                     ServerSideInventory = TestyTraderTasks.GetCurrentInventory();
                     ServerSideGil       = InventoryHelper.GetInventoryItemCount(1);
                     await WaitUntilAsync(() => Svc.Condition[ConditionFlag.TradeOpen] && TestyTraderTasks.CheckForTradePartner(henchmanCID), "Waiting for correct trade partner", token);
+                    await Task.Delay(2 * GeneralDelayMs, token);
                     if (askDict.Count == 0)
                     {
                         continue;

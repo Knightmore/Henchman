@@ -1,6 +1,9 @@
+using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using ECommons.ImGuiMethods;
 using Henchman.Helpers;
 
 namespace Henchman.Windows.Layout;
@@ -36,7 +39,23 @@ public class Layout(ImTextureID logoTextureHandle = default)
         using (var contentArea = ImRaii.Child("##HenchmanContent", new Vector2(0, ImGui.GetContentRegionAvail().Y - 40), true))
         {
             if (!contentArea.Success) return;
-            
+
+            if (selectedFeature.Requirements.Count > 0 &&
+                selectedFeature.Requirements.Where(x => x.mandatory)
+                       .Any(x => !SubscriptionManager.IsInitialized(x.pluginName)))
+            {
+                var missingRequirements = selectedFeature.Requirements.Where(x => x.mandatory && !SubscriptionManager.IsInitialized(x.pluginName));
+                ImGuiEx.TextCentered("Missing Plugins");
+                foreach (var requirement in missingRequirements)
+                {
+                    ImGui.Text($"{requirement.pluginName}");
+                    ImGui.SameLine(100);
+                    ImGui.TextColored(Theme.ErrorRed, "disabled");
+                }
+
+                return;
+            }
+
             DrawContentHeader(selectedFeature);
 
             using (var contentBody = ImRaii.Child("##ContentBody", Vector2.Zero, false))

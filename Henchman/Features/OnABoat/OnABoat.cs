@@ -1,19 +1,20 @@
-using System.Linq;
-using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
-using Lumina.Excel.Sheets;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.Helpers;
+using Lumina.Excel.Sheets;
+using System.Drawing;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.OnABoat;
 
@@ -86,8 +87,10 @@ internal class OnABoat
     internal string PresetSpectral   = "AH4_H4sIAAAAAAAACu1ZTW/bOBD9KwbPIiBK1Id1S71pGqybBnW6PRSLBUWOZCKy6FJU2jTwf1/QkmzLsZJmNz0sVjeZnHnzhnp8FOgHdFYbNWOVqWZZjpIHdF6ytICzokCJ0TU4yE7OZQl28jIvlYb3SvElSjJWVOC0CaILvxQo8eKpg661VFqae5QQB11W5995UQsQ+2Ebv2nwW8QHtH3w9jz6sGHsoIv1zVJDtVSFQAlx3V6hpyudgpxGPQD3WaqzZb3aLoVACSUufYZRl6WKArg5SCSHYd7zZZUWkhUDKxMS2sOjbdZbWS3P76E6qBscEQ6CHuGweyPsFhZLmZk3TG5p24GqG1gYxm8rlAS7F/MY9xB12qJeMyOh5HDAJzzOC/sL6HWpWv6AGTONTrqqx9ne0fL7bfbNkhWS3VZv2Z3SFqA30LXjO/3xj8DVHWiUELtIpxX5SAF+j0C3nm9kfsFW28bPyrwAXXVF7bu3aZFLH3XTg4o3VsPfjWa9rbojZF/MjVp8Y+vL0tTSSFVeMFl2y4WJg+a1hvdQVSwHlCDkoKstJ3SlSkAtwv0aUGLX7QTeXFXmH+Nda6jgNEOE0cB8U3E7v+ezWAM3mhWzWmsozSt1eYT6ar2eZPuo45PVEStV+dc7KPlyxcoJnnzgwMrJHO6gkGU+uVJ6xQrktJpaGLW2W16W+cLAeuu8+/5a3Z3p12nrEG7bzadSfq3B4qJMpF7sxzGmIFxMWRziNEg55iEA+LEbxSREGwfNZWU+ZLZGhZIvD9tqtoHdFp9GJBrm+AfoihlZwMRGWMBmQd4pdWshOrv5DOx2v2HsbAXG9tBtnXaoaZSSyPpVl7wwWpX5S9Jd/yB9DjmUgun7FyN8quA3VbfxXWAz0jXUpu2MoD2Se2heaLtp8va9DIb0+J6IutFy/UICUeD5u8whCr2gJ0i0cVbqZ5kBPWN1vjRzubLHFGkmjvfA9hOm1s05aB8ODL/x3mD6+CB/4kzeOGjnUJ3YPsLXWmoQC8NMbc9G+7VyrMCfE9pP62mUzX9NNgcmyTgjQeRznDI3xjQLBGaMulgA50BTX3ipizbOaVekw674keXflF49b4ejGP/nYhw9bJTNv/MwX7jMTQnFkIYRpiJjOA5SgmlGqBtmfhR66aCHBcMe9ruWRTE62CjF0cFG2fxSBwu4iFMiYhz4PmCaZR5OXRphFpGUh2HK0mw66GDhsINdF/VqPfk8foiNehxtbJTNr7axyJtmWepFmNKIY+q7FE/pNMARETQUbuAzIGjzZ3fl1v7h8mU30Dib/d3c8bUuNnz12N1X9i/+mKDcE36GMw5TTD1OMEs9hoUv/CggQRjQEG3+BtAszL52GgAA";
     internal string PresetSpectralName = "anon_Henchman - Ocean Leveling Spectral";
 
-    internal Vector3 PositionDryskthota     = new(-408, 4, 75);
-    internal uint     BaseIdDryskthota       = 1005421;
+    internal Vector3 PositionDryskthota = new(-408, 4, 75);
+    private  Vector2 DryskthotaA        = new(-409, 75.3f);
+    private  Vector2 DryskthotaB        = new(-407.5f, 72f);
+    internal uint    BaseIdDryskthota   = 1005421;
 
     internal Vector3 PositionMerchantMender = new(-399, 3, 80);
     internal uint    BaseIdMerchantMender   = 1005422;
@@ -109,7 +112,8 @@ internal class OnABoat
             {
                 askARforAccess = true;
                 
-                await WaitUntilAsync(() => inPostProcess || IsInTitleScreen && !IPC.AutoRetainer.IsBusy(), "Waiting for AR PostProccess", token);
+                await WaitUntilAsync(() => inPostProcess || !IPC.AutoRetainer.IsBusy(), "Waiting for AR PostProccess", token);
+                OnCharacterReadyToPostProcess();
                 GetCurrentARCharacterData();
                 var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
                                                       .OrderBy(x => x.ClassJobLevelArray[17])
@@ -120,6 +124,9 @@ internal class OnABoat
             {
                 await Lifestream.SwitchToChar(C.OceanChar, C.OceanWorld, token);
             }
+
+            if (Player.JobId != 18)
+                ChangeToHighestGearsetForClassJobId(18);
 
             if (!QuestManager.IsQuestComplete(69379))
             {
@@ -188,18 +195,21 @@ internal class OnABoat
                     if (ragAmount < 99)
                     {
                         await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Ragworm, 99-ragAmount), $"Buy Item {Bait.Ragworm}", token);
+                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
                         await Task.Delay(GeneralDelayMs * 2, token).ConfigureAwait(true);
                     }
 
                     if (krillAmount < 99)
                     {
                         await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Krill, 99 - krillAmount), $"Buy Item {Bait.Krill}", token);
+                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
                         await Task.Delay(GeneralDelayMs * 2, token).ConfigureAwait(true);
                     }
 
                     if (plumpAmount < 99)
                     {
                         await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.PlumpWorm, 99 - plumpAmount), $"Buy Item {Bait.PlumpWorm}", token);
+                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
                         await Task.Delay(GeneralDelayMs * 2, token).ConfigureAwait(true);
                     }
                     await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
@@ -211,7 +221,7 @@ internal class OnABoat
             if (InventoryHelper.GetItemAmountInNeedOfRepair(30) > 0)
             {
                 await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
-                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open repair", token);
+                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, RepairId), "Waiting to open repair", token);
                 unsafe
                 {
                     RepairManager.Instance()->RepairEquipped(true);
@@ -221,9 +231,11 @@ internal class OnABoat
                 await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
             }
 
-            await MoveToStationaryObject(PositionDryskthota, BaseIdDryskthota, token: token);
+            //await MoveToStationaryObject(PositionDryskthota, BaseIdDryskthota, token: token);
+            var randomPoint = GetRandomPoint(DryskthotaA, DryskthotaB);
+            await MoveTo(new Vector3(randomPoint.X, 4, randomPoint.Y), false, token);
             
-            await InteractWithByBaseId(1005421, token);
+            await InteractWithByBaseId(BaseIdDryskthota, token);
             await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringBoardOCShip), "Waiting for boarding SelectString", token);
             if (QuestManager.IsQuestComplete(68089))
             {
@@ -240,6 +252,8 @@ internal class OnABoat
 
             await WalkToRailing(token);
             await Task.Delay(4 * GeneralDelayMs, token);
+
+            AutoHook.SetPluginState(true);
 
             while (dutyStarted)
             {
@@ -335,7 +349,6 @@ internal class OnABoat
 
     public void OnCharacterReadyToPostProcess() 
     {
-        PluginLog.Verbose("In PostProcess");
         IPC.AutoRetainer.SetMultiModeEnabled(false);
         IPC.AutoRetainer.SetSuppressed(true);
         IPC.AutoRetainer.AbortAllTasks();

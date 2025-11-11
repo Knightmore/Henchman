@@ -76,9 +76,15 @@ internal class AddonTasks
                     .IsMatch(addon.SeStringNullTerminated.TextValue))
             {
                 if (accept)
+                {
                     addon.Yes();
+                    Verbose($"Select Yes for {text.ExtractText()}");
+                }
                 else
+                {
                     addon.No();
+                    Verbose($"Select No for {text.ExtractText()}");
+                }
 
                 return true;
             }
