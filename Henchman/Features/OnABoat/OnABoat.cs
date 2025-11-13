@@ -12,7 +12,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
-using Henchman.Features.Private;
 using Henchman.Helpers;
 using Lumina.Excel.Sheets;
 
