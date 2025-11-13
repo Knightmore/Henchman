@@ -16,15 +16,15 @@ public class Configuration
      */
 
     public string AutoRotationPlugin = IPCNames.Wrath;
-    public int    MinMountDistance   = 50;
-    public int    MinRunDistance     = 20;
-    public uint   MountId            = 1;
-    public bool   UseMount           = true;
-    public bool   UseMountRoulette   = true;
-    public bool   UseChocoboInFights = false;
+    public int MinMountDistance = 50;
+    public int MinRunDistance = 20;
+    public uint MountId = 1;
+    public bool UseMount = true;
+    public bool UseMountRoulette = true;
+    public bool UseChocoboInFights = false;
 
-    public bool                             ReturnOnceDone     = false;
-    public Lifestream.LifestreamDestination ReturnTo           = Lifestream.LifestreamDestination.Home;
+    public bool ReturnOnceDone = false;
+    public Lifestream.LifestreamDestination ReturnTo = Lifestream.LifestreamDestination.Home;
 
     /*
      * Bring Your X Game
@@ -47,51 +47,51 @@ public class Configuration
      */
 
     public Dictionary<string, bool> EnableHuntBills = HuntBoardOptions.ToDictionary(kvp => kvp, _ => false);
-    public bool                     SkipFateMarks   = false;
+    public bool SkipFateMarks = false;
 
     /*
      * On A Boat
      */
 
-    public bool                    OCFishingHandleAR           = false;
+    public bool OCFishingHandleAR = false;
     public Dictionary<ulong, bool> EnableCharacterForOCFishing = [];
-    public bool                    UseOnlyVersatile            = true;
-    public string                  OceanChar                   = string.Empty;
-    public string                  OceanWorld                  = string.Empty;
-    public bool                    DiscardAfterVoyage          = false;
-    public bool                    WaitOnTitleMenu             = false;
+    public bool UseOnlyVersatile = true;
+    public string OceanChar = string.Empty;
+    public string OceanWorld = string.Empty;
+    public bool DiscardAfterVoyage = false;
+    public bool WaitOnTitleMenu = false;
 
     /*
      * Retainer Creator
      */
 
-    public int                                 RetainerAmount = 1;
-    public NpcDatabase.StarterCity             RetainerCity   = NpcDatabase.StarterCity.LimsaLominsa;
-    public uint                                RetainerClass  = 18;
-    public RetainerDetails.RetainerGender      RetainerGender;
+    public int RetainerAmount = 1;
+    public NpcDatabase.StarterCity RetainerCity = NpcDatabase.StarterCity.LimsaLominsa;
+    public uint RetainerClass = 18;
+    public RetainerDetails.RetainerGender RetainerGender;
     public RetainerDetails.RetainerPersonality RetainerPersonality = RetainerDetails.RetainerPersonality.Polite;
-    public RetainerDetails.RetainerRace        RetainerRace;
-    public bool                                SendOnFirstExploration = false;
-    public uint                                QstClassJob            = 1;
-    public bool                                UseMaxRetainerAmount   = true;
+    public RetainerDetails.RetainerRace RetainerRace;
+    public bool SendOnFirstExploration = false;
+    public uint QstClassJob = 1;
+    public bool UseMaxRetainerAmount = true;
 
     /*
      * Bump On A Log
      */
 
-    public bool SkipDutyMarks    = false;
-    public int  StopAfterGCRank  = 3;
-    public int  StopAfterJobRank = 5;
-    public bool ProgressGCRanks  = false;
+    public bool SkipDutyMarks = false;
+    public int StopAfterGCRank = 3;
+    public int StopAfterJobRank = 5;
+    public bool ProgressGCRanks = false;
 
     /*
      * Testy Trader
      */
-    public TradeSession                                 TradeSession                  = TradeSession.Boss;
-    public bool                                         TestyTraderARSupport          = false;
-    public Dictionary<ulong, bool>                      EnableCharacterForTrade       = [];
+    public TradeSession TradeSession = TradeSession.Boss;
+    public bool TestyTraderARSupport = false;
+    public Dictionary<ulong, bool> EnableCharacterForTrade = [];
     public List<TestyTraderUI.TestyTraderCharacterData> TestyTraderImportedCharacters = [];
-    public List<TradeEntry>                             TradeEntries                  = [];
+    public List<TradeEntry> TradeEntries = [];
 
     /*
      * Into The Light

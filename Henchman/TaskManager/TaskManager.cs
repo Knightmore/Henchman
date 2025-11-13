@@ -9,19 +9,11 @@ public static class TaskManager
 {
     private static readonly Queue<TaskRecord>              taskQueue = new();
     private static readonly Queue<CancellationTokenSource> ctsQueue  = new();
-    public static           TaskRecord?                         CurrentTaskRecord;
-    private static          CancellationTokenSource             Cts             = new();
-    public static           List<string>                        TaskDescription = [];
-    private static          Func<CancellationToken, Task>?      currentTask;
-    private static          TaskRecord?                         ChainedTaskRecord;
-
-    private static readonly ManualResetEventSlim ResumeEvent = new(true);
-
-    public static bool IsPaused => !ResumeEvent.IsSet;
-    public static void Pause()  => ResumeEvent.Reset();
-    public static void Resume() => ResumeEvent.Set();
-
-    public static ManualResetEventSlim ResumeHandle => ResumeEvent;
+    public static           TaskRecord?                    CurrentTaskRecord;
+    private static          CancellationTokenSource        Cts             = new();
+    public static           List<string>                   TaskDescription = [];
+    private static          Func<CancellationToken, Task>? currentTask;
+    private static          TaskRecord?                    ChainedTaskRecord;
 
 
     /// <summary>
@@ -29,11 +21,18 @@ public static class TaskManager
     /// </summary>
     public static readonly int GeneralDelayMs = 250;
 
+    public static bool IsPaused => !ResumeHandle.IsSet;
+
+    public static ManualResetEventSlim ResumeHandle { get; } = new(true);
+
     public static bool Running => CurrentTaskRecord != null;
 
     public static string? TaskName => Running
                                               ? CurrentTaskRecord!.Name
                                               : "No Task running";
+
+    public static void Pause()  => ResumeHandle.Reset();
+    public static void Resume() => ResumeHandle.Set();
 
     public static void EnqueueTask(TaskRecord task)
     {
@@ -49,13 +48,11 @@ public static class TaskManager
     public static void TaskManagerTick(IFramework framework)
     {
         if (ChainedTaskRecord != null && CurrentTaskRecord == null)
-        {
             StartTask(ChainedTaskRecord, new CancellationTokenSource());
-        }
         else if (CurrentTaskRecord == null && taskQueue.TryDequeue(out var nextTask) && ctsQueue.TryDequeue(out var cts))
         {
             Cts.Dispose();
-           
+
             StartTask(nextTask, cts);
         }
     }

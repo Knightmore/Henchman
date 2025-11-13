@@ -1,6 +1,4 @@
-using System;
 using System.Linq;
-using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
@@ -11,28 +9,24 @@ namespace Henchman.Windows;
 
 public class StatusWindow : Window, IDisposable
 {
-    private const float ExpandedWidth = 350f;
-    private const float ExpandedHeight = 160f;
+    private const float ExpandedWidth   = 350f;
+    private const float ExpandedHeight  = 160f;
     private const float CollapsedHeight = 40f;
 
-    public bool IsCollapsed { get; set; }
-    public string StatusText { get; set; } = string.Empty;
-    public string DetailsText { get; set; } = string.Empty;
-    public float Progress { get; set; }
-
-    public Action? OnPause { get; set; }
-    public Action? OnAbort { get; set; }
-
     public StatusWindow()
-        : base("##HenchmanStatusWindow",
-               ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoResize | 
-               ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoCollapse)
+            : base("##HenchmanStatusWindow",
+                   ImGuiWindowFlags.NoTitleBar        |
+                   ImGuiWindowFlags.NoScrollbar       |
+                   ImGuiWindowFlags.NoResize          |
+                   ImGuiWindowFlags.NoScrollWithMouse |
+                   ImGuiWindowFlags.NoBackground      |
+                   ImGuiWindowFlags.NoCollapse)
     {
         SizeConstraints = new WindowSizeConstraints
                           {
                                   MinimumSize = new Vector2(ExpandedWidth, ExpandedHeight),
                                   MaximumSize = new Vector2(ExpandedWidth, ExpandedHeight)
-};
+                          };
 
         Size          = new Vector2(ExpandedWidth, ExpandedHeight);
         SizeCondition = ImGuiCond.FirstUseEver;
@@ -40,6 +34,16 @@ public class StatusWindow : Window, IDisposable
         RespectCloseHotkey = false;
         IsOpen             = false;
     }
+
+    public bool   IsCollapsed { get; set; }
+    public string StatusText  { get; set; } = string.Empty;
+    public string DetailsText { get; set; } = string.Empty;
+    public float  Progress    { get; set; }
+
+    public Action? OnPause { get; set; }
+    public Action? OnAbort { get; set; }
+
+    public void Dispose() { }
 
     public override void Draw()
     {
@@ -70,7 +74,9 @@ public class StatusWindow : Window, IDisposable
         using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary))
             ImGui.Text("HENCHMAN STATUS");
 
-        ImGui.SameLine(ImGui.GetContentRegionAvail().X - 20);
+        ImGui.SameLine(ImGui.GetContentRegionAvail()
+                            .X -
+                       20);
 
         ImGui.PushFont(UiBuilder.IconFont);
         if (ImGui.SmallButton(FontAwesomeIcon.Times.ToIconString()))
@@ -117,7 +123,11 @@ public class StatusWindow : Window, IDisposable
 
     private void DrawActionButtons()
     {
-        var buttonWidth = (ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2;
+        var buttonWidth = (ImGui.GetContentRegionAvail()
+                                .X -
+                           ImGui.GetStyle()
+                                .ItemSpacing.X) /
+                          2;
 
         if (OnPause != null)
         {
@@ -141,9 +151,5 @@ public class StatusWindow : Window, IDisposable
                 }
             }
         }
-    }
-
-    public void Dispose()
-    {
     }
 }

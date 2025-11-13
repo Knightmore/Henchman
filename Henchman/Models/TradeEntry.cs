@@ -1,29 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+namespace Henchman.Models;
 
-namespace Henchman.Models
+public enum TradeSession
 {
-    public enum TradeSession
-    {
-        Boss,
-        Henchman
-    }
-    public class TradeEntry
-    {
-        public bool      Enabled;
-        public uint      Id;
-        public TradeMode Mode;
-        public uint      Amount;
-    }
+    Boss,
+    Henchman
+}
 
-    public enum TradeMode
-    {
-        Give,
-        Keep,
-        AskFor,
-        AskUntil,
-    }
+public class TradeEntry
+{
+    public uint      Amount;
+    public bool      Enabled;
+    public uint      Id;
+    public TradeMode Mode;
+}
+
+public enum TradeMode
+{
+    Give,
+    Keep,
+    AskFor,
+    AskUntil,
+    PARLevel
 }

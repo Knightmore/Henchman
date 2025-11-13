@@ -5,7 +5,6 @@ using Dalamud.Interface;
 using ECommons.Configuration;
 using ECommons.GameHelpers;
 using ECommons.ImGuiMethods;
-using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
@@ -38,7 +37,7 @@ internal class OnABoatUI : FeatureUI
                                                    To take less travelling time, it will attune to the Arcanists' Guild aetheryte to use the athernet next time.
                                                    """);
 
-                                        ImGuiHelper.DrawRequirements(Requirements);
+                                        DrawRequirements(Requirements);
                                     };
 
     public override List<(string pluginName, bool mandatory)> Requirements =>
@@ -62,7 +61,7 @@ internal class OnABoatUI : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (ImGui.Button("Start", new Vector2(70, 30))) EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
+                               if (StartButton() && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
                            }, () =>
                               {
                                   if (feature.IsRegistrationOpen)
@@ -85,54 +84,54 @@ internal class OnABoatUI : FeatureUI
                                   }
                               });
 
-        ImGuiHelper.DrawCentered("##boatVersatile", () =>
-                                                    {
-                                                        ImGui.Text("Use only Versatile Lure:");
-                                                        ImGui.SameLine(200);
-                                                        configChanged |= ImGui.Checkbox("##onlyVLure", ref C.UseOnlyVersatile);
-                                                    });
+        DrawCentered("##boatVersatile", () =>
+                                        {
+                                            ImGui.Text("Use only Versatile Lure:");
+                                            ImGui.SameLine(200 * GlobalFontScale);
+                                            configChanged |= ImGui.Checkbox("##onlyVLure", ref C.UseOnlyVersatile);
+                                        });
 
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            ImGuiHelper.DrawCentered("##boatArDiscard", () =>
-                                                        {
-                                                            ImGui.Text("Use AR Discard after Voyage:");
-                                                            ImGui.SameLine(200);
-                                                            configChanged |= ImGui.Checkbox("##ARDiscard", ref C.DiscardAfterVoyage);
-                                                        });
+            DrawCentered("##boatArDiscard", () =>
+                                            {
+                                                ImGui.Text("Use AR Discard after Voyage:");
+                                                ImGui.SameLine(200 * GlobalFontScale);
+                                                configChanged |= ImGui.Checkbox("##ARDiscard", ref C.DiscardAfterVoyage);
+                                            });
 
-            ImGuiHelper.DrawCentered("##boatArCharacters", () =>
-                                                           {
-                                                               ImGui.Text("Use with AutoRetainer Multimode:");
-                                                               ImGui.SameLine(200);
-                                                               configChanged |= ImGui.Checkbox("##HandleAR", ref C.OCFishingHandleAR);
-                                                           });
+            DrawCentered("##boatArCharacters", () =>
+                                               {
+                                                   ImGui.Text("Use with AutoRetainer Multimode:");
+                                                   ImGui.SameLine(200 * GlobalFontScale);
+                                                   configChanged |= ImGui.Checkbox("##HandleAR", ref C.OCFishingHandleAR);
+                                               });
         }
 
         if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
-            ImGuiHelper.DrawCentered("##CenteredARFisherTable", () => DrawARTable());
+            DrawCentered("##CenteredARFisherTable", () => DrawARTable());
         else
         {
-            ImGuiHelper.DrawCentered("##boatSingleCharName", () =>
-                                                             {
-                                                                 ImGui.Text("Character Name:");
-                                                                 ImGui.SameLine(200);
-                                                                 ImGui.SetNextItemWidth(150f);
-                                                                 configChanged |= ImGui.InputText("##character", ref C.OceanChar, 20);
-                                                             });
-            ImGuiHelper.DrawCentered("##boatWorld", () =>
-                                                    {
-                                                        ImGui.Text("World:");
-                                                        ImGui.SameLine(200);
-                                                        ImGui.SetNextItemWidth(150f);
-                                                        if (ImGuiEx.ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == C.OceanWorld) is { } row
-                                                                                                                                          ? row.Name.ExtractText()
-                                                                                                                                          : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
-                                                        {
-                                                            C.OceanWorld  = selectedWorld.Name.ExtractText();
-                                                            configChanged = true;
-                                                        }
-                                                    });
+            DrawCentered("##boatSingleCharName", () =>
+                                                 {
+                                                     ImGui.Text("Character Name:");
+                                                     ImGui.SameLine(200 * GlobalFontScale);
+                                                     ImGui.SetNextItemWidth(150f);
+                                                     configChanged |= ImGui.InputText("##character", ref C.OceanChar, 20);
+                                                 });
+            DrawCentered("##boatWorld", () =>
+                                        {
+                                            ImGui.Text("World:");
+                                            ImGui.SameLine(200 * GlobalFontScale);
+                                            ImGui.SetNextItemWidth(150f);
+                                            if (ImGuiEx.ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == C.OceanWorld) is { } row
+                                                                                                                              ? row.Name.ExtractText()
+                                                                                                                              : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
+                                            {
+                                                C.OceanWorld  = selectedWorld.Name.ExtractText();
+                                                configChanged = true;
+                                            }
+                                        });
         }
 
         if (configChanged) EzConfig.Save();

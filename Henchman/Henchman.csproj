@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/13.0.0">
     <PropertyGroup>
-        <Version>2.0.0.9</Version>
+        <Version>2.0.1.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -12,7 +12,7 @@
         <Authors>Knightmore</Authors>
         <PackageId>Henchman</PackageId>
         <Configurations>Debug;Release;Private</Configurations>
-		<LocalCS>false</LocalCS>
+        <LocalCS>false</LocalCS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,61 +21,61 @@
     </ItemGroup>
     <ItemGroup>
         <None Include="Data\ARRHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\DTHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\EWHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\HWHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\SHBHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\StBHunt.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\BRanks.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="Data\ChocoboTaxiStands.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <Content Include="Images\Henchman.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
-    
+
     <ItemGroup Condition="'$(LocalCS)'=='true'">
         <Reference Include="..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll" Private="true" />
         <Reference Include="..\..\FFXIVClientStructs\InteropGenerator.Runtime\bin\Debug\net9.0\InteropGenerator.Runtime.dll" Private="true" />
         <ProjectReference Include="..\..\FFXIVClientStructs\InteropGenerator\InteropGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
-	<PropertyGroup Condition="'$(LocalCS)'=='true'">
-		<DefineConstants>LOCAL_CS</DefineConstants>
-		<Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(LocalCS)'=='true'">
+        <DefineConstants>LOCAL_CS</DefineConstants>
+        <Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Private|x64'">
-	  <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
-	</PropertyGroup>
-	
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Private|x64'">
+        <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
         <Compile Remove="Features\Private\**\*.cs" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj" />
-      <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
-      <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj" />
+        <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
+        <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="DalamudPackager" Version="13.1.0" />
-      <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
+        <PackageReference Update="DalamudPackager" Version="13.1.0" />
+        <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
     </ItemGroup>
 </Project>

@@ -8,13 +8,12 @@ using ECommons.GameFunctions;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Features.BringYourXGame;
 using Henchman.Helpers;
+using Henchman.Multibox.Command;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
-using Henchman.Multibox.Command;
 
 namespace Henchman.Tasks;
 
@@ -56,7 +55,7 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Dismounting");
-        
+
         if (!Player.Mounted) return;
 
         Verbose("Dismounting");
@@ -169,7 +168,8 @@ internal static class MovementTasks
                              {
                                  unsafe
                                  {
-                                     if (Svc.Objects.OfType<IPlayerCharacter>().TryGetFirst(x => x.Struct()->ContentId == CID, out var boss))
+                                     if (Svc.Objects.OfType<IPlayerCharacter>()
+                                            .TryGetFirst(x => x.Struct()->ContentId == CID, out var boss))
                                      {
                                          if (Player.DistanceTo(boss.Position) < 3)
                                          {
@@ -188,7 +188,7 @@ internal static class MovementTasks
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope($"Move To Area {position}");
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
-        
+
         if (Player.DistanceTo(position) < 5) return;
         if (C.UseMount      && Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();

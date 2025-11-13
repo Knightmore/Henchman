@@ -45,7 +45,7 @@ internal class BumpOnALog
         await ProcessHuntMarks(overworldMarks, true, currentRank, gcLog, token);
         if (gcLog && (!C.SkipDutyMarks || doDutyMarks))
         {
-            if(SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
+            if (SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
                 await ProcessDutyMarks(dutyMarks, token);
             else
                 FullWarning("AutoDuty not enabled! Skipping Duty Mobs.");

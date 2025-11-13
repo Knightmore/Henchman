@@ -30,16 +30,13 @@ internal class IntoTheLight
 
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var addon) && !IsAddonReady(addon) && !addon->IsVisible)
-            {
-                return;
-            }
+            if (TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var addon) && !IsAddonReady(addon) && !addon->IsVisible) return;
         }
 
         await OpenDataCenter(token);
         for (index = 0; index < C.LightCharacters.Count; index++)
         {
-            bool differentDataCenter = false;
+            var differentDataCenter = false;
             unsafe
             {
                 if (AgentModule.Instance()->GetAgentLobby()->DataCenter != C.LightCharacters[index].DataCenterId)
@@ -52,27 +49,24 @@ internal class IntoTheLight
                 }
             }
 
-            if(differentDataCenter)
+            if (differentDataCenter)
                 await OpenDataCenter(token);
 
             await WaitUntilAsync(() => SelectCreateCharacter(), "Select Create Character", token);
             if (validPresets > 0)
             {
                 await WaitUntilAsync(() => SelectIfUsePreset(C.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
-                if (C.LightCharacters[index].PresetId != 255)
-                {
-                    await WaitUntilAsync(() => SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
-                }
+                if (C.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
             }
 
             if (C.LightCharacters[index].PresetId == 255)
             {
                 int maxRace;
-                unsafe{
+                unsafe
+                {
                     maxRace = Framework.Instance()->DevConfig.GetConfigOption(22)->Value.UInt >= 3
                                       ? 8
                                       : 6;
-
                 }
 
                 var genderId = Random.Shared.Next(2) == 0
@@ -89,7 +83,7 @@ internal class IntoTheLight
             await WaitUntilAsync(() => ChooseRandomNameDay(), "Choose Nameday", token);
             await WaitUntilAsync(() => ChooseRandomGuardian(), "Choose Guardian", token);
             // ClassJob Ids are -1 in Callbacks
-            await WaitUntilAsync(() => ChooseClass(C.LightCharacters[index].ClassJobId - 1), "Choose Class", token);
+            await WaitUntilAsync(() => ChooseClass((uint)C.LightCharacters[index].ClassJob), "Choose Class", token);
             await WaitUntilAsync(() => UpdateServerList(), "Choose Server", token);
             await Task.Delay(500, token);
             await WaitUntilAsync(() => SelectServer(C.LightCharacters[index].WorldId), "Select Server", token);
@@ -100,7 +94,7 @@ internal class IntoTheLight
                 using var namingTokenSrc  = new CancellationTokenSource();
                 using var linkedNamingCts = CancellationTokenSource.CreateLinkedTokenSource(token, namingTokenSrc.Token);
 
-                var charConfirmation  = WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoNewGame), $"Checking for New Game Yesno.", linkedNamingCts.Token);
+                var charConfirmation = WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoNewGame), "Checking for New Game Yesno.", linkedNamingCts.Token);
                 var takenName = WaitUntilAsync(() =>
                                                {
                                                    unsafe
@@ -119,16 +113,13 @@ internal class IntoTheLight
                 linkedNamingCts.Cancel();
                 await completedNamingTask;
 
-                if (completedNamingTask == charConfirmation)
-                {
-                    break;
-                }
+                if (completedNamingTask == charConfirmation) break;
             }
 
-            using var loginTokenSrc = new CancellationTokenSource();
-            using var linkedLoginCts      = CancellationTokenSource.CreateLinkedTokenSource(token, loginTokenSrc.Token);
+            using var loginTokenSrc  = new CancellationTokenSource();
+            using var linkedLoginCts = CancellationTokenSource.CreateLinkedTokenSource(token, loginTokenSrc.Token);
 
-            var loginQueue = WaitUntilAsync(() => ConfirmSpecificSelectOk(Lang.SelectOkCongested), $"Checking for login queue.", linkedLoginCts.Token);
+            var loginQueue  = WaitUntilAsync(() => ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
             var directLogin = WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Checking for first Cutscene", linkedLoginCts.Token);
 
             var completedLoginTask = await Task.WhenAny(loginQueue, directLogin);
@@ -138,7 +129,7 @@ internal class IntoTheLight
             if (completedLoginTask != loginQueue)
             {
                 Verbose("Progressing without queue!");
-                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
+                await WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
 
                 await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringSkipCutscene), "Skip cutscene", token);
 
@@ -147,20 +138,19 @@ internal class IntoTheLight
                 {
                     unsafe
                     {
-                        if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out var _))
+                        if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out _))
                             break;
                     }
 
                     Chat.SendMessage("/logout");
                     await Task.Delay(8 * GeneralDelayMs, token);
                 }
+
                 await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
                 await OpenDataCenter(token);
             }
             else
-            {
                 await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoLeaveQueue), "Confirm leave queue", token);
-            }
 
             await Task.Delay(4 * GeneralDelayMs, token);
         }
@@ -245,7 +235,7 @@ internal class IntoTheLight
             {
                 if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgressAddon) && IsAddonReady(charaMakeProgressAddon))
                 {
-                    var raceGenderEvt = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                    var raceGenderEvt  = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                     var raceGenderData = new AtkEventData();
                     charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, genderId, &raceGenderEvt, &raceGenderData);
                     var confirmEvt  = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
@@ -263,7 +253,7 @@ internal class IntoTheLight
     {
         if (TryGetAddonByName<AtkUnitBase>("_CharaMakeTribe", out var charaMakeTribe) && IsAddonReady(charaMakeTribe))
         {
-            var evt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3};
+            var evt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
             var data = new AtkEventData();
             charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, 3, &evt, &data);
             return true;
@@ -391,9 +381,10 @@ internal class IntoTheLight
             for (var i = 0; i < list->GetItemCount(); i++)
             {
                 var fiveContains = list->ItemRendererList[i].AtkComponentListItemRenderer->GetTextNodeById(5)->GetText()
-                                          .ToString().Contains(Svc.Data.GetExcelSheet<World>()
-                                                                  .GetRow(worldId)
-                                                                  .Name.ExtractText(), StringComparison.OrdinalIgnoreCase);
+                                  .ToString()
+                                  .Contains(Svc.Data.GetExcelSheet<World>()
+                                               .GetRow(worldId)
+                                               .Name.ExtractText(), StringComparison.OrdinalIgnoreCase);
                 var sixContains = list->ItemRendererList[i].AtkComponentListItemRenderer->GetTextNodeById(6)->GetText()
                                  .ToString()
                                  .Contains(Svc.Data.GetExcelSheet<World>()

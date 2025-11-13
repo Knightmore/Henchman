@@ -1,15 +1,7 @@
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Keys;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using System.Runtime.InteropServices;
-using FFXIVClientStructs.FFXIV.Client.Game.Control;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace Henchman.Helpers;
 
@@ -17,10 +9,10 @@ internal static class Memory
 {
     public delegate nint ExecuteCommandDelegate(int command, int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0);
 
-    public static readonly ExecuteCommandDelegate? ExecuteCommand = EzDelegate.Get<ExecuteCommandDelegate>("E8 ?? ?? ?? ?? 8D 46 0A");
-
     // https://github.com/Limiana/Dropbox/blob/main/Dropbox/Memory.cs#L18
     public delegate void OfferItemTradeDelegate(nint tradeAddress, ushort slot, InventoryType type);
+
+    public static readonly ExecuteCommandDelegate? ExecuteCommand = EzDelegate.Get<ExecuteCommandDelegate>("E8 ?? ?? ?? ?? 8D 46 0A");
 
     public static readonly OfferItemTradeDelegate? OfferItemTrade = EzDelegate.Get<OfferItemTradeDelegate>("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 83 B9 ?? ?? ?? ?? ?? 41 8B F0");
 

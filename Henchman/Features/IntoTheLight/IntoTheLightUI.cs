@@ -6,7 +6,6 @@ using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
@@ -17,6 +16,18 @@ namespace Henchman.Features.IntoTheLight;
 [Feature]
 public class IntoTheLightUI : FeatureUI
 {
+    public enum ClassJob
+    {
+        Gladiator,
+        Pugilist,
+        Marauder,
+        Lancer,
+        Archer,
+        Conjurer,
+        Thaumaturge,
+        Arcanist
+    }
+
     private readonly IntoTheLight feature = new();
 
     private readonly IEnumerable<int> values = Enumerable.Range(1, 40);
@@ -27,23 +38,20 @@ public class IntoTheLightUI : FeatureUI
     public override string          Category => Henchman.Category.Exploration;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.PersonRays;
 
-    public override Action? Help => () =>
-                                    {
-                                        ImGui.Text("Configure your wanted character data hit Start."); 
-                                    };
+    public override Action? Help => () => { ImGui.Text("Configure your wanted character data hit Start."); };
 
     public override bool LoginNeeded => false;
-    
+
     public override unsafe void Draw()
     {
         var configChanged = false;
-        ImGuiHelper.DrawCentered("##LightStart", () =>
-                                                 {
-                                                     Layout.DrawButton(() =>
-                                                                       {
-                                                                           if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light", () => feature.Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
-                                                                       });
-                                                 });
+        DrawCentered("##LightStart", () =>
+                                     {
+                                         Layout.DrawButton(() =>
+                                                           {
+                                                               if (ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light", () => feature.Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
+                                                           });
+                                     });
 
 
         var characterColumns = new List<TableColumn<LightCharacter>>
@@ -52,18 +60,22 @@ public class IntoTheLightUI : FeatureUI
                                                                       {
                                                                           if (ImGuiComponents.IconButton($"##{x.GetHashCode()}Remove", FontAwesomeIcon.Trash)) charToDelete = x;
                                                                       }),
-                                       new("First Name", x => string.IsNullOrEmpty(x.FirstName) ? "Random" : x.FirstName, 110, ColumnAlignment.Center),
-                                       new("Last Name", x => string.IsNullOrEmpty(x.LastName) ? "Random" : x.LastName, 110, ColumnAlignment.Center),
+                                       new("First Name", x => string.IsNullOrEmpty(x.FirstName)
+                                                                      ? "Random"
+                                                                      : x.FirstName, 110, ColumnAlignment.Center),
+                                       new("Last Name", x => string.IsNullOrEmpty(x.LastName)
+                                                                     ? "Random"
+                                                                     : x.LastName, 110, ColumnAlignment.Center),
                                        new("Data Center", x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
                                                                   .GetRow(x.DataCenterId)
                                                                   .Name.ExtractText(), 100, ColumnAlignment.Center),
                                        new("World", x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
                                                             .Name.ExtractText(), 100, ColumnAlignment.Center),
-                                       new("ClassJob", x => Utils.ToTitleCaseExtended(Svc.Data.GetExcelSheet<ClassJob>()
-                                                                                         .GetRow(x.ClassJobId)
-                                                                                         .Name.ExtractText(), Svc.ClientState.ClientLanguage), 100, ColumnAlignment.Center),
-                                       new("Preset", x => x.PresetId == 255 ? "None" : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].LabelString}", 130, ColumnAlignment.Center)
+                                       new("ClassJob", x => x.ClassJob.ToString(), 100, ColumnAlignment.Center),
+                                       new("Preset", x => x.PresetId == 255
+                                                                  ? "None"
+                                                                  : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].LabelString}", 130, ColumnAlignment.Center)
                                };
 
         var table = new Table<LightCharacter>(
@@ -74,12 +86,12 @@ public class IntoTheLightUI : FeatureUI
                                               drawExtraRow: () =>
                                                             {
                                                                 ImGui.TableNextRow();
-                                                                using var row = new ImGuiHelper.ColumnScope(characterColumns.Count);
+                                                                using var row = new ColumnScope(characterColumns.Count);
                                                                 row.TableNextColumn();
                                                                 var randomFirstName = string.IsNullOrEmpty(newCharacter.FirstName);
-                                                                var randomLastName = string.IsNullOrEmpty(newCharacter.LastName);
+                                                                var randomLastName  = string.IsNullOrEmpty(newCharacter.LastName);
 
-                                                                if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !C.LightCharacters.Any(x => (!randomFirstName && x.FirstName == newCharacter.FirstName) && (!randomLastName && x.LastName == newCharacter.LastName) && x.WorldId == newCharacter.WorldId))
+                                                                if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !C.LightCharacters.Any(x => !randomFirstName && x.FirstName == newCharacter.FirstName && !randomLastName && x.LastName == newCharacter.LastName && x.WorldId == newCharacter.WorldId))
                                                                 {
                                                                     C.LightCharacters.Add(newCharacter);
                                                                     newCharacter  = new LightCharacter();
@@ -117,43 +129,41 @@ public class IntoTheLightUI : FeatureUI
                                                                     newCharacter.WorldId = selectedWorld.RowId;
                                                                 row.TableNextColumn();
                                                                 ImGui.SetNextItemWidth(100f);
-                                                                if (ImGuiEx.ExcelSheetCombo<ClassJob>("##newclassJob", out var selectedClass, s => s.GetRowOrDefault(newCharacter.ClassJobId) is { } row
-                                                                                                                                                           ? Utils.ToTitleCaseExtended(row.Name, Svc.ClientState.ClientLanguage)
-                                                                                                                                                           : string.Empty, x => Utils.ToTitleCaseExtended(x.Name, Svc.ClientState.ClientLanguage), x => x.RowId is >= 1 and <= 7 or 26))
+                                                                ImGuiEx.EnumCombo("##newclassJob", ref newCharacter.ClassJob);
+
+                                                                /*if (ImGuiEx.ExcelSheetCombo<ClassJob>("##newclassJob", out var selectedClass, s => s.GetRowOrDefault(newCharacter.ClassJobId) is { } row
+                                                                                                                                                          : string.Empty, x => Utils.ToTitleCaseExtended(x.Name, Svc.ClientState.ClientLanguage), x => x.RowId is >= 1 and <= 7 or 26))
                                                                 {
                                                                     newCharacter.ClassJobId = selectedClass.RowId;
                                                                     configChanged           = true;
-                                                                }
+                                                                }*/
 
                                                                 row.TableNextColumn();
-                                                                unsafe
+                                                                var presetId = newCharacter.PresetId;
+
+                                                                var presets = Framework.Instance()->CharamakeAvatarSaveData->Release.Slots
+                                                                                                                                    .ToArray()
+                                                                                                                                    .Where(x => x.Timestamp > 0)
+                                                                                                                                    .ToArray();
+
+                                                                var presetIds = new[] { (byte)255 }
+                                                                       .Concat(presets.Select(x => x.SlotIndex));
+
+                                                                var names = presets.ToDictionary(
+                                                                                                 y => y.SlotIndex,
+                                                                                                 y => $"{y.SlotIndex} - {y.LabelString}"
+                                                                                                );
+                                                                names[255] = "None";
+
+                                                                ImGui.SetNextItemWidth(130f);
+                                                                if (ImGuiEx.Combo("##newpreset", ref presetId, presetIds, names: names))
                                                                 {
-                                                                    var presetId = newCharacter.PresetId;
-
-                                                                    var presets = Framework.Instance()->CharamakeAvatarSaveData->Release.Slots
-                                                                                                                                        .ToArray()
-                                                                                                                                        .Where(x => x.Timestamp > 0)
-                                                                                                                                        .ToArray();
-
-                                                                    var presetIds = new[] { (byte)255 }
-                                                                           .Concat(presets.Select(x => x.SlotIndex));
-
-                                                                    var names = presets.ToDictionary(
-                                                                                                     y => y.SlotIndex,
-                                                                                                     y => $"{y.SlotIndex} - {y.LabelString}"
-                                                                                                    );
-                                                                    names[255] = "None";
-
-                                                                    ImGui.SetNextItemWidth(130f);
-                                                                    if (ImGuiEx.Combo("##newpreset", ref presetId, presetIds, names: names))
-                                                                    {
-                                                                        newCharacter.PresetId = presetId;
-                                                                        configChanged         = true;
-                                                                    }
+                                                                    newCharacter.PresetId = presetId;
+                                                                    configChanged         = true;
                                                                 }
                                                             });
 
-        ImGuiHelper.DrawCentered("##LightTable", () => table.Draw());
+        DrawCentered("##LightTable", () => table.Draw());
 
         if (charToDelete != null)
         {

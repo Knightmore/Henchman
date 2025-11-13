@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
-using Henchman.Helpers;
 
 namespace Henchman.Windows.Layout;
 
@@ -30,14 +29,16 @@ public class Table<T>(
         Action?              drawExtraRow       = null
 )
 {
+    private float GlobalFontScale => ImGui.GetIO()
+                                          .FontGlobalScale;
+
     public void Draw()
     {
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg   |
                                       ImGuiTableFlags.Borders |
                                       ImGuiTableFlags.ScrollY |
                                       ImGuiTableFlags.SizingStretchProp;
-
-        using var table = ImRaii.Table(tableId, columns.Count, flags, size);
+        using var table = ImRaii.Table(tableId, columns.Count, flags, size * GlobalFontScale);
         if (!table.Success) return;
         ImGui.TableSetupScrollFreeze(0, 1);
         SetupColumns();
@@ -50,7 +51,7 @@ public class Table<T>(
         foreach (var column in columns)
         {
             if (column.Width > 0)
-                ImGui.TableSetupColumn(column.Name, ImGuiTableColumnFlags.WidthFixed, column.Width);
+                ImGui.TableSetupColumn(column.Name, ImGuiTableColumnFlags.WidthFixed, column.Width * GlobalFontScale);
             else
                 ImGui.TableSetupColumn(column.Name, ImGuiTableColumnFlags.WidthStretch);
         }
@@ -73,7 +74,7 @@ public class Table<T>(
                 if (column.DrawCustom != null)
                 {
                     if (column.Alignment == ColumnAlignment.Center)
-                        ImGuiHelper.DrawCentered($"##Centered{column.Name}{i}", () => column.DrawCustom(item));
+                        DrawCentered($"##Centered{column.Name}{i}", () => column.DrawCustom(item));
                     else
                         column.DrawCustom(item);
                 }

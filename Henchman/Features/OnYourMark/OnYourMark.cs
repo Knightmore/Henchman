@@ -72,7 +72,7 @@ internal class OnYourMark
                 {
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
                 }
-                
+
                 if (!isMarkBillObtained)
                 {
                     mobHuntOrderTypeEnumerator.MoveNext();
@@ -103,10 +103,7 @@ internal class OnYourMark
                             tempMark.MobHuntRowId    = (byte)currentMobHuntType.RowId;
                             tempMark.MobHuntSubRowId = (byte)mob.SubrowId;
                             Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
-                            if (tempMark.GetOpenMobHuntKills == 0)
-                            {
-                                continue;
-                            }
+                            if (tempMark.GetOpenMobHuntKills == 0) continue;
 
 
                             huntTargets.Add(tempMark);

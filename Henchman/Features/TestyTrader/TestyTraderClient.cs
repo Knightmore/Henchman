@@ -47,7 +47,9 @@ internal partial class TestyTrader
         else
         {
             characters = C.TestyTraderImportedCharacters.Where(x => x.Enabled)
-                          .Select(c => new MultiboxClient.CharacterData(c.Name, Svc.Data.GetExcelSheet<World>().GetRow(c.WorldId).Name.ExtractText()))
+                          .Select(c => new MultiboxClient.CharacterData(c.Name, Svc.Data.GetExcelSheet<World>()
+                                                                                   .GetRow(c.WorldId)
+                                                                                   .Name.ExtractText()))
                           .ToList();
         }
 
@@ -352,7 +354,7 @@ internal partial class TestyTrader
                 case TradeMode.Keep:
                 {
                     var possibleAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
-                    if (possibleAmount == 0 || entry.Amount == 0) continue;
+                    if (possibleAmount == 0) continue;
                     if (possibleAmount > entry.Amount) tradeList.Add(entry.Id, (uint)(possibleAmount - entry.Amount));
                     break;
                 }
@@ -366,6 +368,14 @@ internal partial class TestyTrader
                 case TradeMode.AskFor:
                 {
                     askList.Add(entry.Id, entry.Amount);
+                    break;
+                }
+                case TradeMode.PARLevel:
+                {
+                    var currentAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
+                    if (currentAmount == entry.Amount) continue;
+                    if (currentAmount      > entry.Amount) tradeList.Add(entry.Id, (uint)currentAmount - entry.Amount);
+                    else if (currentAmount < entry.Amount) askList.Add(entry.Id, entry.Amount          - (uint)currentAmount);
                     break;
                 }
             }

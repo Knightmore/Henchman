@@ -12,21 +12,14 @@ public static class CommandProcessor
 {
     public static async Task<(object? returnValue, CommandEnvelope env)> HandleRPCAsync(string json, CancellationToken token = default)
     {
-        var env = JsonSerializer.Deserialize<CommandEnvelope>(json, Utils.JsonDefaults.Options)
-               ?? throw new ArgumentException("Invalid message.");
+        var env = JsonSerializer.Deserialize<CommandEnvelope>(json, Utils.JsonDefaults.Options) ?? throw new ArgumentException("Invalid message.");
 
-        if (!Enum.TryParse<CommandKey>(env.Key, out var key))
-        {
-            throw new InvalidOperationException("Invalid Command Key.");
-        }
+        if (!Enum.TryParse<CommandKey>(env.Key, out var key)) throw new InvalidOperationException("Invalid Command Key.");
         Verbose($"RPC: {env.Key}");
         if (!CommandRegistry.TryGetMeta(key, out var meta))
             throw new InvalidOperationException($"Unknown command: {env.Key}");
 
-        foreach (var jsonElement in env.Args)
-        {
-            Verbose($"{jsonElement.GetRawText()} {jsonElement.ValueKind}");
-        }
+        foreach (var jsonElement in env.Args) Verbose($"{jsonElement.GetRawText()} {jsonElement.ValueKind}");
         var typedArgs = MaterializeArgs(env.Args, meta);
         return (await CommandDispatcher.DispatchAsync(key, typedArgs, token), env);
     }
@@ -34,7 +27,8 @@ public static class CommandProcessor
     private static object[] MaterializeArgs(JsonElement[] rawArgs, CommandMeta meta)
     {
         var expected = meta.ParameterTypes;
-        var filtered = expected.Where(t => t != typeof(CancellationToken)).ToArray();
+        var filtered = expected.Where(t => t != typeof(CancellationToken))
+                               .ToArray();
 
         if (rawArgs.Length != filtered.Length)
             throw new ArgumentException($"Incorrect argument count for command {meta}. Got: {rawArgs.Length} - Expected: {filtered.Length}");
@@ -56,7 +50,7 @@ public static class CommandProcessor
 
         return result;
     }
-    
+
     private static object Translate(JsonElement el, Type targetType)
     {
         if (el.ValueKind == JsonValueKind.Null)
@@ -68,7 +62,7 @@ public static class CommandProcessor
 
         var actualType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-        Verbose($"Translating {el.GetRawText()} with type {actualType.ToString()}");
+        Verbose($"Translating {el.GetRawText()} with type {actualType}");
 
         if (actualType.IsEnum)
         {
@@ -88,9 +82,12 @@ public static class CommandProcessor
         if (actualType == typeof(long)) return el.GetInt64();
         if (actualType == typeof(ulong)) return el.GetUInt64();
         if (actualType == typeof(float))
+        {
             return el.ValueKind == JsonValueKind.Number
                            ? el.GetSingle()
                            : float.Parse(el.GetString()!);
+        }
+
         if (actualType == typeof(double)) return el.GetDouble();
         if (actualType == typeof(decimal)) return el.GetDecimal();
 
@@ -137,6 +134,7 @@ public static class CommandProcessor
 
         return JsonSerializer.Deserialize(el.GetRawText(), actualType, Utils.JsonDefaults.Options) ?? throw new InvalidOperationException($"Failed to deserialize type {targetType.FullName}.");
     }
+
     private static Vector3 ReadVector3(JsonElement el)
     {
         switch (el.ValueKind)

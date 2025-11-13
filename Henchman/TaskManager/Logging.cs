@@ -53,7 +53,7 @@ internal static class Logging
 
     internal static void InternalError(string message)
     {
-        PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count                == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
+        PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
     }
 
     internal static void FullError(string message)

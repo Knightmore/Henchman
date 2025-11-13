@@ -1,12 +1,12 @@
-using Henchman.Helpers;
-using Henchman.Multibox.Command;
-using Henchman.TaskManager;
 using System.IO.Pipes;
 using System.Security.Principal;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Henchman.Helpers;
+using Henchman.Multibox.Command;
+using Henchman.TaskManager;
 
 namespace Henchman.Multibox;
 
@@ -76,7 +76,7 @@ public class MultiboxClient(string featureName, Func<PipeStream, Channel<(Comman
                             Log("Received Turn command. Progressing with sessionHandler!");
                             if (characters!.TryGetFirst(out var nextCharacter))
                             {
-                                messagingCts = new CancellationTokenSource();
+                                messagingCts   = new CancellationTokenSource();
                                 messagingToken = messagingCts.Token;
                                 linkedCts      = CancellationTokenSource.CreateLinkedTokenSource(token, messagingToken);
                                 linkedToken    = linkedCts.Token;

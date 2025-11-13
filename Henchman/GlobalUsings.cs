@@ -10,6 +10,7 @@ global using System.Numerics;
 global using static ECommons.GenericHelpers;
 global using static Henchman.Data.HuntDatabase;
 global using static Henchman.Helpers.GeneralHelpers;
+global using static Henchman.Helpers.ImGuiHelper;
 global using static Henchman.Henchman;
 global using static Henchman.TaskManager.Conditionals;
 global using static Henchman.TaskManager.Logging;

@@ -1,12 +1,11 @@
+using System.Threading;
+using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.EzIpcManager;
 using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.TaskManager;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Henchman.IPC;
 
@@ -18,7 +17,8 @@ public static class Lifestream
         Home,
         FC,
         Apartment,
-        Inn
+        Inn,
+        Auto
     }
 
     [EzIPC]
@@ -71,14 +71,15 @@ public static class Lifestream
     public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
         if (Player.Available && Player.Name == charName && Player.HomeWorld == worldName) return;
-        bool inTitleMenu = false;
+        var inTitleMenu = false;
         unsafe
         {
             inTitleMenu = TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var addon) && addon->IsVisible;
         }
+
         if (!Player.Available)
         {
-            if(inTitleMenu)
+            if (inTitleMenu)
             {
                 ErrorThrowIf(!ConnectAndLogin(charName, worldName), $"Can not connect to character {charName} on {worldName}");
                 await WaitUntilAsync(() => Player.Available && !Player.IsBusy, "Waiting for login", token);
@@ -92,7 +93,7 @@ public static class Lifestream
         {
             unsafe
             {
-                if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out var _))
+                if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out _))
                     break;
             }
 
@@ -141,6 +142,11 @@ public static class Lifestream
             case LifestreamDestination.Inn:
             {
                 ExecuteCommand("Inn");
+                break;
+            }
+            case LifestreamDestination.Auto:
+            {
+                ExecuteCommand("Auto");
                 break;
             }
             default:

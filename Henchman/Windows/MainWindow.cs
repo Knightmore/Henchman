@@ -1,12 +1,10 @@
 using System.IO;
 using System.Linq;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.ImGuiMethods;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using Henchman.Windows.Layout;
 
 namespace Henchman.Windows;
@@ -31,6 +29,9 @@ public class MainWindow : Window, IDisposable
 
         RespectCloseHotkey = true;
     }
+
+    private float GlobalFontScale => ImGui.GetIO()
+                                          .FontGlobalScale;
 
     private FeatureUI? selectedFeature => FeatureSet.FirstOrDefault(t => t.Name == selectedFeatureName);
 
@@ -80,7 +81,8 @@ public class MainWindow : Window, IDisposable
     {
         if (layout == null) return;
 
-        foreach (var feature in FeatureSet.OrderBy(x => x.Category).ThenBy(x => x.Name))
+        foreach (var feature in FeatureSet.OrderBy(x => x.Category)
+                                          .ThenBy(x => x.Name))
         {
             if (!P!.categories.TryGetValue(feature.Category, out var foundCategory))
             {
@@ -103,13 +105,14 @@ public class MainWindow : Window, IDisposable
 
         using (Theme.Push())
         {
-            var sidebarButtonPos = layout.Sidebar.Draw(() => {
-                                    layout.Sidebar.activeItemName = string.Empty;
-                                    selectedFeatureName = string.Empty;
-                                });
+            var sidebarButtonPos = layout.Sidebar.Draw(() =>
+                                                       {
+                                                           layout.Sidebar.ActiveItemName = string.Empty;
+                                                           selectedFeatureName           = string.Empty;
+                                                       });
 
             ImGui.SameLine();
-            if (selectedFeature != null) 
+            if (selectedFeature != null)
                 layout.DrawWithHeader(selectedFeature);
             else
             {
@@ -131,15 +134,12 @@ public class MainWindow : Window, IDisposable
                                                      If you want to report a problematic position, please also send the corrected position if possible.
                                                      """);
                             });
-                
             }
 
             ImGui.SetCursorPos(sidebarButtonPos);
-            using (ImRaii.Child("OverlayChild", new Vector2(24, 40), false,
+            using (ImRaii.Child("OverlayChild", new Vector2(24 * GlobalFontScale, 40 * GlobalFontScale), false,
                                 ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground))
-            {
                 layout.Sidebar.DrawCollapseButton();
-            }
         }
     }
 }

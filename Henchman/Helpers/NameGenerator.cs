@@ -36,25 +36,25 @@ internal static class NameGenerator
                                                               .ToList();
 
     private static readonly List<PropertyInfo> FemaleFirstNames = typeof(CharaMakeName)
-                                                              .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                                              .Where(p => p.Name.EndsWith("Female")  &&
-                                                                          !p.Name.Contains("Lalafell") &&
-                                                                          !p.Name.Contains("SeaWolf")  &&
-                                                                          !p.Name.Contains("Viera"))
-                                                              .ToList();
-
-    private static readonly List<PropertyInfo> MaleFirstNames = typeof(CharaMakeName)
                                                                  .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                                                 .Where(p => p.Name.EndsWith("Male")    &&
+                                                                 .Where(p => p.Name.EndsWith("Female")    &&
                                                                              !p.Name.Contains("Lalafell") &&
                                                                              !p.Name.Contains("SeaWolf")  &&
                                                                              !p.Name.Contains("Viera"))
                                                                  .ToList();
 
-    internal static string                              GenerateFeminineName      => GeneratePrefixMiddle(1, 3) + FeminineSuffix[Rand.Next(FeminineSuffix.Length)];
-    internal static string                              GenerateMasculineName     => GeneratePrefixMiddle(1, 3) + MasculineSuffix[Rand.Next(MasculineSuffix.Length)];
-    internal static (string FirstName, string LastName) GetFullMasculineName => GenerateFullName(GenerateMasculineName);
-    internal static (string FirstName, string LastName) GetFullFeminineName  => GenerateFullName(GenerateFeminineName);
+    private static readonly List<PropertyInfo> MaleFirstNames = typeof(CharaMakeName)
+                                                               .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                                               .Where(p => p.Name.EndsWith("Male")      &&
+                                                                           !p.Name.Contains("Lalafell") &&
+                                                                           !p.Name.Contains("SeaWolf")  &&
+                                                                           !p.Name.Contains("Viera"))
+                                                               .ToList();
+
+    internal static string                              GenerateFeminineName  => GeneratePrefixMiddle(1, 3) + FeminineSuffix[Rand.Next(FeminineSuffix.Length)];
+    internal static string                              GenerateMasculineName => GeneratePrefixMiddle(1, 3) + MasculineSuffix[Rand.Next(MasculineSuffix.Length)];
+    internal static (string FirstName, string LastName) GetFullMasculineName  => GenerateFullName(GenerateMasculineName);
+    internal static (string FirstName, string LastName) GetFullFeminineName   => GenerateFullName(GenerateFeminineName);
 
     internal static (string FirstName, string LastName) GenerateFullName(string firstName)
     {
@@ -72,7 +72,7 @@ internal static class NameGenerator
 
     internal static string GetFirstName(string lastName, bool male)
     {
-        var    lastNameLength        = lastName.Length;
+        var    lastNameLength          = lastName.Length;
         var    possibleFirstNameLength = 20 - lastNameLength;
         string firstName;
         do
@@ -142,11 +142,11 @@ internal static class NameGenerator
 
     internal static string GetLastName(string firstName)
     {
-        var    firstNameLength         = firstName.Length;
+        var    firstNameLength        = firstName.Length;
         var    possibleLastNameLength = 20 - firstNameLength;
-        var    nameSheet               = Svc.Data.GetExcelSheet<CharaMakeName>();
-        var    nameRowAmount           = nameSheet.Count;
-        var    randomLastNameColumn    = RaceLastNames[Rand.Next(RaceLastNames.Count)];
+        var    nameSheet              = Svc.Data.GetExcelSheet<CharaMakeName>();
+        var    nameRowAmount          = nameSheet.Count;
+        var    randomLastNameColumn   = RaceLastNames[Rand.Next(RaceLastNames.Count)];
         string lastName;
         do
         {
@@ -154,7 +154,7 @@ internal static class NameGenerator
             lastName = ((ReadOnlySeString)lastNameObject!).ExtractText();
         }
         while (string.IsNullOrEmpty(lastName) && lastName.Length > possibleLastNameLength);
-        
+
         return lastName;
     }
 

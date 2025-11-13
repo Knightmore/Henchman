@@ -30,10 +30,7 @@ internal static class TestyTraderTasks
 
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon) && IsAddonReady(addon))
-            {
-                return true;
-            }
+            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon) && IsAddonReady(addon)) return true;
         }
 
         return false;
@@ -58,7 +55,7 @@ internal static class TestyTraderTasks
 
         return false;
     }
-    
+
     internal static bool SetNumericInput(uint num)
     {
         if (num > 1000000) throw new ArgumentOutOfRangeException(nameof(num));
@@ -88,7 +85,7 @@ internal static class TestyTraderTasks
 
         return false;
     }
-    
+
     internal static unsafe bool CheckForTradeConfirmation()
     {
         if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon) && IsAddonReady(addon))
@@ -251,16 +248,20 @@ internal static class TestyTraderTasks
 
             var difference = newQty - oldQty;
             if (difference > 0)
+            {
                 if (!diffLog.TryAdd(item.Key, difference))
                     diffLog[item.Key] += difference;
+            }
         }
 
         var newGil        = InventoryHelper.GetInventoryItemCount(1);
         var gilDifference = newGil - oldGil;
 
         if (gilDifference > 0)
+        {
             if (!diffLog.TryAdd(1, gilDifference))
                 diffLog[1] += gilDifference;
+        }
     }
 
     public record struct QueueEntry(InventoryType Type, int SlotID, uint Quantity)

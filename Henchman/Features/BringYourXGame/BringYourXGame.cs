@@ -9,7 +9,6 @@ namespace Henchman.Features.BringYourXGame;
 
 internal class BringYourXGame
 {
-
     internal async Task StartA(CancellationToken token = default)
     {
         var aggregatedPositions = BRanks
@@ -56,14 +55,12 @@ internal class BringYourXGame
                 }
 
                 // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478)
-                {
-                    await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
-                }
+                if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
             }
 
             await RoamUntilTargetNearby(territory.Value, int.MaxValue, false, true, 10, token);
         }
+
         ChatPrintInfo("Completed all selected mob A-Rank territories!");
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
     }
@@ -96,10 +93,7 @@ internal class BringYourXGame
                 }
 
                 // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478)
-                {
-                    await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
-                }
+                if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
             }
 
             if (!await RoamUntilTargetNearby(huntMark.Positions, huntMark.BNpcNameRowId, false, C.DetourForARanks, token: token))

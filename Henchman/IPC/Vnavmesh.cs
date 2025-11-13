@@ -102,7 +102,7 @@ public static class Vnavmesh
     //[Command]
     public static void StopCompletely()
     {
-        if(SubscriptionManager.IsInitialized(IPCNames.vnavmesh))
+        if (SubscriptionManager.IsInitialized(IPCNames.vnavmesh))
         {
             PathStop();
             NavPathfindCancelAll();

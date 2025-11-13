@@ -1,17 +1,15 @@
+using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Helpers;
-using Henchman.Models;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
-using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.OnYourMark;
@@ -48,7 +46,7 @@ public class OnYourMarkUi : FeatureUI
                                        ImGui.SameLine(90);
                                        ImGui.Text("-   Completed.");
 
-                                       ImGuiHelper.DrawRequirements(Requirements);
+                                       DrawRequirements(Requirements);
                                    };
 
     public override bool LoginNeeded => true;
@@ -72,16 +70,19 @@ public class OnYourMarkUi : FeatureUI
         var mobHuntOrderTypeEnumerator = Svc.Data.GetExcelSheet<MobHuntOrderType>()
                                             .GetEnumerator();
 
-        ImGuiHelper.DrawCentered("##MarkStart", () => Layout.DrawButton(() =>
-                           {
-                               if (ImGui.Button("Start", new(70, 30)) && !IsTaskEnqueued(Name))
-                                   EnqueueTask(new TaskRecord(feature.Start, Name, onDone: () => {
-                                                                                               Bossmod.DisableAI();
-                                                                                               AutoRotation.Disable();
-                                                                                               ResetCurrentTarget();
-                                                                                           }));
-                           }));
-        
+        DrawCentered("##MarkStart", () => Layout.DrawButton(() =>
+                                                            {
+                                                                if (StartButton() && !IsTaskEnqueued(Name))
+                                                                {
+                                                                    EnqueueTask(new TaskRecord(feature.Start, Name, onDone: () =>
+                                                                                                                            {
+                                                                                                                                Bossmod.DisableAI();
+                                                                                                                                AutoRotation.Disable();
+                                                                                                                                ResetCurrentTarget();
+                                                                                                                            }));
+                                                                }
+                                                            }));
+
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
@@ -203,8 +204,10 @@ public class OnYourMarkUi : FeatureUI
             }
 
             using (var tab = ImRaii.TabItem("Settings"))
+            {
                 if (tab)
                     DrawSettings();
+            }
 
             if (configChanged) EzConfig.Save();
         }
@@ -213,22 +216,24 @@ public class OnYourMarkUi : FeatureUI
     private unsafe void DrawMarkTable(SubrowCollection<MobHuntOrder> mobHunt, MobHuntOrderType currentType)
     {
         var table = new Table<MobHuntOrder>(
-                                        "##HuntTable",
-                                        new List<TableColumn<MobHuntOrder>>
-                                        {
-                                                new("Name", h => Utils.ToTitleCaseExtended(h.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage)),
-                                                new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, ColumnAlignment.Center),
-                                                new("Finished", h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
-                                                                                                      (byte)h.SubrowId) ==
-                                                                     h.NeededKills ? FontAwesomeIcon.Check.ToIconString()
-                                                                             : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
-                                                    h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
-                                                                                         (byte)h.SubrowId) ==
-                                                         h.NeededKills ?  Theme.SuccessGreen
-                                                                 : Theme.ErrorRed)
-                                        },
-                                        () => mobHunt
-                                       );
+                                            "##HuntTable",
+                                            new List<TableColumn<MobHuntOrder>>
+                                            {
+                                                    new("Name", h => Utils.ToTitleCaseExtended(h.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage)),
+                                                    new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, ColumnAlignment.Center),
+                                                    new("Finished", h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
+                                                                                                          (byte)h.SubrowId) ==
+                                                                         h.NeededKills
+                                                                                 ? FontAwesomeIcon.Check.ToIconString()
+                                                                                 : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
+                                                        h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
+                                                                                              (byte)h.SubrowId) ==
+                                                             h.NeededKills
+                                                                     ? Theme.SuccessGreen
+                                                                     : Theme.ErrorRed)
+                                            },
+                                            () => mobHunt
+                                           );
 
         table.Draw();
     }
@@ -237,10 +242,10 @@ public class OnYourMarkUi : FeatureUI
     {
         var configChanged = false;
         ImGui.Text("Discard old Hunt Bills");
-        ImGui.SameLine(250);
+        ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##oldHuntBills", ref C.DiscardOldBills);
         ImGui.Text("Detour if an A-Rank is nearby");
-        ImGui.SameLine(250);
+        ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##ABDetour", ref C.DetourForARanks);
         ImGui.SameLine();
         ImGuiEx.HelpMarker("""
@@ -249,7 +254,7 @@ public class OnYourMarkUi : FeatureUI
                            As a safety measure, this will only work up until Stormblood.
                            """);
         ImGui.Text("Skip Fate Marks");
-        ImGui.SameLine(250);
+        ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
         if (configChanged) EzConfig.Save();
     }

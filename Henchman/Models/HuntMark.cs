@@ -8,6 +8,8 @@ namespace Henchman.Models;
 
 public class HuntMark
 {
+    public bool IsCurrentTarget = false;
+
     public HuntMark(uint bnpcNameRowId, float x, float y, float z, uint territoryId, uint fateId)
     {
         BNpcNameRowId = bnpcNameRowId;
@@ -64,8 +66,6 @@ public class HuntMark
                                                                                                      .GetRow(MobHuntRowId)
                                                                                                      .OrderStart.Value.RowId +
                                                                                                   ((uint)MobHunt.Instance()->ObtainedMarkId[MobHuntRowId] - 1)][MobHuntSubRowId];
-
-    public bool IsCurrentTarget = false;
 
     public Fate Fate => Svc.Data.GetExcelSheet<Fate>()
                            .GetRow(FateId);

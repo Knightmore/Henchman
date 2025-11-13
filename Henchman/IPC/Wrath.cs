@@ -88,9 +88,9 @@ public static class Wrath
         catch (Exception e)
         {
             InternalError("Unknown Wrath IPC error,"                +
-                  "probably inability to register a lease." +
-                  "\n"                                      +
-                  e.Message);
+                          "probably inability to register a lease." +
+                          "\n"                                      +
+                          e.Message);
         }
     }
 
@@ -112,9 +112,9 @@ public static class Wrath
         catch (Exception e)
         {
             InternalError("Unknown Wrath IPC error,"                +
-                            "probably inability to register a lease." +
-                            "\n"                                      +
-                            e.Message);
+                          "probably inability to register a lease." +
+                          "\n"                                      +
+                          e.Message);
         }
     }
 
@@ -131,9 +131,9 @@ public static class Wrath
         catch (Exception e)
         {
             InternalError("Unknown Wrath IPC error,"                +
-                            "probably inability to register a lease." +
-                            "\n"                                      +
-                            e.Message);
+                          "probably inability to register a lease." +
+                          "\n"                                      +
+                          e.Message);
         }
     }
 }

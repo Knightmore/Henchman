@@ -6,7 +6,6 @@ using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.Automation;
 using ECommons.GameFunctions;
 using ECommons.GameHelpers;
-using ECommons.ImGuiMethods;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
@@ -159,10 +158,7 @@ internal static class CombatTasks
                     }
 
                     // TODO: Switch to MappingTheRealm once/if ever released.
-                    if (Player.Territory == 478)
-                    {
-                        await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
-                    }
+                    if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
                 }
 
                 await CheckChocobo(token);
@@ -280,11 +276,7 @@ internal static class CombatTasks
             }
             else if (!dutyUnlocked && ADPathAvailable)
             {
-                if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
-                {
-                    FullWarning("Questionable not enabled! Skipping duty!");
-                    
-                }
+                if (!SubscriptionManager.IsInitialized(IPCNames.Questionable)) FullWarning("Questionable not enabled! Skipping duty!");
                 switch (duty)
                 {
                     case 1245:
@@ -308,15 +300,11 @@ internal static class CombatTasks
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
                         huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
-                    default:
-                        break;
                 }
                 // TODO: Add Dzemael and Aurum Vale once they have Duty Support.
             }
             else
-            {
                 FullWarning($"There is no AutoDuty Path for Duty {Svc.Data.Excel.GetSheet<TerritoryType>().GetRow(duty).PlaceName.Value.Name.ExtractText()}");
-            }
         }
     }
 

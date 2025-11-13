@@ -50,17 +50,17 @@ internal static class HuntDatabase
                                                                                };
 
     internal static Dictionary<string, uint> AethernetIdCloseToHuntboard = new()
-                                                                {
-                                                                        {
-                                                                                "Heavensward", 80
-                                                                        },
-                                                                        {
-                                                                                "Endwalker", 189
-                                                                        },
-                                                                        {
-                                                                                "Dawntrail", 221
-                                                                        },
-                                                                };
+                                                                           {
+                                                                                   {
+                                                                                           "Heavensward", 80
+                                                                                   },
+                                                                                   {
+                                                                                           "Endwalker", 189
+                                                                                   },
+                                                                                   {
+                                                                                           "Dawntrail", 221
+                                                                                   }
+                                                                           };
 
     internal static readonly List<string> HuntBoardOptions =
     [
@@ -339,44 +339,32 @@ internal static class HuntDatabase
 
     internal static void ResetCurrentTarget()
     {
-        foreach (var huntMarksValue in HuntMarks.Values)
-        {
-            huntMarksValue.IsCurrentTarget = false;
-        }
+        foreach (var huntMarksValue in HuntMarks.Values) huntMarksValue.IsCurrentTarget = false;
 
-        foreach (var bRanksValue in BRanks.Values)
-        {
-            bRanksValue.IsCurrentTarget = false;
-        }
+        foreach (var bRanksValue in BRanks.Values) bRanksValue.IsCurrentTarget = false;
 
         foreach (var huntLog in ClassHuntRanks.Values)
         {
-            for (int row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
+            for (var row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
             {
-                for (int col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
+                for (var col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
                 {
                     var mark = huntLog.HuntMarks[row, col];
 
-                    if (mark != null)
-                    {
-                        mark.IsCurrentTarget = false;
-                    }
+                    if (mark != null) mark.IsCurrentTarget = false;
                 }
             }
         }
 
         foreach (var huntLog in GcHuntRanks.Values)
         {
-            for (int row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
+            for (var row = 0; row < huntLog.HuntMarks.GetLength(0); row++)
             {
-                for (int col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
+                for (var col = 0; col < huntLog.HuntMarks.GetLength(1); col++)
                 {
                     var mark = huntLog.HuntMarks[row, col];
 
-                    if (mark != null)
-                    {
-                        mark.IsCurrentTarget = false;
-                    }
+                    if (mark != null) mark.IsCurrentTarget = false;
                 }
             }
         }

@@ -1,6 +1,4 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Windowing;
-using Henchman.Helpers;
 
 namespace Henchman.Features.General;
 
@@ -15,6 +13,6 @@ internal class RequirementsUI : FeatureUI
 
     public override void Draw()
     {
-        ImGuiHelper.DrawRequirements(FeatureSet);
+        DrawRequirements(FeatureSet);
     }
 }

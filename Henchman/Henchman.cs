@@ -2,7 +2,6 @@
 using Henchman.Features.Private.MappingTheRealm;
 using Henchman.Features.Private;
 #endif
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using Dalamud.Game;
@@ -11,7 +10,6 @@ using Dalamud.Interface.Windowing;
 using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.EzHookManager;
-using FFXIVClientStructs.Interop.Generated;
 using Henchman.Data;
 using Henchman.Features.BumpOnALog;
 using Henchman.Features.RetainerVocate;
@@ -19,7 +17,6 @@ using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Tweaks;
 using Henchman.Windows;
-using InteropGenerator.Runtime;
 using Lumina.Excel.Sheets;
 using Module = ECommons.Module;
 
@@ -68,7 +65,7 @@ public class Henchman : IDalamudPlugin
 
         mainWindow.Dispose();
         StatusWindow.Dispose();
-        
+
         CancelAllTasks();
         Wrath.DisableWrath();
 
@@ -142,14 +139,21 @@ public class Henchman : IDalamudPlugin
         if (args.StartsWith("BumpOnALog", StringComparison.InvariantCultureIgnoreCase))
         {
             var parameters = args.Split(" ");
-                if (parameters.Length == 3 && parameters[1].EqualsIgnoreCase("GC"))
-                {
+            if (parameters.Length == 3 &&
+                parameters[1]
+                       .EqualsIgnoreCase("GC"))
+            {
                 if (bool.TryParse(parameters[2], out var runDutyMarks))
-                    if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name)) EnqueueTask(new TaskRecord((token) => bumpOnALog.feature.StartGCRank(token, runDutyMarks), "Bump On A Log - GC Log"));
-                }
-                else if (parameters.Length == 2 && parameters[1].EqualsIgnoreCase("Class"))
                     if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
-                        EnqueueTask(new TaskRecord(bumpOnALog.feature.StartClassRank, "Bump On A Log - Rank Log"));
+                        EnqueueTask(new TaskRecord(token => bumpOnALog.feature.StartGCRank(token, runDutyMarks), "Bump On A Log - GC Log"));
+            }
+            else if (parameters.Length == 2 &&
+                     parameters[1]
+                            .EqualsIgnoreCase("Class"))
+            {
+                if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
+                    EnqueueTask(new TaskRecord(bumpOnALog.feature.StartClassRank, "Bump On A Log - Rank Log"));
+            }
         }
         else if (args.StartsWith("OnYourMark", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -159,6 +163,7 @@ public class Henchman : IDalamudPlugin
         {
             var parameters = args.Split(" ");
             if (parameters.Length == 5)
+            {
                 if (uint.TryParse(parameters[1], out var amount))
                 {
                     if (Svc.Data.GetExcelSheet<ClassJob>()
@@ -170,11 +175,12 @@ public class Henchman : IDalamudPlugin
                             if (bool.TryParse(parameters[4], out var firstExploration))
                             {
                                 if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                                    EnqueueTask(new TaskRecord((token) => retainerVocate.feature.RunFullCreation(token, amount, retainerClass.RowId, questClass.RowId, firstExploration), retainerVocate.Name));
+                                    EnqueueTask(new TaskRecord(token => retainerVocate.feature.RunFullCreation(token, amount, retainerClass.RowId, questClass.RowId, firstExploration), retainerVocate.Name));
                             }
                         }
                     }
                 }
+            }
         }
         else if (args.EqualsIgnoreCase("Stop"))
             CancelAllTasks();

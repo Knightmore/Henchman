@@ -4,7 +4,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
 using ECommons.GameHelpers;
 using Henchman.Helpers;
 using Henchman.Models;

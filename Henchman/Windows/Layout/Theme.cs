@@ -105,7 +105,7 @@ public static class Theme
         styleCount++;
         ImGui.PushStyleVar(ImGuiStyleVar.TabRounding, 6f);
         styleCount++;
-        
+
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0.2f);
         styleCount++;
 

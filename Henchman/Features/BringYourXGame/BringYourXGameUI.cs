@@ -1,20 +1,18 @@
-using AutoRetainerAPI.Configuration;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.Configuration;
-using ECommons.GameHelpers;
 using ECommons.ImGuiMethods;
 using ECommons.MathHelpers;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
 using Action = System.Action;
 using Map = Lumina.Excel.Sheets.Map;
 
@@ -96,7 +94,7 @@ public class BringYourXGameUI : FeatureUI
                                                   """);
 
 
-                                       ImGuiHelper.DrawRequirements(Requirements);
+                                       DrawRequirements(Requirements);
                                    };
 
     public override List<(string pluginName, bool mandatory)> Requirements =>
@@ -134,32 +132,35 @@ public class BringYourXGameUI : FeatureUI
     private void DrawA()
     {
         var configChanged = false;
-        ImGuiHelper.DrawCentered("##ARankStart", () =>
-                                         Layout.DrawButton(() =>
-                                                           {
-                                                               if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartA, Name, onDone: () =>
-                                                                                                                                                                                                 {
-                                                                                                                                                                                                     Bossmod.DisableAI();
-                                                                                                                                                                                                     AutoRotation.Disable();
-                                                                                                                                                                                                     ResetCurrentTarget();
-                                                                                                                                                                                                 }));
-                                                           }));
+        DrawCentered("##ARankStart", () =>
+                                             Layout.DrawButton(() =>
+                                                               {
+                                                                   if (StartButton() && !IsTaskEnqueued(Name))
+                                                                   {
+                                                                       EnqueueTask(new TaskRecord(feature.StartA, Name, onDone: () =>
+                                                                                                                                {
+                                                                                                                                    Bossmod.DisableAI();
+                                                                                                                                    AutoRotation.Disable();
+                                                                                                                                    ResetCurrentTarget();
+                                                                                                                                }));
+                                                                   }
+                                                               }));
 
-        ImGuiHelper.DrawCentered("###ARankSelector", () =>
-                                            {
-                                                if (ImGui.Button("Select All"))
-                                                {
-                                                    C.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
-                                                    configChanged                = true;
-                                                }
+        DrawCentered("###ARankSelector", () =>
+                                         {
+                                             if (ImGui.Button("Select All"))
+                                             {
+                                                 C.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
+                                                 configChanged                = true;
+                                             }
 
-                                                ImGui.SameLine();
-                                                if (ImGui.Button("Deselect All"))
-                                                {
-                                                    C.EnabledTerritoriesForARank.Clear();
-                                                    configChanged = true;
-                                                }
-                                            });
+                                             ImGui.SameLine();
+                                             if (ImGui.Button("Deselect All"))
+                                             {
+                                                 C.EnabledTerritoriesForARank.Clear();
+                                                 configChanged = true;
+                                             }
+                                         });
 
 
         using var exTabs = ImRaii.TabBar("ExTabs");
@@ -222,7 +223,7 @@ public class BringYourXGameUI : FeatureUI
                                                                                   }
                                                                               });
                                         ImGui.NewLine();
-                                        ImGuiHelper.DrawCentered(() => { DrawARankTable(zone.Value); });
+                                        DrawCentered("AGameTable", () => { DrawARankTable(zone.Value); });
                                     }
                                 }
                             }
@@ -266,50 +267,50 @@ public class BringYourXGameUI : FeatureUI
     private void DrawB()
     {
         var configChanged = false;
-        ImGuiHelper.DrawCentered("##BRankStart", () => Layout.DrawButton(() =>
-                                                         {
-                                                             if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name))
+        DrawCentered("##BRankStart", () => Layout.DrawButton(() =>
                                                              {
-                                                                 EnqueueTask(new TaskRecord(feature.StartB, Name, onDone: () =>
-                                                                                                                          {
-                                                                                                                              Bossmod.DisableAI();
-                                                                                                                              AutoRotation.Disable();
-                                                                                                                              ResetCurrentTarget();
-                                                                                                                          }));
-                                                                 if (C.TrackBRankSpots)
+                                                                 if (StartButton() && !IsTaskEnqueued(Name))
                                                                  {
-                                                                     if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
+                                                                     EnqueueTask(new TaskRecord(feature.StartB, Name, onDone: () =>
+                                                                                                                              {
+                                                                                                                                  Bossmod.DisableAI();
+                                                                                                                                  AutoRotation.Disable();
+                                                                                                                                  ResetCurrentTarget();
+                                                                                                                              }));
+                                                                     if (C.TrackBRankSpots)
                                                                      {
-                                                                         if (SpawnsRecordedFor != C.BRankToFarm)
+                                                                         if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
                                                                          {
-                                                                             SpawnsRecordedFor = C.BRankToFarm;
-                                                                             PossibleSpawnPoints.Clear();
-                                                                             foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
-                                                                             FoundSpawns.Clear();
+                                                                             if (SpawnsRecordedFor != C.BRankToFarm)
+                                                                             {
+                                                                                 SpawnsRecordedFor = C.BRankToFarm;
+                                                                                 PossibleSpawnPoints.Clear();
+                                                                                 foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
+                                                                                 FoundSpawns.Clear();
+                                                                             }
                                                                          }
                                                                      }
                                                                  }
-                                                             }
-                                                         }));
+                                                             }));
 
-        ImGuiHelper.DrawCentered(() =>
-                                 {
-                                     ImGui.Text("B-Rank to Farm:");
-                                     ImGui.SameLine(150);
-                                     ImGui.SetNextItemWidth(150f);
-                                     if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(C.BRankToFarm) is { } row
-                                                                                                                  ? Utils.ToTitleCaseExtended(s.GetRow(C.BRankToFarm)
-                                                                                                                                               .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                                                  : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
-                                     {
-                                         C.BRankToFarm = brank.RowId;
-                                         configChanged = true;
-                                     }
+        DrawCentered(() =>
+                     {
+                         ImGui.Text("B-Rank to Farm:");
+                         ImGui.SameLine(150);
+                         ImGui.SetNextItemWidth(150f);
+                         if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(C.BRankToFarm) is { } row
+                                                                                                      ? Utils.ToTitleCaseExtended(s.GetRow(C.BRankToFarm)
+                                                                                                                                   .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
+                                                                                                      : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
+                         {
+                             C.BRankToFarm = brank.RowId;
+                             configChanged = true;
+                         }
 
-                                     ImGui.Text("Track found B-Rank spots");
-                                     ImGui.SameLine(200);
-                                     configChanged |= ImGui.Checkbox("##echoBRanks", ref C.TrackBRankSpots);
-                                 });
+                         ImGui.Text("Track found B-Rank spots");
+                         ImGui.SameLine(200);
+                         configChanged |= ImGui.Checkbox("##echoBRanks", ref C.TrackBRankSpots);
+                     });
 
         if (C.TrackBRankSpots)
         {
@@ -321,54 +322,54 @@ public class BringYourXGameUI : FeatureUI
             }
 
             ImGui.Separator();
-            ImGuiHelper.DrawCentered(() =>
-                                     {
-                                         if (ImGui.Button("Write positions to log"))
-                                         {
-                                             var sb = new StringBuilder();
-                                             sb.AppendLine("Left over possible positions");
-                                             foreach (var position in PossibleSpawnPoints)
-                                             {
-                                                 sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
-                                                 var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                 sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
-                                                 sb.AppendLine("");
-                                             }
+            DrawCentered(() =>
+                         {
+                             if (ImGui.Button("Write positions to log"))
+                             {
+                                 var sb = new StringBuilder();
+                                 sb.AppendLine("Left over possible positions");
+                                 foreach (var position in PossibleSpawnPoints)
+                                 {
+                                     sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
+                                     var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+                                     sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
+                                     sb.AppendLine("");
+                                 }
 
-                                             sb.AppendLine("Registered spawn positions");
-                                             foreach (var position in FoundSpawns)
-                                             {
-                                                 sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
-                                                 var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                 sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
-                                                 sb.AppendLine("");
-                                             }
+                                 sb.AppendLine("Registered spawn positions");
+                                 foreach (var position in FoundSpawns)
+                                 {
+                                     sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
+                                     var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+                                     sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
+                                     sb.AppendLine("");
+                                 }
 
-                                             Log(sb.ToString());
-                                         }
+                                 Log(sb.ToString());
+                             }
 
-                                         ImGui.SameLine();
-                                         if (ImGui.Button("Print spawn locations to chat"))
-                                         {
-                                             var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
-                                                             .GetRow(BRanks[C.BRankToFarm].TerritoryId)
-                                                             .Map.Value;
-                                             foreach (var position in FoundSpawns)
-                                             {
-                                                 var mapCoords = WorldToMap(position.ToVector2(), mapRow.OffsetX, mapRow.OffsetY, mapRow.SizeFactor);
-                                                 var mapLink   = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
-                                                 var message = new XivChatEntry
-                                                               {
-                                                                       Type = XivChatType.Echo,
-                                                                       Message = new SeStringBuilder().AddUiForeground($"B-Rank {BRanks[C.BRankToFarm].Name} found @ ", 561)
-                                                                                                      .Append(mapLink)
-                                                                                                      .AddUiForegroundOff()
-                                                                                                      .Build()
-                                                               };
-                                                 Svc.Chat.Print(message);
-                                             }
-                                         }
-                                     });
+                             ImGui.SameLine();
+                             if (ImGui.Button("Print spawn locations to chat"))
+                             {
+                                 var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
+                                                 .GetRow(BRanks[C.BRankToFarm].TerritoryId)
+                                                 .Map.Value;
+                                 foreach (var position in FoundSpawns)
+                                 {
+                                     var mapCoords = WorldToMap(position.ToVector2(), mapRow.OffsetX, mapRow.OffsetY, mapRow.SizeFactor);
+                                     var mapLink   = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
+                                     var message = new XivChatEntry
+                                                   {
+                                                           Type = XivChatType.Echo,
+                                                           Message = new SeStringBuilder().AddUiForeground($"B-Rank {BRanks[C.BRankToFarm].Name} found @ ", 561)
+                                                                                          .Append(mapLink)
+                                                                                          .AddUiForegroundOff()
+                                                                                          .Build()
+                                                   };
+                                     Svc.Chat.Print(message);
+                                 }
+                             }
+                         });
 
             using (var overviewTable = ImRaii.Table("###positionTables", 2))
             {
@@ -393,17 +394,17 @@ public class BringYourXGameUI : FeatureUI
         using (var leftChild = ImRaii.Child("###leftChild", regionSize with { X = (regionSize.X / 2) - 5, Y = adjustedHeight }, false, ImGuiWindowFlags.NoDecoration))
         {
             var table = new Table<Vector3>(
-                                                        "##BGamePossible",
-                                                        new List<TableColumn<Vector3>>
-                                                        {
-                                                            new("World", pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
-                                                            new("Map", pos =>
-                                                                       {
-                                                                           var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                                           return $"X: {mapCoords.X} | Y: {mapCoords.Y}";
-                                                                       })
-                                                        },
-                                                        () => PossibleSpawnPoints);
+                                           "##BGamePossible",
+                                           new List<TableColumn<Vector3>>
+                                           {
+                                                   new("World", pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
+                                                   new("Map", pos =>
+                                                              {
+                                                                  var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+                                                                  return $"X: {mapCoords.X} | Y: {mapCoords.Y}";
+                                                              })
+                                           },
+                                           () => PossibleSpawnPoints);
 
             table.Draw();
         }

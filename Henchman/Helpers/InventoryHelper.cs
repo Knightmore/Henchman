@@ -40,7 +40,7 @@ internal static class InventoryHelper
         return null;
     }
 
-    internal static unsafe List<InventoryItem>?  GetItemsInInventory(uint itemId)
+    internal static unsafe List<InventoryItem>? GetItemsInInventory(uint itemId)
     {
         var                 itemList = new List<InventoryItem>();
         InventoryContainer* container;
@@ -67,10 +67,7 @@ internal static class InventoryHelper
         return null;
     }
 
-    public static unsafe InventoryItem GetItemSlot(InventoryType type, int slot)
-    {
-        return *InventoryManager.Instance()->GetInventoryContainer(type)->GetInventorySlot(slot);
-    }
+    public static unsafe InventoryItem GetItemSlot(InventoryType type, int slot) => *InventoryManager.Instance()->GetInventoryContainer(type)->GetInventorySlot(slot);
 
     internal static unsafe void Discard(InventoryItem* item)
     {
@@ -88,7 +85,7 @@ internal static class InventoryHelper
     public static unsafe uint GetItemAmountInNeedOfRepair(int durability = 0)
     {
         var amount    = 0u;
-        var  container = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
+        var container = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
         for (var i = 0; i < container->Size; i++)
         {
             var item = container->GetInventorySlot(i);
@@ -96,6 +93,7 @@ internal static class InventoryHelper
             if (Convert.ToInt32(Convert.ToDouble(item->Condition) / 30000.0 * 100.0) <= durability)
                 amount++;
         }
+
         return amount;
     }
 
@@ -105,7 +103,7 @@ internal static class InventoryHelper
                                                              ? 0
                                                              : InventoryManager.Instance()->GetCompanySeals((byte)Player.GrandCompany);
 
-    internal static unsafe void SetTradeGilAmount(uint amount) => InventoryManager.Instance()->SetTradeGilAmount(amount);
-    internal static unsafe void SendTradeRequest(uint entityId) => InventoryManager.Instance()->SendTradeRequest(entityId);
-    internal static unsafe void RefuseTrade() => InventoryManager.Instance()->RefuseTrade();
+    internal static unsafe void SetTradeGilAmount(uint amount)   => InventoryManager.Instance()->SetTradeGilAmount(amount);
+    internal static unsafe void SendTradeRequest(uint  entityId) => InventoryManager.Instance()->SendTradeRequest(entityId);
+    internal static unsafe void RefuseTrade()                    => InventoryManager.Instance()->RefuseTrade();
 }

@@ -2,7 +2,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
-using ECommons.GameFunctions;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
@@ -90,7 +89,7 @@ internal static class WorldTasks
         var x = Svc.Objects.Where(obj => obj.BaseId == baseId && obj.IsTargetable)
                    .OrderBy(x => Player.DistanceTo(x))
                    .FirstOrDefault();
-        
+
         return x == null
                        ? Task.FromResult(false)
                        : Task.FromResult(Player.DistanceTo(x) < distance);

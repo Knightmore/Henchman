@@ -1,8 +1,7 @@
-namespace Henchman.Multibox.Command
+namespace Henchman.Multibox.Command;
+
+[AttributeUsage(AttributeTargets.Class)]
+public class CommandGroupAttribute(string name = null) : Attribute
 {
-    [AttributeUsage(AttributeTargets.Class)]
-    public class CommandGroupAttribute(string name = null) : Attribute
-    {
-        public string? Name { get; } = name;
-    }
+    public string? Name { get; } = name;
 }

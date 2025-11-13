@@ -4,7 +4,6 @@ using ECommons.Automation.UIInput;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Henchman.Data;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
 using Lumina.Text.ReadOnly;
@@ -130,7 +129,8 @@ internal class AddonTasks
             if (TryGetAddonByName<AddonSelectString>("SelectString", out var addon) && IsAddonReady(&addon->AtkUnitBase))
             {
                 var selectString = new AddonMaster.SelectString(addon);
-                selectString.Entries[entryNumber].Select();
+                selectString.Entries[entryNumber]
+                            .Select();
                 Log($"TrySelectEntryNumber: selecting {entryNumber}");
                 return true;
             }
@@ -213,9 +213,7 @@ internal class AddonTasks
         {
             if (text.ToRegex()
                     .IsMatch(addon.Text))
-            {
                 return true;
-            }
         }
 
         await Task.Delay(100);

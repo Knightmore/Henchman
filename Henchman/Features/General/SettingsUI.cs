@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Windowing;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -29,7 +28,7 @@ internal class SettingsUI : FeatureUI
 
     public override string          Name     => "Settings";
     public override string          Category => Henchman.Category.System;
-    public override FontAwesomeIcon Icon => FontAwesomeIcon.Cog;
+    public override FontAwesomeIcon Icon     => FontAwesomeIcon.Cog;
 
     public override Action Help => () => { ImGui.Text("General Setting used through all implemented features."); };
 

@@ -1,3 +1,6 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.GameHelpers;
 using ECommons.MathHelpers;
@@ -7,9 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Map = Lumina.Excel.Sheets.Map;
 
 namespace Henchman.Helpers;
@@ -151,7 +151,6 @@ internal static class GeneralHelpers
     internal static unsafe void ChangeBait(int baitId) => ((FishingEventHandler*)EventFramework.Instance()->GetEventHandlerById(0x150001))->ChangeBait(baitId);
 
 
-
     /*
      * TODO: Switch to MappingTheRealm once/if ever released.
      */
@@ -242,10 +241,10 @@ internal static class GeneralHelpers
     public static Vector2 GetRandomPoint(Vector2 A, Vector2 B)
     {
         var rand = new Random();
-        var  minX = Math.Min(A.X, B.X);
-        var  maxX = Math.Max(A.X, B.X);
-        var  minY = Math.Min(A.Y, B.Y);
-        var  maxY = Math.Max(A.Y, B.Y);
+        var minX = Math.Min(A.X, B.X);
+        var maxX = Math.Max(A.X, B.X);
+        var minY = Math.Min(A.Y, B.Y);
+        var maxY = Math.Max(A.Y, B.Y);
 
         var randomX = (float)(minX + (rand.NextDouble() * (maxX - minX)));
         var randomY = (float)(minY + (rand.NextDouble() * (maxY - minY)));

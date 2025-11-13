@@ -19,8 +19,8 @@ public class MultiboxServer
     private readonly SemaphoreSlim semaphore = new(1, 1);
 
     private readonly Func<ClientSession, CancellationToken, Task> sessionHandler;
-    private readonly CancellationToken                                                            token;
-    private          int                                                                          currentIndex;
+    private readonly CancellationToken                            token;
+    private          int                                          currentIndex;
 
     public MultiboxServer(string featureName, int maxClients, Func<ClientSession, CancellationToken, Task> sessionHandler, CancellationToken token)
     {
@@ -197,7 +197,7 @@ public class MultiboxServer
 
     private async Task<bool> ProcessTurnAsync(ClientSession client, CancellationToken token)
     {
-        using var scope          = new TaskDescriptionScope("Processing Turns");
+        using var scope = new TaskDescriptionScope("Processing Turns");
         try
         {
             await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.ServerRequest, ServerRequest.Turn.ToJson(), token);
@@ -280,5 +280,6 @@ public class MultiboxServer
 
     public void Disconnect() => clients.ForEach(x => x.Pipe.Disconnect());
     public void Dispose()    => clients.ForEach(x => x.Pipe.Dispose());
-    public record ClientSession(NamedPipeServerStream Pipe, Channel<(CommandType type, string data)> MessageChannel, Task MessageHandler, CancellationTokenSource HandlerTokenSource,  string Id);
+
+    public record ClientSession(NamedPipeServerStream Pipe, Channel<(CommandType type, string data)> MessageChannel, Task MessageHandler, CancellationTokenSource HandlerTokenSource, string Id);
 }

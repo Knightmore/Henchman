@@ -11,11 +11,15 @@ using Dalamud.Utility;
 using ECommons.GameHelpers;
 using Lumina.Text.ReadOnly;
 
-
 namespace Henchman.Helpers;
 
 public static class Utils
 {
+    public static readonly JsonSerializerOptions EnumAsStringOptions = new()
+                                                                       {
+                                                                               Converters = { new JsonStringEnumConverter() }
+                                                                       };
+
     internal static bool IsPluginBusy => Running;
 
     internal static List<Vector3> SortListByDistance(List<Vector3> pointList)
@@ -107,24 +111,20 @@ public static class Utils
         ImGui.Image(texture.Handle, iconSize);
     }
 
-    public static string ToJson<TEnum>(this TEnum value) where TEnum : struct, Enum => JsonSerializer.Serialize(value, EnumAsStringOptions);
-    public static TEnum FromJsonEnum<TEnum>(this string json, JsonSerializerOptions? options = null) where TEnum : struct, Enum => JsonSerializer.Deserialize<TEnum>(json, options ?? EnumAsStringOptions);
+    public static string ToJson<TEnum>(this       TEnum  value) where TEnum : struct, Enum                                       => JsonSerializer.Serialize(value, EnumAsStringOptions);
+    public static TEnum  FromJsonEnum<TEnum>(this string json, JsonSerializerOptions? options = null) where TEnum : struct, Enum => JsonSerializer.Deserialize<TEnum>(json, options ?? EnumAsStringOptions);
 
     public static string ToJson<T>(this T value, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Serialize(value, options ?? JsonDefaults.Options);
 
     public static T FromJson<T>(this string json, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Deserialize<T>(json, options ?? JsonDefaults.Options)!;
 
-    public static readonly JsonSerializerOptions EnumAsStringOptions = new()
-                                                                       {
-                                                                                Converters = { new JsonStringEnumConverter() }
-                                                                        };
     public static class JsonDefaults
     {
         public static readonly JsonSerializerOptions Options = new()
                                                                {
                                                                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                                                                        WriteIndented        = false,
-                                                                       NumberHandling = JsonNumberHandling.AllowReadingFromString
-        };
+                                                                       NumberHandling       = JsonNumberHandling.AllowReadingFromString
+                                                               };
     }
 }

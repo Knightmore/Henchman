@@ -1,8 +1,6 @@
 using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Windowing;
-using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -18,9 +16,9 @@ namespace Henchman.Features.RetainerVocate;
 public class RetainerVocateUI : FeatureUI
 {
     internal readonly RetainerVocate  feature = new();
-    public override  string          Name     => "Retainer Vocate";
-    public override  string          Category => Henchman.Category.Economy;
-    public override  FontAwesomeIcon Icon     => FontAwesomeIcon.ConciergeBell;
+    public override   string          Name     => "Retainer Vocate";
+    public override   string          Category => Henchman.Category.Economy;
+    public override   FontAwesomeIcon Icon     => FontAwesomeIcon.ConciergeBell;
 
     public override Action Help => () =>
                                    {
@@ -32,7 +30,7 @@ public class RetainerVocateUI : FeatureUI
                                                   you can try to continue through one of the 'Single Backup Tasks' 
                                                   """);
 
-                                       ImGuiHelper.DrawRequirements(Requirements);
+                                       DrawRequirements(Requirements);
                                    };
 
     public override bool LoginNeeded => true;
@@ -43,6 +41,7 @@ public class RetainerVocateUI : FeatureUI
             (IPCNames.Lifestream, true),
             (IPCNames.Questionable, true)
     ];
+
     public override unsafe void Draw()
     {
         var configChanged = false;
@@ -51,19 +50,19 @@ public class RetainerVocateUI : FeatureUI
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            ImGuiHelper.DrawCentered("###Start", () => Layout.DrawButton(() =>
-                                             {
-                                                 if (ImGui.Button("Start", new Vector2(70,30)) && !IsTaskEnqueued(Name))
-                                                 {
-                                                     EnqueueTask(new TaskRecord((token) => feature.RunFullCreation(token, C.UseMaxRetainerAmount
-                                                                                                                                  ? 10
-                                                                                                                                  : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
-                                                 }
-                                             }));
+            DrawCentered("###Start", () => Layout.DrawButton(() =>
+                                                             {
+                                                                 if (StartButton() && !IsTaskEnqueued(Name))
+                                                                 {
+                                                                     EnqueueTask(new TaskRecord(token => feature.RunFullCreation(token, C.UseMaxRetainerAmount
+                                                                                                                                                ? 10
+                                                                                                                                                : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
+                                                                 }
+                                                             }));
 
 
             ImGui.Text("Fill all retainer slots");
-            ImGui.SameLine(150);
+            ImGui.SameLine(150 * GlobalFontScale);
             configChanged |= ImGui.Checkbox("##fillAllSlots", ref C.UseMaxRetainerAmount);
             if (!C.UseMaxRetainerAmount)
             {
@@ -76,8 +75,8 @@ public class RetainerVocateUI : FeatureUI
                 }
                 else
                 {
-                    ImGui.SameLine(150);
-                    ImGui.SetNextItemWidth(120f);
+                    ImGui.SameLine(150          * GlobalFontScale);
+                    ImGui.SetNextItemWidth(120f * GlobalFontScale);
                     configChanged |= ImGui.Combo("##retainerAmount", ref C.RetainerAmount, Enumerable.Range(1, 10)
                                                                                                      .Select(x => x.ToString())
                                                                                                      .ToArray(), 10);
@@ -85,25 +84,25 @@ public class RetainerVocateUI : FeatureUI
             }
 
             ImGui.Text("City");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150          * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             configChanged |= ImGuiEx.EnumCombo("##retainerCity", ref C.RetainerCity);
             ImGui.Text("Race");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150 * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             configChanged |= ImGuiEx.EnumCombo("##retainerRace", ref C.RetainerRace);
             ImGui.Text("Gender");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150 * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             configChanged |= ImGuiEx.EnumCombo("##retainerGender", ref C.RetainerGender);
             ImGui.Text("Personality");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150 * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             configChanged |= ImGuiEx.EnumCombo("##retainerPersonality", ref C.RetainerPersonality);
 
             ImGui.Text("Retainer Class");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150 * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             if (ImGuiEx.ExcelSheetCombo<ClassJob>("##retainerJob", out var selected, s => s.GetRowOrDefault(C.RetainerClass) is { } row
                                                                                                   ? s.GetRow(C.RetainerClass)
                                                                                                      .Abbreviation.ExtractText()
@@ -115,15 +114,15 @@ public class RetainerVocateUI : FeatureUI
             }
 
             ImGui.Text("Assign Exploration");
-            ImGui.SameLine(150);
+            ImGui.SameLine(150 * GlobalFontScale);
             configChanged |= ImGui.Checkbox("##firstExploration", ref C.SendOnFirstExploration);
 
             ImGui.Separator();
 
             ImGui.NewLine();
             ImGui.Text("Class/Job for Quest:");
-            ImGui.SameLine(150);
-            ImGui.SetNextItemWidth(120f);
+            ImGui.SameLine(150 * GlobalFontScale);
+            ImGui.SetNextItemWidth(120f * GlobalFontScale);
             if (ImGuiEx.ExcelSheetCombo<ClassJob>("##qstCombatJob", out var classJobSheet, s => s.GetRowOrDefault(C.QstClassJob) is { } row
                                                                                                         ? s.GetRow(C.QstClassJob)
                                                                                                            .Abbreviation.ExtractText()

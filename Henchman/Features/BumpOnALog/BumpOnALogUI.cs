@@ -39,7 +39,7 @@ public class BumpOnALogUi : FeatureUI
                                                   BumpOnALog will complete all (only non-Duty for now) current mob entries for your rank. 
                                                   """);
 
-                                       ImGuiHelper.DrawRequirements(Requirements);
+                                       DrawRequirements(Requirements);
                                    };
 
     public override List<(string pluginName, bool mandatory)> Requirements =>
@@ -106,7 +106,7 @@ public class BumpOnALogUi : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
+                               if (StartButton() && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
                            },
                            () =>
                            {
@@ -114,7 +114,6 @@ public class BumpOnALogUi : FeatureUI
                                ImGui.SameLine();
 
                                using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {currentClassLogRank + 1}");
-                               
                            });
 
         ImGui.Spacing();
@@ -142,11 +141,15 @@ public class BumpOnALogUi : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord((token) => feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () => {
-                                                                                                                                                                                              Bossmod.DisableAI();
-                                                                                                                                                                                              AutoRotation.Disable();
-                                                                                                                                                                                              ResetCurrentTarget();
-                                                                                                                                                                                          }));
+                               if (StartButton() && !IsTaskEnqueued(Name))
+                               {
+                                   EnqueueTask(new TaskRecord(token => feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () =>
+                                                                                                                                     {
+                                                                                                                                         Bossmod.DisableAI();
+                                                                                                                                         AutoRotation.Disable();
+                                                                                                                                         ResetCurrentTarget();
+                                                                                                                                     }));
+                               }
                            }, () =>
                               {
                                   ImGui.Text(gcRow.Name.ExtractText());

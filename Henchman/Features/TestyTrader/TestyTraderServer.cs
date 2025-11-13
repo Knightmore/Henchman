@@ -6,7 +6,6 @@ using ECommons.GameHelpers;
 using Henchman.Data;
 using Henchman.Generated;
 using Henchman.Helpers;
-using Henchman.Models;
 using Henchman.Multibox;
 using Henchman.Multibox.Command;
 using Henchman.TaskManager;
@@ -42,9 +41,9 @@ internal partial class TestyTrader
 
     internal async Task ServerSessionHandler(MultiboxServer.ClientSession client, CancellationToken token = default)
     {
-        using var scope = new TaskDescriptionScope("Boss Trade Session");
+        using var              scope   = new TaskDescriptionScope("Boss Trade Session");
         Dictionary<uint, uint> askDict = [];
-        
+
         var statusMessage = new TestyTraderMessage
                             {
                                     Type = TestyTraderMessageType.ServerStatusCheck
@@ -163,10 +162,7 @@ internal partial class TestyTrader
                     ServerSideGil       = InventoryHelper.GetInventoryItemCount(1);
                     await WaitUntilAsync(() => Svc.Condition[ConditionFlag.TradeOpen] && TestyTraderTasks.CheckForTradePartner(henchmanEID), "Waiting for correct trade partner", token);
                     await Task.Delay(2 * GeneralDelayMs, token);
-                    if (askDict.Count == 0)
-                    {
-                        continue;
-                    }
+                    if (askDict.Count == 0) continue;
 
                     await TestyTraderTasks.Trade(askDict, token);
                 }
@@ -177,7 +173,7 @@ internal partial class TestyTrader
             InternalError(e.ToString());
         }
     }
-    
+
     internal static void ProcessAskDict(ref Dictionary<uint, uint> askDict)
     {
         var keysToRemove = new List<uint>();

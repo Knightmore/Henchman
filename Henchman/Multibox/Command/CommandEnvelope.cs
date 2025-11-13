@@ -1,15 +1,13 @@
-using Henchman.Generated;
-using Henchman.Helpers;
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Henchman.Helpers;
 
 namespace Henchman.Multibox.Command;
 
 public sealed class CommandEnvelope
 {
-    public string        Key    { get; init; } = "";
-    public JsonElement[] Args   { get; init; } = [];
+    public string        Key  { get; init; } = "";
+    public JsonElement[] Args { get; init; } = [];
 
     public static string Create(string key, object?[]? args = null, JsonSerializerOptions? options = null)
     {
@@ -43,5 +41,3 @@ public sealed class CommandEnvelope
 
     public string ToJson(JsonSerializerOptions? options = null) => JsonSerializer.Serialize(this, options ?? Utils.JsonDefaults.Options);
 }
-
-

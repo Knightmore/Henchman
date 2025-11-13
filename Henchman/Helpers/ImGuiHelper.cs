@@ -13,6 +13,9 @@ namespace Henchman.Helpers;
 
 internal static class ImGuiHelper
 {
+    internal static float GlobalFontScale => ImGui.GetIO()
+                                                 .FontGlobalScale;
+
     private static readonly Dictionary<string, float> CenteredWidths = new();
 
     private static string HeaderText => """
@@ -235,6 +238,8 @@ internal static class ImGuiHelper
             CenteredWidths[id] = measuredWidth;
         }
     }
+
+    public static bool StartButton() => ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale));
 
     public class ColumnScope : IDisposable
     {
