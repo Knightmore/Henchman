@@ -66,7 +66,7 @@ internal static class GeneralHelpers
         if (gearset != null)
         {
             Verbose($"Highest set is {gearset.Value.Id + 1}");
-            RaptureGearsetModule.Instance()->EquipGearset(gearset.Value.Id + 1);
+            RaptureGearsetModule.Instance()->EquipGearset(gearset.Value.Id);
             return true;
         }
 

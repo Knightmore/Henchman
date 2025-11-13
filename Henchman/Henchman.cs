@@ -8,6 +8,7 @@ using System.Reflection;
 using Dalamud.Game;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
+using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.Interop.Generated;
@@ -85,7 +86,8 @@ public class Henchman : IDalamudPlugin
     private void Initialize()
     {
         HuntDatabase.Initialize();
-
+        AutoCutsceneSkipper.Init(null);
+        AutoCutsceneSkipper.Disable();
         EzConfig.Migrate<Configuration>();
         Config               =  EzConfig.Init<Configuration>();
         Svc.Framework.Update += TaskManagerTick;

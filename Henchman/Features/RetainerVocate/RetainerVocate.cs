@@ -269,15 +269,14 @@ internal class RetainerVocate
                                                                                     .RowId)
                                                                             .RowId, MainHand(retainerClassId)
                                                                             .RowId, 1), $"Buy Item {MainHand(retainerClassId).Name.ExtractText()}", token);
-                await Task.Delay(GeneralDelayMs * 2, token)
-                          .ConfigureAwait(true);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(GilShop(MainHand(retainerClassId)
+                                                                                              .RowId)
+                                                                                      .RowId), "Waiting for transaction", token);
             }
         }
 
         await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
-        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(VendorShop(MainHand(retainerClassId)
-                                                                                         .RowId)
-                                                                              .RowId), "Waiting for transaction", token);
+        
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringCancel), "SelectString Cancel", token);
     }
 

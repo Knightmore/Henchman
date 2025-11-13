@@ -2,6 +2,7 @@ using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using ECommons.Automation;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
@@ -40,7 +41,7 @@ public class IntoTheLightUI : FeatureUI
                                                  {
                                                      Layout.DrawButton(() =>
                                                                        {
-                                                                           if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light"));
+                                                                           if (ImGui.Button("Start", new Vector2(70, 30)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light", () => feature.Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
                                                                        });
                                                  });
 

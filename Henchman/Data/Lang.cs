@@ -122,7 +122,7 @@ internal static class Lang
                                                    .Unknown0;
 
     internal static string SelectStringSkipCutscene => Svc.Data.GetExcelSheet<Addon>()
-                                                         .GetRow(281)
+                                                         .GetRow(3)
                                                          .Text.ExtractText();
 
     internal static string SelectStringMouseKeyboard => Svc.Data.GetExcelSheet<Addon>()

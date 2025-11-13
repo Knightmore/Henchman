@@ -12,6 +12,8 @@ public static class AutoRetainer
     public delegate void OnCharacterReadyToPostprocessDelegate();
 
     public static AutoRetainerApi ARAPI = new();
+    [EzIPC]
+    public static Func<bool> GetMultiModeEnabled;
 
     [EzIPC]
     public static Action<bool> SetMultiModeEnabled;

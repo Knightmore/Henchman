@@ -20,6 +20,7 @@ internal class IntoTheLight
 
     public async Task Start(CancellationToken token = default)
     {
+        AutoCutsceneSkipper.Enable();
         index = 0;
         uint validPresets;
         unsafe
@@ -36,8 +37,9 @@ internal class IntoTheLight
         }
 
         await OpenDataCenter(token);
-        for (var index = 0; index < C.LightCharacters.Count; index++)
+        for (index = 0; index < C.LightCharacters.Count; index++)
         {
+            bool differentDataCenter = false;
             unsafe
             {
                 if (AgentModule.Instance()->GetAgentLobby()->DataCenter != C.LightCharacters[index].DataCenterId)
@@ -45,9 +47,14 @@ internal class IntoTheLight
                     if (TryGetAddonByName<AtkUnitBase>("_CharaSelectReturn", out var charaSelectReturn) && IsAddonReady(charaSelectReturn))
                     {
                         Callback.Fire(charaSelectReturn, true, 19);
+                        differentDataCenter = true;
                     }
                 }
             }
+
+            if(differentDataCenter)
+                await OpenDataCenter(token);
+
             await WaitUntilAsync(() => SelectCreateCharacter(), "Select Create Character", token);
             if (validPresets > 0)
             {
@@ -81,7 +88,8 @@ internal class IntoTheLight
             await WaitUntilAsync(() => GenericYesNo(false), "Deny Preset Saving", token);
             await WaitUntilAsync(() => ChooseRandomNameDay(), "Choose Nameday", token);
             await WaitUntilAsync(() => ChooseRandomGuardian(), "Choose Guardian", token);
-            await WaitUntilAsync(() => ChooseClass(C.LightCharacters[index].ClassJobId), "Choose Class", token);
+            // ClassJob Ids are -1 in Callbacks
+            await WaitUntilAsync(() => ChooseClass(C.LightCharacters[index].ClassJobId - 1), "Choose Class", token);
             await WaitUntilAsync(() => UpdateServerList(), "Choose Server", token);
             await Task.Delay(500, token);
             await WaitUntilAsync(() => SelectServer(C.LightCharacters[index].WorldId), "Select Server", token);
@@ -92,7 +100,7 @@ internal class IntoTheLight
                 using var namingTokenSrc  = new CancellationTokenSource();
                 using var linkedNamingCts = CancellationTokenSource.CreateLinkedTokenSource(token, namingTokenSrc.Token);
 
-                var charConfirmation  = WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoNewGame), $"Checking for login queue.", linkedNamingCts.Token);
+                var charConfirmation  = WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoNewGame), $"Checking for New Game Yesno.", linkedNamingCts.Token);
                 var takenName = WaitUntilAsync(() =>
                                                {
                                                    unsafe
@@ -105,7 +113,7 @@ internal class IntoTheLight
 
                                                        return false;
                                                    }
-                                               }, "Checking for first Cutscene", linkedNamingCts.Token);
+                                               }, "Checking for name taken", linkedNamingCts.Token);
 
                 var completedNamingTask = await Task.WhenAny(charConfirmation, takenName);
                 linkedNamingCts.Cancel();
@@ -129,14 +137,11 @@ internal class IntoTheLight
 
             if (completedLoginTask != loginQueue)
             {
-                await WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
-                unsafe
-                {
-                    var returnValue = new AtkValue();
-                    var value   = stackalloc AtkValue[1];
-                    value[0].SetInt(0);
-                    AgentModule.Instance()->GetAgentByInternalId(AgentId.Cutscene)->ReceiveEvent(&returnValue, value, 1, 11);
-                }
+                Verbose("Progressing without queue!");
+                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
+
+                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringSkipCutscene), "Skip cutscene", token);
+
                 await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringMouseKeyboard), "Skip input controls", token);
                 while (true)
                 {
@@ -147,7 +152,7 @@ internal class IntoTheLight
                     }
 
                     Chat.SendMessage("/logout");
-                    await Task.Delay(1000, token);
+                    await Task.Delay(8 * GeneralDelayMs, token);
                 }
                 await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
                 await OpenDataCenter(token);
@@ -159,6 +164,12 @@ internal class IntoTheLight
 
             await Task.Delay(4 * GeneralDelayMs, token);
         }
+    }
+
+    internal async Task Stop()
+    {
+        AutoCutsceneSkipper.Disable();
+        await Task.Delay(GeneralDelayMs);
     }
 
     private async Task OpenDataCenter(CancellationToken token = default)

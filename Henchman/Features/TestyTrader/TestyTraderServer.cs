@@ -117,7 +117,7 @@ internal partial class TestyTrader
         }
     }
 
-    internal static async Task ProcessServerTrade(MultiboxServer.ClientSession client, ulong henchmanCID, Dictionary<uint, uint> askDict, CancellationToken token = default)
+    internal static async Task ProcessServerTrade(MultiboxServer.ClientSession client, ulong henchmanEID, Dictionary<uint, uint> askDict, CancellationToken token = default)
     {
         using var scope = new TaskDescriptionScope("Processing Boss Trade");
 
@@ -161,7 +161,7 @@ internal partial class TestyTrader
 
                     ServerSideInventory = TestyTraderTasks.GetCurrentInventory();
                     ServerSideGil       = InventoryHelper.GetInventoryItemCount(1);
-                    await WaitUntilAsync(() => Svc.Condition[ConditionFlag.TradeOpen] && TestyTraderTasks.CheckForTradePartner(henchmanCID), "Waiting for correct trade partner", token);
+                    await WaitUntilAsync(() => Svc.Condition[ConditionFlag.TradeOpen] && TestyTraderTasks.CheckForTradePartner(henchmanEID), "Waiting for correct trade partner", token);
                     await Task.Delay(2 * GeneralDelayMs, token);
                     if (askDict.Count == 0)
                     {

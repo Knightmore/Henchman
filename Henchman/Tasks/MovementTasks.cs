@@ -371,13 +371,13 @@ internal static class MovementRPCs
     [Command]
     internal static async Task<bool> GoToPlayer(uint territoryId, Vector3 position, string world, ulong CID, CancellationToken token = default)
     {
-        //if (token.IsCancellationRequested) return false;
+        if (token.IsCancellationRequested) return false;
         using var scope = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
 
         if (Player.CurrentWorld != world)
         {
             if (Lifestream.ChangeWorld(world))
-                await WaitUntilAsync(() => !Lifestream.IsBusy(), "Waiting for World change", token);
+                await WaitPulseConditionAsync(() => Lifestream.IsBusy(), "Waiting for World change", token);
             else
                 return false;
         }

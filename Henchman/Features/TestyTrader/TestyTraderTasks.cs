@@ -27,9 +27,13 @@ internal static class TestyTraderTasks
         Chat.ExecuteCommand("/trade");
 
         await Task.Delay(2 * GeneralDelayMs, token);
+
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon) && IsAddonReady(addon)) return true;
+            if (TryGetAddonByName<AtkUnitBase>("Trade", out var addon) && IsAddonReady(addon))
+            {
+                return true;
+            }
         }
 
         return false;

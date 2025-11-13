@@ -67,6 +67,7 @@ internal class OnABoat
                                           : GetBaits.NormalBait;
     public unsafe bool IsSpectralActive => EventFramework.Instance()->GetInstanceContentOceanFishing()->SpectralCurrentActive;
 
+    private unsafe bool SpectralActiveCache;
 
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
@@ -82,9 +83,9 @@ internal class OnABoat
                                                           };
     }
 
-    internal string PresetNormal     = "AH4_H4sIAAAAAAAACu1Z227bOBD9FYPPJiCKFHV5c71pGqybBnW6fSgWC0oa2URk0aWotNnA/76gLral2LksggLZ9ZtCzhyeGR4e0co9mlRGTUVpymm2QNE9OitEnMMkz1FkdAVjZCdnsoDdZNpNXaQocoNwjK60VFqaOxSRMbooz34meZVCuhu28ZsG66NSydKC1Q+ufapxeDBG5+vrpYZyqfIURcRxesiPQx+iFvo9AOdJbtNltTpSJyMOGxBk3OvhdyAqzyExXWGMOGQ/zH2ahdKpFHkHwAnrAbA27L0sl2d3UO4t5A0Yel6vhbzbAnED86XMzDsha552oOwG5kYkNyWKvLaLPHiIu48atqhXwkgoEtjjw4d5vL+lbpeq5d8wFaYRRrfqMNsdCIK22ddLkUtxU74Xt0pbgN5AV47d/t7EZ0jULWgUEdulQ/rhwYM9H3Loc5zE6hZQlIm87DbznVyci1XdlEmxyEGXHSErhBRF1HfYg0p7awQbq++fRoveGd1ytZt2reY/xPqiMJU0UhXnQhZdKzEZo1ml4SOUpVgAihAao8uaE7pUBaAW4W4NKLI9PYA3U6X513hXGko4zBBhdGS+WbGe3/GZryExWuTTSmsozCtVOUB9tVoPskWiUMVfH6BIlitRjPDoUwKiGM3gFnJZLEZd0qAvBznW3WlUNTdqbQ1BFou5gXVtxLsKW+VN9OsUtg9Xc/hSyO8VWFzEaELjmHKcMZdiJsIAB5krsMc5T6nrCE59tBmjmSzNp8yuUaLo2329mi1gawChT/zjHP8AXQojcxjZCAt4qfRK5B+UurEQnRl9BXGzOzJ2tgRja+gOTzvUFMqIb92sS54brYrFS9Idupc+gwUUqdB3L0b4TVVxvuXeRmxPfW0vg0SXh9u8He2XZvYYH4i61nL9Ql6+59Jt5guZ9XIf4dbG2TMwyQzoqagWSzOTK/t2I83E8HDU15pKN69P+9DZMu1s2QuH5v/oDWIzRlvz6lT4Gb5XUkM6N8JU9pVqLzlvW5pfSmi00tTYBJ70+ib1umfbTko4cVLAsZNQzOLAx2GSBdgNaEJFFmduyNFmfNin2XGf/iwWP5RePW3QzxP7szV9ctX/uav+Aj2drPA/aYWe5/up8ENMaeZjFjAXh14c40SEoZs4wokpOWqF3nEr/F3LPD8Z4UmjJyM8iexN3AkzlogkSLBLiY8ZkBAHSShwmjGPeCSgHrhHjZAfN8KrvFqtR1+fdS18Wz+OTpp/k5o/GetJZL/UWMM0dDIWYO6TFDMacywyP8Wp5waxw2LmZQRt/uw+krb/Mfu2HWi81v7dfJVtffX4R+XGY/sfat2Qp0kALiYMKGY8FjhIHQ8LPwiY8AhPaIY2/wAgbFEpIRwAAA==";
+    internal string PresetNormal     = "AH4_H4sIAAAAAAAACu1Z227jNhD9FYPPJkDdL29eN8kG9SZBnDQPi6KgyJFNRCa9FJVsGvjfC0qWbTl2LkVQwF2/KRzO4ZnhzCHNPKNBZdSQlqYc5hOUPqMTSbMCBkWBUqMr6CNrHAkJayNvTeccpW6c9NGVFkoL84RSp4/Oy5OfrKg48PWwnb9osL4pxaYWrP5w7VeNE8Z9dDa/mWoop6rgKHUI6SC/Dr2LWhJ1AMib3IbTarYnTt8h/hsEWxBVFMBMG5jvEGdzmvs2C6W5oEULEDp+B8BfTjsV5fTkCcqNhYIthkHQYRi2W0DvYTwVuflCRc3TDpTtwNhQdl+iNFhmMYxf4m6iJkvUK2oESAYbfMJtv7CbMbd11eJvGFLTFEa76ra3u5Vvb+l9M6WFoPflKX1Q2gJ0Btpw7PZ3DNfA1ANolDo2S7vqJ4xf7Pk2hy7HQaYeAKU5Lcp2M7+IyRmd1UkZyEkBumwJ2ULgKPUi4r+ItLNGvLD1/dNo2unRFVe7aTdq/Ejn59JUwgglz6iQbSqx00ejSsM3KEs6AZQi1EcXNSd0oSSgJcLTHFBqc7oDb6RK86/xrjSUsJshwmiPvVmxtq/5jOfAjKbFsNIapPmkKLdQPy3WnWwRlUr+9RUkm86o7OHeJQMqeyN4gELISa912srLTo51dpqqGhs1t4Ig5GRsYF4L8TrCZeUN9OcEtgn3YgfHj2KWUWFORVGUr9ivK1leVi3CrRQ/KrDMUORlThTTHGfcAeznAcFxlHGc+CzPYsI4yUO06KORKM1lblmWKP3+XPO1KVhJSBI50f4o/wBdUiMK6NkZFvBC6Rktvip1byFaObsDer9uOmstwdhA2vZbDjWp8p3I6mHrPDZayclH3Im34T6CCUhO9dOHEX5TVVasuC9nrHSjFqgtRzdMVn5r2h/17DDeMetGi/kHeUWB6608P8is4/sKt+U820WD3IAe0moyNSMxs+ej0xi226u+GFW6OYDtRyvsXivsQfLyyvDK6b/oo5X8tVV4DT8qoYGPDTWVPZTtNemwS/O2hKZWmhibicd6Pch6bcV8qCppNv366FIWT7cl3E1BXqj6rj94oKKw0bebviH6DvF4FHqAacZ87JMkxknAMxznNPEpdRNGHLTo71Z5f7/KX9PJo9Kzt+X9fa3y7o44avIvrsn/QT0dhfT/U2SfJqSEOhBFXoz9BHzsczfEceLHmCRJlpOQcxJHe4U02C+kv2tRFEcZPVb4UUaPRfYL3EeDmAVZnOE4JhT7PMtwwpwIOwAOcyjLc3e/jIb7ZfSqqGbz3t27rqSH9bPu2DEH2TFHWT4W2eHIchYkJCAhxYEXhNgPOMOUM4b9xHGDkPKYkBwt/mwfh5f/a/y+GmiU2v7dPEkvVXn/c3yj0N0Has/LQ4fFEQ4hYdgnnofjkHEcMRo5bhwmlBO0+Af0uqCDWx0AAA==";
     internal string PresetNormalName = "anon_Henchman - Ocean Leveling Normal";
-    internal string PresetSpectral   = "AH4_H4sIAAAAAAAACu1ZTW/bOBD9KwbPIiBK1Id1S71pGqybBnW6PRSLBUWOZCKy6FJU2jTwf1/QkmzLsZJmNz0sVjeZnHnzhnp8FOgHdFYbNWOVqWZZjpIHdF6ytICzokCJ0TU4yE7OZQl28jIvlYb3SvElSjJWVOC0CaILvxQo8eKpg661VFqae5QQB11W5995UQsQ+2Ebv2nwW8QHtH3w9jz6sGHsoIv1zVJDtVSFQAlx3V6hpyudgpxGPQD3WaqzZb3aLoVACSUufYZRl6WKArg5SCSHYd7zZZUWkhUDKxMS2sOjbdZbWS3P76E6qBscEQ6CHuGweyPsFhZLmZk3TG5p24GqG1gYxm8rlAS7F/MY9xB12qJeMyOh5HDAJzzOC/sL6HWpWv6AGTONTrqqx9ne0fL7bfbNkhWS3VZv2Z3SFqA30LXjO/3xj8DVHWiUELtIpxX5SAF+j0C3nm9kfsFW28bPyrwAXXVF7bu3aZFLH3XTg4o3VsPfjWa9rbojZF/MjVp8Y+vL0tTSSFVeMFl2y4WJg+a1hvdQVSwHlCDkoKstJ3SlSkAtwv0aUGLX7QTeXFXmH+Nda6jgNEOE0cB8U3E7v+ezWAM3mhWzWmsozSt1eYT6ar2eZPuo45PVEStV+dc7KPlyxcoJnnzgwMrJHO6gkGU+uVJ6xQrktJpaGLW2W16W+cLAeuu8+/5a3Z3p12nrEG7bzadSfq3B4qJMpF7sxzGmIFxMWRziNEg55iEA+LEbxSREGwfNZWU+ZLZGhZIvD9tqtoHdFp9GJBrm+AfoihlZwMRGWMBmQd4pdWshOrv5DOx2v2HsbAXG9tBtnXaoaZSSyPpVl7wwWpX5S9Jd/yB9DjmUgun7FyN8quA3VbfxXWAz0jXUpu2MoD2Se2heaLtp8va9DIb0+J6IutFy/UICUeD5u8whCr2gJ0i0cVbqZ5kBPWN1vjRzubLHFGkmjvfA9hOm1s05aB8ODL/x3mD6+CB/4kzeOGjnUJ3YPsLXWmoQC8NMbc9G+7VyrMCfE9pP62mUzX9NNgcmyTgjQeRznDI3xjQLBGaMulgA50BTX3ipizbOaVekw674keXflF49b4ejGP/nYhw9bJTNv/MwX7jMTQnFkIYRpiJjOA5SgmlGqBtmfhR66aCHBcMe9ruWRTE62CjF0cFG2fxSBwu4iFMiYhz4PmCaZR5OXRphFpGUh2HK0mw66GDhsINdF/VqPfk8foiNehxtbJTNr7axyJtmWepFmNKIY+q7FE/pNMARETQUbuAzIGjzZ3fl1v7h8mU30Dib/d3c8bUuNnz12N1X9i/+mKDcE36GMw5TTD1OMEs9hoUv/CggQRjQEG3+BtAszL52GgAA";
+    internal string PresetSpectral   = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZTvr7dOFxi0HUAUlofRauU4N61FandsB4ZB/e8rN0nbtA0MK6Sd1eatte89Pvfm5Nh1X9Co0mJMlFbjYobSF3TKSVbCqCxRqmUFFjKTE8bBTF7MuJDwRQg6R2lBSgVWk5C34Rc5St04sdC1ZEIy/YxSx0IX6vQ7Lasc8u2wiV/V+A3iC1p/cLc8urBhbKHz5e1cgpqLMkepY9udhV5f6RhkEnUA7DepjufVYt2KHKW+Y/tvMGqzRFkC1TuJzm6Y+/ayQuaMlD2dCR2/g+c3WWdMzU+fQe2sG+wRDoIO4bB9IuQBpnNW6E+ErWmbAdUOTDWhDwqlwebBHOLuoiYN6jXRDDiFnjJ8x3b3YNy9frotkmQ/YEx0LZuWRPhGttdk385JyciDOiOPQhqAzkBbnWd1x2+AikeQKHVMz44L9EAQXodA295PbHZOFus+jPisBKnaRY0UTFpk+wfVdKDilZH0dy1J583dEDLP6VZMn8jyguuKaSb4OWG8bRd2LDSpJHwBpcgMUIqQhS7XnNCl4IAahOcloNT07QjeRCj9j/GuJSg4zhBh1DNfr7ie3/KZLoFqScpxJSVw/UFV7qF+WK1H2R5UfHR1RLjgf30GTucLwk/wyRUFwk8m8Agl47OTSyEXpERWo6mpFkvjAIzPphqWayPe1tfobiQ/pqxduMNqntgiI0yfsbJUr8zfVFxdVS3CHWffKjDMUJ5nDrghxeAHMfZDSnCcU4IpEOpmnuNkuYdWFpowpa8Kw1Kh9OvLmq9pwcYkksiJ+qv8A6QimpVwYiIMYN3Sz0I8GIjWv+6BPGxfOTOrQJtC2pevGapb5TuRMcA2eaql4LP3pNveTvoEZsBzIp/fjXCn4DdRNfFtYD3SFtSkbayk2eM7aG5oqqnztrX0hnT4Hom6lWz5TgJR4HqbzD4KnaBXSDRx5mUZFRrkmFSzuZ6whdn3nHpi/y1an4kqWW+s5sPOllG7d5Acngxe2eRXFtp4XCu2G/hWMQn5VBNdmc3WHH/2FfhzQvtpPQ2y+a/JprXOsai43s2z0BUvn+8U3M+BX4r1yXr0SFhpWtQ+xh2Lje3YcyAmOAfXwb4TBziJgwJTN/LCJI5JSBK0so57qt/vqTdk9iTk4m0zHaT8P5fy4ICDbP5NBwygICQPzKkycbGfhSHOIA9xEpIw9jybJnnc64BBvwP+LllZDv43CHnwv0E2v7D/+WGQ0SBLcJCbH9m0oDihQYahoEVSeHZOAtLrf2G//12X1WJ5cj8cAgc1DyY4yOYXN8E4C7PEznAeRC72vdzFJHRsTNw4pHaROXaUoNWf7VVj88/V181A7Yvme33B2Xhg/6Vte9PbvfAMczdyfXCxV1Af+7Zt4ySKE+y4QRzQCJyCemj1Nw8lKWu/GwAA";
     internal string PresetSpectralName = "anon_Henchman - Ocean Leveling Spectral";
 
     internal Vector3 PositionDryskthota = new(-408, 4, 75);
@@ -97,9 +98,10 @@ internal class OnABoat
     internal uint    ShopId                 = 263015;
     internal uint    RepairId               = 720915;
     internal bool    eventsSubscribed;
-    internal bool    askARforAccess = false;
-    internal bool    inPostProcess  = false;
-    internal bool    dutyStarted    = false;
+    internal bool    askARforAccess  = false;
+    internal bool    inPostProcess   = false;
+    internal bool    dutyStarted     = false;
+    internal bool    cachedMultiMode = false;
     internal async Task Start(CancellationToken token = default)
     {
         SubscribeEvents();
@@ -108,25 +110,50 @@ internal class OnABoat
         while (!token.IsCancellationRequested)
         {
             await WaitUntilAsync(() => IsRegistrationOpen, "Waiting for Ocean Fishing time window", token);
-            if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+            if (C.OCFishingHandleAR)
             {
-                askARforAccess = true;
-                
-                await WaitUntilAsync(() => inPostProcess || !IPC.AutoRetainer.IsBusy(), "Waiting for AR PostProccess", token);
-                OnCharacterReadyToPostProcess();
-                GetCurrentARCharacterData();
-                var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
-                                                      .OrderBy(x => x.ClassJobLevelArray[17])
-                                                      .First();
-                await Lifestream.SwitchToChar(lowestFisherCharacter.Name, lowestFisherCharacter.World, token);
+                if(SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+                {
+                    askARforAccess = true;
+
+                    await WaitUntilAsync(() => inPostProcess || !IPC.AutoRetainer.IsBusy(), "Waiting for AR PostProccess", token);
+                    askARforAccess  = false;
+                    cachedMultiMode = IPC.AutoRetainer.GetMultiModeEnabled();
+                    IPC.AutoRetainer.SetMultiModeEnabled(false);
+
+                    GetCurrentARCharacterData();
+                    var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
+                                                          .OrderBy(x => x.ClassJobLevelArray[17])
+                                                          .First();
+                    if (lowestFisherCharacter.ClassJobLevelArray[17] == 100)
+                    {
+                        if(inPostProcess)
+                        {
+                            IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                            IPC.AutoRetainer.SetMultiModeEnabled(true);
+                        }
+                        return;
+                    }
+                    await Lifestream.SwitchToChar(lowestFisherCharacter.Name, lowestFisherCharacter.World, token);
+                }
+                else
+                {
+                    FullError($"Auto Retainer not enabled! Use On A Boat - Single Character mode or enabled Auto Retainer for this feature to work!");
+                }
             }
             else
             {
                 await Lifestream.SwitchToChar(C.OceanChar, C.OceanWorld, token);
             }
 
+            Chat.ExecuteCommand("/nastatus off");
+
+            await Task.Delay(8 * GeneralDelayMs, token);
+
             if (Player.JobId != 18)
                 ChangeToHighestGearsetForClassJobId(18);
+
+            await Task.Delay(4 * GeneralDelayMs, token);
 
             if (!QuestManager.IsQuestComplete(69379))
             {
@@ -225,13 +252,18 @@ internal class OnABoat
                 unsafe
                 {
                     RepairManager.Instance()->RepairEquipped(true);
+                }
+
+                await Task.Delay(4 * GeneralDelayMs, token);
+                unsafe
+                {
                     var agentRepair = (AgentRepair*)AgentModule.Instance()->GetAgentByInternalId(AgentId.Repair);
                     agentRepair->UIModuleInterface->GetRaptureAtkModule()->CloseAddon(agentRepair->AddonId);
                 }
+
                 await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
             }
 
-            //await MoveToStationaryObject(PositionDryskthota, BaseIdDryskthota, token: token);
             var randomPoint = GetRandomPoint(DryskthotaA, DryskthotaB);
             await MoveTo(new Vector3(randomPoint.X, 4, randomPoint.Y), false, token);
             
@@ -259,6 +291,7 @@ internal class OnABoat
             {
                 if (Player.Available && Player.Territory is 900 or 1163)
                 {
+                    SpectralActiveCache = IsSpectralActive;
                     if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
                     {
                         await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for new zone", token);
@@ -280,7 +313,7 @@ internal class OnABoat
 
                         if (C.UseOnlyVersatile)
                         {
-                            ChangeBait(29717);
+                            ChangeBait((int)Bait.VersatileLure);
                         }
                         else
                         {
@@ -293,7 +326,12 @@ internal class OnABoat
                                 ActionManager.Instance()->UseAction(ActionType.Action, 289);
                         }
 
-                        await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing], "Waiting for reel in", token);
+                        await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || SpectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
+                        if(SpectralActiveCache != IsSpectralActive)
+                            unsafe
+                            {
+                                ActionManager.Instance()->UseAction(ActionType.Action, 296);
+                            }
                     }
                 }
 
@@ -313,8 +351,12 @@ internal class OnABoat
                     Chat.ExecuteCommand("/ays discard");
                     await WaitWhileAsync(IPC.AutoRetainer.IsBusy, "Wait until discard finished", token);
                 }
-                IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
-                IPC.AutoRetainer.SetMultiModeEnabled(true);
+                if(inPostProcess)
+                {
+                    IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                }
+                if(cachedMultiMode)
+                    IPC.AutoRetainer.SetMultiModeEnabled(true);
             }
         }
     }
@@ -343,7 +385,11 @@ internal class OnABoat
         if (askARforAccess)
         {
             IPC.AutoRetainer.ARAPI.RequestCharacterPostprocess();
-            askARforAccess = false;
+            Log("Requesting AR post process");
+        }
+        else
+        {
+            Verbose("Outside of Voyage window. Skipping post process request.");
         }
     }
 

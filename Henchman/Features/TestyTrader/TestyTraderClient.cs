@@ -218,9 +218,9 @@ internal partial class TestyTrader
                     {
                         var serverDone = statusData.IsTradeDone;
                         Verbose($"TradeDict: {tradeDict.Count} | Server done: {serverDone!.Value}");
-                        IPlayerCharacter targetPlayer;
+                        /*IPlayerCharacter targetPlayer;
                         if (Svc.Objects.OfType<IPlayerCharacter>()
-                               .TryGetFirst(x => x.EntityId == bossEID, out targetPlayer)) ;
+                               .TryGetFirst(x => x.EntityId == bossEID, out targetPlayer)) ;*/
                         switch (tradeDict.Count)
                         {
                             case 0 when serverDone!.Value:

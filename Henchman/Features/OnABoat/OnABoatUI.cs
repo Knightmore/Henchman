@@ -62,7 +62,7 @@ internal class OnABoatUI : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (ImGui.Button("Start", new Vector2(70, 30))) EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onError: feature.OnError));
+                               if (ImGui.Button("Start", new Vector2(70, 30))) EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
                            }, () =>
                               {
                                   if (feature.IsRegistrationOpen)
@@ -103,7 +103,7 @@ internal class OnABoatUI : FeatureUI
 
             ImGuiHelper.DrawCentered("##boatArCharacters", () =>
                                                            {
-                                                               ImGui.Text("AutoRetainer Characterlist:");
+                                                               ImGui.Text("Use with AutoRetainer Multimode:");
                                                                ImGui.SameLine(200);
                                                                configChanged |= ImGui.Checkbox("##HandleAR", ref C.OCFishingHandleAR);
                                                            });
