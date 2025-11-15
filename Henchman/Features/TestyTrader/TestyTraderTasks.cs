@@ -58,7 +58,7 @@ internal static class TestyTraderTasks
 
     internal static bool SetNumericInput(uint num)
     {
-        if (num > 1000000) throw new ArgumentOutOfRangeException(nameof(num));
+        if (num > 1_000_000) throw new ArgumentOutOfRangeException(nameof(num));
         unsafe
         {
             if (TryGetAddonByName<AtkUnitBase>("InputNumeric", out var addon) && IsAddonReady(addon))
@@ -129,8 +129,8 @@ internal static class TestyTraderTasks
 
             if (neededGil > inventoryGil)
                 gilToTrade = inventoryGil;
-            else if (neededGil > 1000000)
-                gilToTrade = 1000000;
+            else if (neededGil > 1_000_000)
+                gilToTrade = 1_000_000;
             else
                 gilToTrade = neededGil;
 

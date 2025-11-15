@@ -14,6 +14,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.Helpers;
 using Lumina.Excel.Sheets;
+#if PRIVATE
+using Henchman.Features.Private;
+#endif
 
 namespace Henchman.Features.OnABoat;
 
@@ -118,7 +121,7 @@ internal class OnABoat
                 {
                     AskARforAccess = true;
 
-                    await WaitUntilAsync(() => InPostProcess || !IPC.AutoRetainer.IsBusy(), "Waiting for AR PostProccess", token);
+                    await WaitUntilAsync(() => InPostProcess || (!IPC.AutoRetainer.IsBusy() && !Lifestream.IsBusy()), "Waiting for AR PostProccess", token);
                     AskARforAccess  = false;
                     CachedMultiMode = IPC.AutoRetainer.GetMultiModeEnabled();
                     IPC.AutoRetainer.SetMultiModeEnabled(false);
@@ -336,6 +339,8 @@ internal class OnABoat
             await Task.Delay(GeneralDelayMs * 4, token);
 
             await WaitUntilAsync(() => CloseIKDResult(), "Waiting for Ocean Fishing results", token);
+
+            await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
 
             await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
 

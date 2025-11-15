@@ -19,17 +19,31 @@ namespace Henchman.Features.TestyTrader;
 [Feature]
 public class TestyTraderUI : FeatureUI
 {
+    private static readonly Item[] TradableItems = Svc.Data.GetExcelSheet<Item>()
+                                                      .Where(x => x is { IsUntradable: false, RowId: 1 or > 100 } && !string.IsNullOrEmpty(x.Name.GetText()))
+                                                      .OrderBy(x => x.Name.GetText())
+                                                      .ToArray();
+
+    private readonly List<(Item Item, uint RowId, string DisplayName)> expandedItems = TradableItems
+                                                                                      .SelectMany(x =>
+                                                                                                  {
+                                                                                                      var baseEntry = (Item: x, x.RowId, DisplayName: x.Name.GetText());
+                                                                                                      if (x.CanBeHq)
+                                                                                                      {
+                                                                                                          var hqEntry = (Item: x, RowId: x.RowId + 1_000_000, DisplayName: x.Name.GetText() + " (HQ)");
+                                                                                                          return [baseEntry, hqEntry];
+                                                                                                      }
+
+                                                                                                      return new[] { baseEntry };
+                                                                                                  })
+                                                                                      .ToList();
+
     private readonly TestyTrader feature = new();
 
     private readonly List<ItemSearchCategory> searchCategories = Svc.Data.GetExcelSheet<ItemSearchCategory>()
                                                                     .Where(x => x.Category > 1)
                                                                     .OrderBy(x => x.Category)
                                                                     .ToList();
-
-    private readonly Item[] tradableItems = Svc.Data.GetExcelSheet<Item>()
-                                               .Where(x => x is { IsUntradable: false, RowId: 1 or > 100 } && !string.IsNullOrEmpty(x.Name.GetText()))
-                                               .OrderBy(x => x.Name.GetText())
-                                               .ToArray();
 
     internal TestyTraderCharacterData? characterToRemove;
 
@@ -59,6 +73,7 @@ public class TestyTraderUI : FeatureUI
                                                         - Keep:         Will keep the specified amount and give the rest to the Boss.
                                                         - Ask For:      Will ask the Boss for the specified amount.
                                                         - Ask Until:    Will ask the Boss for items until the specified amount is reached.
+                                                        - PAR Level:    Will try to stay on the specified amount, regardless if it has to ask for or give away.
                                                    """);
 
                                         DrawRequirements(Requirements);
@@ -185,7 +200,7 @@ public class TestyTraderUI : FeatureUI
                                                                                                                  })
                                };
         var table = new Table<TestyTraderCharacterData>(
-                                                        "##ARTraderTable",
+                                                        "##ManualTraderTable",
                                                         characterColumns,
                                                         () => C.TestyTraderImportedCharacters,
                                                         h => h.Name == Player.Name && h.WorldId == Player.HomeWorldId,
@@ -242,27 +257,33 @@ public class TestyTraderUI : FeatureUI
 
     private void DrawCharacterTab()
     {
-        DrawCentered("##TraderARSupport", () => configChanged |= ImGui.Checkbox("AR Support", ref C.TestyTraderARSupport));
-        if (C.TestyTraderARSupport)
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##ARankSelector", () =>
-                                            {
-                                                if (ImGui.Button("Select All"))
-                                                {
-                                                    foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = true;
-                                                    configChanged = true;
-                                                }
+            DrawCentered("##TraderARSupport", () => configChanged |= ImGui.Checkbox("AR Support", ref C.TestyTraderARSupport));
+            if (C.TestyTraderARSupport)
+            {
+                DrawCentered("##TradeCharSelector", () =>
+                                                    {
+                                                        if (ImGui.Button("Select All"))
+                                                        {
+                                                            foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = true;
+                                                            configChanged = true;
+                                                        }
 
-                                                ImGui.SameLine();
-                                                if (ImGui.Button("Deselect All"))
-                                                {
-                                                    foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = false;
-                                                    configChanged = true;
-                                                }
-                                            });
-            DrawCentered("##CenteredARTraderTable", () => DrawARTable());
+                                                        ImGui.SameLine();
+                                                        if (ImGui.Button("Deselect All"))
+                                                        {
+                                                            foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = false;
+                                                            configChanged = true;
+                                                        }
+                                                    });
+                DrawCentered("##CenteredARTraderTable", () => DrawARTable());
+            }
         }
         else
+            C.TestyTraderARSupport = false;
+
+        if (!C.TestyTraderARSupport)
         {
             DrawCentered("##ImportTraders", () =>
                                             {
@@ -315,13 +336,11 @@ public class TestyTraderUI : FeatureUI
                                                                                                    }
                                                                                                });
 
-                                                             var filteredItems = tradableItems.Where(item =>
-                                                                                                             (selectedSearchCategory == null || item.ItemSearchCategory.RowId == selectedSearchCategory.Value.RowId) &&
-                                                                                                             (string.IsNullOrEmpty(Search) ||
-                                                                                                              item.Name.ToString()
-                                                                                                                  .Contains(Search, StringComparison.OrdinalIgnoreCase))
-                                                                                                    )
-                                                                                              .ToList();
+                                                             var filteredItems = expandedItems
+                                                                                .Where(entry =>
+                                                                                               (selectedSearchCategory == null || entry.Item.ItemSearchCategory.RowId == selectedSearchCategory.Value.RowId) &&
+                                                                                               (string.IsNullOrEmpty(Search)   || entry.DisplayName.Contains(Search, StringComparison.OrdinalIgnoreCase)))
+                                                                                .ToList();
 
                                                              var clipper = new ImGuiListClipper();
                                                              clipper.Begin(filteredItems.Count);
@@ -330,22 +349,23 @@ public class TestyTraderUI : FeatureUI
                                                              {
                                                                  for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                                                                  {
-                                                                     var item = filteredItems[i];
+                                                                     var entry = filteredItems[i];
                                                                      var cont = C.TradeEntries.Select(s => s.Id)
                                                                                  .ToArray();
-                                                                     if (ThreadLoadImageHandler.TryGetIconTextureWrap(item.Icon, false, out var texture))
+
+                                                                     if (ThreadLoadImageHandler.TryGetIconTextureWrap(entry.Item.Icon, false, out var texture))
                                                                      {
                                                                          ImGui.Image(texture.Handle, new Vector2(ImGui.GetTextLineHeight()));
                                                                          ImGui.SameLine();
                                                                      }
 
-                                                                     if (ImGui.Selectable($"{item.GetName()}##{item.RowId}", cont.Contains(item.RowId), ImGuiSelectableFlags.DontClosePopups))
+                                                                     if (ImGui.Selectable($"{entry.DisplayName}##{entry.RowId}", cont.Contains(entry.RowId), ImGuiSelectableFlags.DontClosePopups))
                                                                      {
-                                                                         if (!cont.Contains(item.RowId))
+                                                                         if (!cont.Contains(entry.RowId))
                                                                          {
                                                                              C.TradeEntries.Add(new TradeEntry
                                                                                                 {
-                                                                                                        Id     = item.RowId,
+                                                                                                        Id     = entry.RowId,
                                                                                                         Amount = 0,
                                                                                                         Mode   = TradeMode.Give
                                                                                                 });
@@ -357,6 +377,7 @@ public class TestyTraderUI : FeatureUI
                                                              }
 
                                                              clipper.End();
+
                                                              ImGui.EndCombo();
                                                          }
                                                      });
@@ -375,16 +396,21 @@ public class TestyTraderUI : FeatureUI
                                                   new("Name", Width: 300, DrawCustom: x =>
                                                                                       {
                                                                                           if (ThreadLoadImageHandler.TryGetIconTextureWrap(Svc.Data.GetExcelSheet<Item>()
-                                                                                                                                              .GetRow(x.Id)
+                                                                                                                                              .GetRow(x.Id % 1_000_000)
                                                                                                                                               .Icon, false, out var texture))
                                                                                           {
                                                                                               ImGui.Image(texture.Handle, new Vector2(ImGui.GetTextLineHeight()));
                                                                                               ImGui.SameLine();
                                                                                           }
 
-                                                                                          ImGuiEx.Text(Svc.Data.GetExcelSheet<Item>()
-                                                                                                          .GetRow(x.Id)
-                                                                                                          .GetName());
+                                                                                          ImGuiEx.Text(
+                                                                                                       Svc.Data.GetExcelSheet<Item>()
+                                                                                                          .GetRow(x.Id % 1_000_000)
+                                                                                                          .GetName() +
+                                                                                                       (x.Id > 1_000_000
+                                                                                                                ? " (HQ)"
+                                                                                                                : "")
+                                                                                                      );
                                                                                       }),
                                                   new("Amount", Width: 120, DrawCustom: x =>
                                                                                         {

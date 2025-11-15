@@ -162,6 +162,8 @@ internal class RetainerVocate
             ErrorThrowIf(changedGearSet == null, $"No gearset assigned for the chosen class {classJob.Name.ExtractText()}");
         }
 
+        await Task.Delay(4 * GeneralDelayMs, token);
+
         byte startTown;
         unsafe
         {
