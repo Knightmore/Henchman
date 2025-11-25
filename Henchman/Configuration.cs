@@ -53,13 +53,13 @@ public class Configuration
      * On A Boat
      */
 
-    public bool OCFishingHandleAR = false;
+    public bool                    OCFishingHandleAR           = false;
     public Dictionary<ulong, bool> EnableCharacterForOCFishing = [];
-    public bool UseOnlyVersatile = true;
-    public string OceanChar = string.Empty;
-    public string OceanWorld = string.Empty;
-    public bool DiscardAfterVoyage = false;
-    public bool WaitOnTitleMenu = false;
+    public bool                    UseOnlyVersatile            = true;
+    public string                  OceanChar                   = string.Empty;
+    public string                  OceanWorld                  = string.Empty;
+    public bool                    DiscardAfterVoyage          = false;
+    public bool                    OCFishingStop100            = false;
 
     /*
      * Retainer Creator

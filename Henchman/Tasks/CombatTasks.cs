@@ -271,7 +271,7 @@ internal static class CombatTasks
 
             if (dutyUnlocked && ADPathAvailable)
             {
-                AutoDuty.Run(duty, 0, false);
+                AutoDuty.RunDutySupport(duty);
                 await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
             }
             else if (!dutyUnlocked && ADPathAvailable)
@@ -281,22 +281,19 @@ internal static class CombatTasks
                 {
                     case 1245:
                         await Questionable.CompleteQuest("697", 66233, token);
-                        AutoDuty.Run(duty, 0, false);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
+                        AutoDuty.RunDutySupport(duty);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
                         huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
                     case 1267:
                         await Questionable.CompleteQuest("764", 66300, token);
-                        AutoDuty.Run(duty, 0, false);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
+                        AutoDuty.RunDutySupport(duty);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
                         huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
                     case 1303:
                         await Questionable.CompleteQuest("921", 66457, token);
-                        AutoDuty.Run(duty, 0, false);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = true);
+                        AutoDuty.RunDutySupport(duty);
                         await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
                         huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;

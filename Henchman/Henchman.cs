@@ -38,7 +38,7 @@ public class Henchman : IDalamudPlugin
 
     public readonly WindowSystem  WindowSystem = new("Henchman");
     public          Configuration Config;
-    private         MainWindow    mainWindow;
+    internal         MainWindow    MainWindow;
     internal        StatusWindow  StatusWindow;
 
 
@@ -63,7 +63,7 @@ public class Henchman : IDalamudPlugin
     {
         WindowSystem.RemoveAllWindows();
 
-        mainWindow.Dispose();
+        MainWindow.Dispose();
         StatusWindow.Dispose();
 
         CancelAllTasks();
@@ -114,10 +114,10 @@ public class Henchman : IDalamudPlugin
         EzCmd.Add("/knightman", OnCommand);
         EzCmd.Add("/henchmore", OnCommand);
 
-        mainWindow   = new MainWindow();
+        MainWindow   = new MainWindow();
         StatusWindow = new StatusWindow();
 
-        WindowSystem.AddWindow(mainWindow);
+        WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(StatusWindow);
 
         Svc.PluginInterface.UiBuilder.Draw       += DrawUi;
@@ -195,7 +195,7 @@ public class Henchman : IDalamudPlugin
 
     public void ToggleMainUi()
     {
-        mainWindow.Toggle();
+        MainWindow.Toggle();
     }
 
     public static bool TryGetFeature<T>(out T result) where T : FeatureUI

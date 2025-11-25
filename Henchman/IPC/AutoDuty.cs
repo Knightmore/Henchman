@@ -16,4 +16,13 @@ public static class AutoDuty
 
     [EzIPC]
     public static Action<uint, int, bool> Run;
+
+    [EzIPC]
+    public static Action<string, object> SetConfig;
+
+    public static void RunDutySupport(uint territoryType, int loops = 0, bool bareMode = false)
+    {
+        SetConfig("dutyModeEnum", "Support");
+        Run(territoryType, loops, bareMode);
+    }
 }

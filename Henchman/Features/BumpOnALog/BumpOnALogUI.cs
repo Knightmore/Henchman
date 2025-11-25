@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -12,6 +11,7 @@ using Henchman.Models;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 
@@ -30,6 +30,8 @@ public class BumpOnALogUi : FeatureUI
     public override   string              Name     => "Bump On A Log";
     public override   string              Category => Henchman.Category.Combat;
     public override   FontAwesomeIcon     Icon     => FontAwesomeIcon.List;
+
+    
 
     public override Action Help => () =>
                                    {
@@ -55,16 +57,8 @@ public class BumpOnALogUi : FeatureUI
 
     public override bool LoginNeeded => true;
 
-    public override unsafe void Draw()
+    public override void Draw()
     {
-        classMonsterNoteId = Svc.Data.GetExcelSheet<ClassJob>()
-                                .GetRow(PlayerState.Instance()->CurrentClassJobId)
-                                .MonsterNote.RowId.ToInt();
-
-        gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
-                                  .GetRow(PlayerState.Instance()->GrandCompany)
-                                  .MonsterNote.RowId;
-
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
@@ -95,6 +89,7 @@ public class BumpOnALogUi : FeatureUI
                              .GetRow(PlayerState.Instance()->CurrentClassJobId);
 
         classMonsterNoteId = classJobRow.MonsterNote.RowId.ToInt();
+
         if (classMonsterNoteId is -1 or 127)
         {
             ImGuiEx.TextCentered(ImGuiColors.DalamudRed, "There is no hunt log for your class!");
@@ -106,14 +101,27 @@ public class BumpOnALogUi : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (StartButton() && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log"));
+                               if (StartButton() && !IsTaskEnqueued(Name))
+                               {
+                                   EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log", onDone: () =>
+                                                                                                                          {
+                                                                                                                              Bossmod.DisableAI();
+                                                                                                                              AutoRotation.Disable();
+                                                                                                                              ResetCurrentTarget();
+                                                                                                                          }, onAbort: () =>
+                                                                                                                                      {
+                                                                                                                                          Bossmod.DisableAI();
+                                                                                                                                          AutoRotation.Disable();
+                                                                                                                                          ResetCurrentTarget();
+                                                                                                                                      }));
+                               }
                            },
                            () =>
                            {
                                ImGui.Text(classJobRow.NameEnglish.ExtractText());
                                ImGui.SameLine();
 
-                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {currentClassLogRank + 1}");
+                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Difficulty: {currentClassLogRank + 1}");
                            });
 
         ImGui.Spacing();
@@ -123,7 +131,7 @@ public class BumpOnALogUi : FeatureUI
 
     private unsafe void DrawGcHuntLog()
     {
-        gcMonsterNoteId = (int)Svc.Data.Excel.GetSheet<GrandCompany>()
+        gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
                                   .GetRow(PlayerState.Instance()->GrandCompany)
                                   .MonsterNote.RowId;
 
@@ -148,14 +156,19 @@ public class BumpOnALogUi : FeatureUI
                                                                                                                                          Bossmod.DisableAI();
                                                                                                                                          AutoRotation.Disable();
                                                                                                                                          ResetCurrentTarget();
-                                                                                                                                     }));
+                                                                                                                                     }, onAbort: () =>
+                                                                                                                                                 {
+                                                                                                                                                     Bossmod.DisableAI();
+                                                                                                                                                     AutoRotation.Disable();
+                                                                                                                                                     ResetCurrentTarget();
+                                                                                                                                                 }));
                                }
                            }, () =>
                               {
                                   ImGui.Text(gcRow.Name.ExtractText());
                                   ImGui.SameLine();
 
-                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {currentGcLogRank}");
+                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {GetGCRankTitle()} - Difficulty: {currentGcLogRank}");
                               });
 
         ImGui.Spacing();
@@ -247,5 +260,41 @@ public class BumpOnALogUi : FeatureUI
 
 
         if (configChanged) EzConfig.Save();
+    }
+
+    public unsafe string GetGCRankTitle()
+    {
+        var playerState = PlayerState.Instance();
+        var playerSex   = playerState->Sex;
+        var playerGC    = playerState->GrandCompany;
+        switch (playerGC)
+            {
+                case 1:
+                    if (playerSex == 0)
+                        return Svc.Data.GetExcelSheet<GCRankLimsaMaleText>()
+                           .GetRow(playerState->GCRankMaelstrom)
+                           .Singular.ExtractText();
+                    return Svc.Data.GetExcelSheet<GCRankLimsaFemaleText>()
+                              .GetRow(playerState->GCRankMaelstrom)
+                              .Singular.ExtractText();
+                case 2:
+                    if (playerSex == 0)
+                        return Svc.Data.GetExcelSheet<GCRankGridaniaMaleText>()
+                                  .GetRow(playerState->GCRankTwinAdders)
+                                  .Singular.ExtractText();
+                    return Svc.Data.GetExcelSheet<GCRankGridaniaFemaleText>()
+                              .GetRow(playerState->GCRankTwinAdders)
+                              .Singular.ExtractText();
+                case 3:
+                    if (playerSex == 0)
+                        return Svc.Data.GetExcelSheet<GCRankUldahMaleText>()
+                                  .GetRow(playerState->GCRankImmortalFlames)
+                                  .Singular.ExtractText();
+                    return Svc.Data.GetExcelSheet<GCRankUldahFemaleText>()
+                              .GetRow(playerState->GCRankImmortalFlames)
+                              .Singular.ExtractText();
+                default:
+                    return "None";
+            }
     }
 }

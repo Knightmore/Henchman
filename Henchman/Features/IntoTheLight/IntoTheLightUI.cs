@@ -131,13 +131,6 @@ public class IntoTheLightUI : FeatureUI
                                                                 ImGui.SetNextItemWidth(100f);
                                                                 ImGuiEx.EnumCombo("##newclassJob", ref newCharacter.ClassJob);
 
-                                                                /*if (ImGuiEx.ExcelSheetCombo<ClassJob>("##newclassJob", out var selectedClass, s => s.GetRowOrDefault(newCharacter.ClassJobId) is { } row
-                                                                                                                                                          : string.Empty, x => Utils.ToTitleCaseExtended(x.Name, Svc.ClientState.ClientLanguage), x => x.RowId is >= 1 and <= 7 or 26))
-                                                                {
-                                                                    newCharacter.ClassJobId = selectedClass.RowId;
-                                                                    configChanged           = true;
-                                                                }*/
-
                                                                 row.TableNextColumn();
                                                                 var presetId = newCharacter.PresetId;
 

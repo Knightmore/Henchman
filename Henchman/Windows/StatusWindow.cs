@@ -76,9 +76,17 @@ public class StatusWindow : Window, IDisposable
 
         ImGui.SameLine(ImGui.GetContentRegionAvail()
                             .X -
-                       20);
+                       50);
 
         ImGui.PushFont(UiBuilder.IconFont);
+        if (ImGui.SmallButton(FontAwesomeIcon.Bars.ToIconString()))
+            P.MainWindow.IsOpen = true;
+        ImGui.PopFont();
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Open Main Menu");
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.SameLine(ImGui.GetContentRegionAvail()
+                            .X -
+                       20);
         if (ImGui.SmallButton(FontAwesomeIcon.Times.ToIconString()))
             IsOpen = false;
         ImGui.PopFont();

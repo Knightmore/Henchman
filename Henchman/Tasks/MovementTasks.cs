@@ -157,7 +157,6 @@ internal static class MovementTasks
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope($"Move To {position}");
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
-        // TODO: Figure out why a delay is now needed to not fail the pathfinding... Only happened with never vnav versions and happens exactly the moment the mesh is loaded (0% -> Ready)
         await Task.Delay(2 * GeneralDelayMs, token);
         if (Player.DistanceTo(position) < 5) return;
         if (Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
@@ -201,6 +200,7 @@ internal static class MovementTasks
         {
             await Task.Delay(GeneralDelayMs * 4, token);
             token.ThrowIfCancellationRequested();
+            ErrorIf(!Vnavmesh.PathIsRunning(), "Pathing was randomly stopped");
             if (Player.DistanceTo(position) < 50) break;
             if (Player.DistanceTo(lastPlayerPosition) < 1f)
             {

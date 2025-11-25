@@ -106,6 +106,13 @@ internal class OnABoatUI : FeatureUI
                                                    ImGui.SameLine(200 * GlobalFontScale);
                                                    configChanged |= ImGui.Checkbox("##HandleAR", ref C.OCFishingHandleAR);
                                                });
+
+            DrawCentered("##boatArStopAt100", () =>
+                                               {
+                                                   ImGui.Text("Stop if selected chars are lvl 100:");
+                                                   ImGui.SameLine(200 * GlobalFontScale);
+                                                   configChanged |= ImGui.Checkbox("##stopAt100", ref C.OCFishingStop100);
+                                               });
         }
 
         if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
@@ -117,7 +124,7 @@ internal class OnABoatUI : FeatureUI
                                                      ImGui.Text("Character Name:");
                                                      ImGui.SameLine(200 * GlobalFontScale);
                                                      ImGui.SetNextItemWidth(150f);
-                                                     configChanged |= ImGui.InputText("##character", ref C.OceanChar, 20);
+                                                     configChanged |= ImGui.InputText("##character", ref C.OceanChar, 21);
                                                  });
             DrawCentered("##boatWorld", () =>
                                         {
@@ -170,8 +177,7 @@ internal class OnABoatUI : FeatureUI
                                                                              .ToString(), 35, ColumnAlignment.Center),
                                                             new("Inv.", x => x.InventorySpace.ToString(), 75, ColumnAlignment.Center)
                                                     },
-                                                    () => feature.GetCurrentARCharacterData()
-                                                                 .Where(x => x.ClassJobLevelArray[17] >= 1),
+                                                    () => feature.GetCurrentARCharacterData(),
                                                     x => x.CID == Player.CID,
                                                     new Vector2(500, 0)
                                                    );
