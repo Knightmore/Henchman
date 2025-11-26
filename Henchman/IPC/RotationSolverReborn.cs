@@ -51,7 +51,10 @@ public static class RotationSolverReborn
     public static void Enable()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.RotationSolverReborn))
+        {
             ChangeOperatingMode((byte)StateCommandType.Manual);
+            Svc.Commands.ProcessCommand("/rotation Settings HostileType 0");
+        }
     }
 
     public static void Disable()

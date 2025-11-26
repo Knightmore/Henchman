@@ -1,11 +1,7 @@
-using System.IO.Pipes;
-using System.Linq;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using ECommons.GameHelpers;
+using ECommons.Throttlers;
 using Henchman.Data;
 using Henchman.Generated;
 using Henchman.Helpers;
@@ -14,6 +10,11 @@ using Henchman.Multibox;
 using Henchman.Multibox.Command;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.IO.Pipes;
+using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.TestyTrader;
 
@@ -382,9 +383,13 @@ internal partial class TestyTrader
         }
     }
 
+    private readonly List<OfflineCharacterData> characters = [];
+
     internal List<OfflineCharacterData> GetCurrentARCharacterData()
     {
-        List<OfflineCharacterData> characters = [];
+        if (!EzThrottler.Throttle("TestyTradersARCharacters"))
+            return characters;
+        characters.Clear();
         var                        cids       = IPC.AutoRetainer.GetRegisteredCIDs();
         foreach (var cid in cids) characters.Add(IPC.AutoRetainer.GetOfflineCharacterData(cid));
 
