@@ -56,7 +56,7 @@ internal class IntoTheLight
             if (validPresets > 0)
             {
                 await WaitUntilAsync(() => SelectIfUsePreset(C.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
-                if (C.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
+                if (C.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => AddonHelpers.SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
             }
 
             if (C.LightCharacters[index].PresetId == 255)
@@ -210,17 +210,6 @@ internal class IntoTheLight
             Callback.Fire(selectYesNoAddon, true, usePreset
                                                           ? 6
                                                           : 7);
-            return true;
-        }
-
-        return false;
-    }
-
-    private unsafe bool SelectPreset(byte presetPosition)
-    {
-        if (TryGetAddonByName<AtkUnitBase>("CharaMakeDataImport", out var charaMakeDataImportAddon) && charaMakeDataImportAddon->IsFullyLoaded())
-        {
-            Callback.Fire(charaMakeDataImportAddon, true, 102, (int)presetPosition, false);
             return true;
         }
 

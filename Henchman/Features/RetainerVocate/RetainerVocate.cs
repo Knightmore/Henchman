@@ -1,7 +1,3 @@
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.GameFunctions;
@@ -10,12 +6,19 @@ using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
 
 namespace Henchman.Features.RetainerVocate;
 
@@ -142,7 +145,7 @@ internal class RetainerVocate
         using var scope = new TaskDescriptionScope($"Create {createRetainerAmount} Retainer");
 
         for (var i = 0; i < createRetainerAmount; i++)
-            await CreateSingleRetainer(token);
+            await CreateSingleRetainer(token: token);
 
         return true;
     }
@@ -432,26 +435,49 @@ internal class RetainerVocate
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringHireARetainer), "SelectString HireARetainer", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
 
-        var documentsPath   = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var gameFolderPath  = Path.Combine(documentsPath, "My Games", "FINAL FANTASY XIV - A Realm Reborn");
-        var appearanceFiles = Directory.GetFiles(gameFolderPath, "FFXIV_CHARA_*");
+        await SetupRetainer(token: token);
+    }
 
-        if (appearanceFiles.Any()) await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
+    internal async Task SetupRetainer(bool newRetainer = true, byte presetslot = 255, string name = "", CancellationToken token = default)
+    {
+        uint validPresets;
+        unsafe
+        {
+            validPresets = Framework.Instance()->CharamakeAvatarSaveData->Release.GetValidSlotCount();
+        }
 
-        await WaitUntilAsync(() => SelectRetainerRaceAndGender((int)C.RetainerRace + (int)C.RetainerGender, token), "Select Retainer Race and Gender", token);
-        await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
+        if (validPresets > 0 && presetslot != 255)
+        {
+            await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
+            await WaitUntilAsync(() => AddonHelpers.SelectPreset(presetslot), "Select Preset", token);
+        }
+        else
+        {
+            await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
+            await WaitUntilAsync(() => SelectRetainerRaceAndGender((int)C.RetainerRace + (int)C.RetainerGender, token), "Select Retainer Race and Gender", token);
+            await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
+        }
+        
         await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
         await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoSaveAppearance), "SelectYesNo SaveAppearance", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoFinalizeRetainer), "SelectYesNo FinalizeRetainer", token);
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(C.RetainerPersonality)), "SelectString RetainerPersonality", token);
-        await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireThisRetainer), "SelectYesNo HireThisRetainer", token);
-        do
+        if (newRetainer) await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireThisRetainer), "SelectYesNo HireThisRetainer", token);
+        else await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoSatisfiedWithPersonality), "SelectYesNo SatisfiedWithPersonality", token);
+    
+        if (string.IsNullOrEmpty(name))
+            do
+            {
+                await WaitUntilAsync(() => InputRetainerName(token: token), "InputString RetainerName", token);
+                await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectStringHireTheServicesRetainer), "SelectYesNo HireTheServices", token);
+                await Task.Delay(GeneralDelayMs * 12, token);
+            }
+            while (Svc.Condition[ConditionFlag.OccupiedInQuestEvent]);
+        else
         {
-            await WaitUntilAsync(() => InputRetainerName(token), "InputString RetainerName", token);
-            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectStringHireTheServicesRetainer), "SelectYesNo HireTheServices", token);
-            await Task.Delay(GeneralDelayMs * 12, token);
+            await WaitUntilAsync(() => InputRetainerName(name, token), "InputString RetainerName", token);
+            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoCompleteReview), "SelectYesNo CompleteReview", token);
         }
-        while (Svc.Condition[ConditionFlag.OccupiedInQuestEvent]);
     }
 
     private async Task<bool> SelectRetainerRaceAndGender(int raceGender, CancellationToken token = default)
@@ -505,16 +531,15 @@ internal class RetainerVocate
         return false;
     }
 
-    private async Task<bool> InputRetainerName(CancellationToken token = default)
+    private async Task<bool> InputRetainerName(string name = "", CancellationToken token = default)
     {
         unsafe
         {
             if (TryGetAddonByName<AtkUnitBase>("InputString", out var inputString) && IsAddonReady(inputString))
             {
-                Callback.Fire(inputString, true, 0, C.RetainerGender == RetainerDetails.RetainerGender.Male
+                Callback.Fire(inputString, true, 0, string.IsNullOrEmpty(name) ? (C.RetainerGender == RetainerDetails.RetainerGender.Male
                                                             ? NameGenerator.GenerateMasculineName
-                                                            : NameGenerator.GenerateFeminineName, "");
-                Debug("Input Retainer Name");
+                                                            : NameGenerator.GenerateFeminineName) : name, "");
                 return true;
             }
         }

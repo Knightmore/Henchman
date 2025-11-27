@@ -17,7 +17,7 @@ namespace Henchman.Features.OnYourMark;
 [Feature]
 public class OnYourMarkUi : FeatureUI
 {
-    private readonly OnYourMark      feature = new();
+    internal readonly OnYourMark      feature = new();
     public override  string          Name     => "On Your Mark";
     public override  string          Category => Henchman.Category.Combat;
     public override  FontAwesomeIcon Icon     => FontAwesomeIcon.Bullseye;

@@ -2,22 +2,24 @@
 using Henchman.Features.Private.MappingTheRealm;
 using Henchman.Features.Private;
 #endif
-using System.Linq;
-using System.Reflection;
 using Dalamud.Game;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ECommons.Automation;
 using ECommons.Configuration;
-using ECommons.EzHookManager;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Henchman.Data;
 using Henchman.Features.BumpOnALog;
+using Henchman.Features.OnYourMark;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Tweaks;
 using Henchman.Windows;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Reflection;
 using Module = ECommons.Module;
 
 namespace Henchman;
@@ -109,6 +111,7 @@ public class Henchman : IDalamudPlugin
                                           /henchman BumpOnALog <Class|GC> [RunDuties] → Run current huntlog rank for Class/GC
                                           /henchman OnYourMark → Runs with currently selected HuntBills
                                           /henchman RetainerVocate <1-10> <RetainerClassAbbr> <QuestClassAbbr> <FirstExploration> -> Run retainer creation with selected parameters and random names
+                                          /henchman SetupRetainer <Name> <PresetId> -> Runs Retainer Setup for Retainer Fantasia. Keep PresetId and/or Name empty to randomize them.
                                           /henchman Stop
                                           """);
         EzCmd.Add("/knightman", OnCommand);
@@ -157,7 +160,7 @@ public class Henchman : IDalamudPlugin
         }
         else if (args.StartsWith("OnYourMark", StringComparison.InvariantCultureIgnoreCase))
         {
-            if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name)) EnqueueTask(new TaskRecord(bumpOnALog.feature.StartClassRank, "Bump On A Log - Rank Log"));
+            if (TryGetFeature<OnYourMarkUi>(out var onYourMark) && !IsTaskEnqueued(onYourMark.Name)) EnqueueTask(new TaskRecord(onYourMark.feature.Start, "On Your Mark"));
         }
         else if (args.StartsWith("RetainerVocate", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -179,6 +182,60 @@ public class Henchman : IDalamudPlugin
                             }
                         }
                     }
+                }
+            }
+        }
+        else if (args.StartsWith("SetupRetainer", StringComparison.InvariantCultureIgnoreCase))
+        {
+            var  parameters   = args.Split(" ");
+            uint validPresets;
+            unsafe
+            {
+                validPresets = Framework.Instance()->CharamakeAvatarSaveData->Release.GetValidSlotCount();
+            }
+            if (!Svc.Condition[ConditionFlag.CreatingCharacter]) return;
+
+            switch (parameters.Length)
+            {
+                case 2 when byte.TryParse(parameters[1], out var presetId):
+                {
+                    if (validPresets < presetId)
+                    {
+                        ChatPrintWarning("Your Preset ID is invalid!");
+                        return;
+                    }
+                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, token: token), "Setup Retainer"));
+                    break;
+                }
+                case 2:
+                {
+                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, name: parameters[1], token: token), $"Setup {parameters[1]}"));
+                    break;
+                }
+                case 3:
+                {
+                    var name = parameters[1];
+
+                    if (byte.TryParse(parameters[2], out var presetId))
+                    {
+                        if (validPresets < presetId)
+                        {
+                            ChatPrintWarning("Your Preset ID is invalid!");
+                            return;
+                        }
+                        if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                            EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, name, token), $"Setup {name}"));
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, token: token), "Setup Retainer"));
+                    break;
                 }
             }
         }

@@ -28,6 +28,15 @@ internal static class Lang
                                                              .ReadStringColumn(1)
                                                              .ExtractText();
 
+    internal static string SelectYesNoSatisfiedWithPersonality => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerDesk_00009")
+                                                                     .GetRow(134)
+                                                                     .ReadStringColumn(1)
+                                                                     .ExtractText();
+
+    internal static ReadOnlySeString SelectYesNoCompleteReview => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerDesk_00009")
+                                                           .GetRow(137)
+                                                           .ReadStringColumn(1);
+
     internal static string SelectStringHireARetainer => Svc.Data.GetExcelSheet<RawRow>(name: "custom/000/CmnDefRetainerDesk_00009")
                                                            .GetRow(6)
                                                            .ReadStringColumn(1)
