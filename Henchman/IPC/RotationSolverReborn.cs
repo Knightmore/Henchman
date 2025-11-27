@@ -39,7 +39,13 @@ public static class RotationSolverReborn
         /// <summary>
         /// </summary>
         [Description("This mode is managed by the Autoduty plugin")]
-        AutoDuty
+        AutoDuty,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [Description("This mode is managed by the Henchman plugin")]
+        Henched,
     }
 
     [EzIPC]
@@ -52,8 +58,7 @@ public static class RotationSolverReborn
     {
         if (SubscriptionManager.IsInitialized(IPCNames.RotationSolverReborn))
         {
-            ChangeOperatingMode((byte)StateCommandType.Manual);
-            Svc.Commands.ProcessCommand("/rotation Settings HostileType 0");
+            ChangeOperatingMode((byte)StateCommandType.Henched);
         }
     }
 
