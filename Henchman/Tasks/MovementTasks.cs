@@ -32,6 +32,7 @@ internal static class MovementTasks
         }
 
         Verbose("Using Mount");
+        await CheckIfPlayerIsStunned(token);
         unsafe
         {
             var actionManager = ActionManager.Instance();
@@ -158,7 +159,7 @@ internal static class MovementTasks
         using var scope = new TaskDescriptionScope($"Move To {position}");
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !IsPlayerBusy, "Wait for navmesh", token);
         await Task.Delay(2 * GeneralDelayMs, token);
-        if (Player.DistanceTo(position) < 5) return;
+        if (Player.DistanceTo(position) < 2) return;
         if (Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo(position, Player.Mounted && Player.CanFly), $"Could not find path to {position}");
@@ -170,7 +171,7 @@ internal static class MovementTasks
                                      if (Svc.Objects.OfType<IPlayerCharacter>()
                                             .TryGetFirst(x => x.Struct()->ContentId == CID, out var boss))
                                      {
-                                         if (Player.DistanceTo(boss.Position) < 3)
+                                         if (Player.DistanceTo(boss.Position) < 2)
                                          {
                                              Vnavmesh.StopCompletely();
                                              return true;
@@ -220,6 +221,7 @@ internal static class MovementTasks
         if (Player.Territory != aetheryteTerritoryId && Player.Territory != territoryId)
         {
             using var scope = new TaskDescriptionScope($"Teleport to {territoryId}");
+            await CheckIfPlayerIsStunned(token);
             ErrorThrowIf(!Lifestream.Teleport(aetheryteId, 0), $"Teleport to {aetheryteId} failed.");
             await WaitUntilAsync(() => Player.Territory == aetheryteTerritoryId || Player.Territory == territoryId, "Check for right territory", token);
         }
@@ -235,6 +237,7 @@ internal static class MovementTasks
         if (Player.Territory != territory.RowId)
         {
             using var scope = new TaskDescriptionScope($"Teleport to aetheryte {aetheryteId}");
+            await CheckIfPlayerIsStunned(token);
             await WaitWhileAsync(() => Player.IsBusy, "Wait while Player is busy", token);
             while (!Svc.Condition[ConditionFlag.Casting])
             {
@@ -362,6 +365,16 @@ internal static class MovementTasks
         }
 
         return true;
+    }
+
+    private static async Task CheckIfPlayerIsStunned(CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        uint[] paralyzeIds = { 17, 216, 482, 988, 3463, 3963 };
+        if (paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x)))
+        {
+            await WaitWhileAsync(() => paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x)), "Wait for paralyze status to end", token);
+        }
     }
 }
 

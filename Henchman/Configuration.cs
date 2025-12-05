@@ -65,15 +65,17 @@ public class Configuration
      * Retainer Creator
      */
 
-    public int RetainerAmount = 1;
-    public NpcDatabase.StarterCity RetainerCity = NpcDatabase.StarterCity.LimsaLominsa;
-    public uint RetainerClass = 18;
-    public RetainerDetails.RetainerGender RetainerGender;
+    public int                                 RetainerAmount     = 1;
+    public RetainerCharacter[]                 RetainerCharacters = Enumerable.Range(0, 10).Select(i => new RetainerCharacter()).ToArray();
+    public NpcDatabase.StarterCity             RetainerCity       = NpcDatabase.StarterCity.LimsaLominsa;
+    public string[]                            RetainerName       = new string[10];
+    public uint                                RetainerClass      = 18;
+    public RetainerDetails.RetainerGender      RetainerGender;
     public RetainerDetails.RetainerPersonality RetainerPersonality = RetainerDetails.RetainerPersonality.Polite;
-    public RetainerDetails.RetainerRace RetainerRace;
-    public bool SendOnFirstExploration = false;
-    public uint QstClassJob = 1;
-    public bool UseMaxRetainerAmount = true;
+    public RetainerDetails.RetainerRace        RetainerRace;
+    public bool                                SendOnFirstExploration = false;
+    public uint                                QstClassJob            = 1;
+    public bool                                UseMaxRetainerAmount   = true;
 
     /*
      * Bump On A Log
@@ -87,15 +89,17 @@ public class Configuration
     /*
      * Testy Trader
      */
-    public TradeSession TradeSession = TradeSession.Boss;
-    public bool TestyTraderARSupport = false;
-    public Dictionary<ulong, bool> EnableCharacterForTrade = [];
+    public TradeSession                                 TradeSession                  = TradeSession.Boss;
+    public bool                                         TestyTraderARSupport          = false;
+    public Dictionary<ulong, bool>                      EnableCharacterForTrade       = [];
     public List<TestyTraderUI.TestyTraderCharacterData> TestyTraderImportedCharacters = [];
-    public List<TradeEntry> TradeEntries = [];
+    public List<TradeEntry>                             TradeEntries                  = [];
+    public bool                                         UseARItemSell;
 
     /*
      * Into The Light
      */
 
-    public List<LightCharacter> LightCharacters = [];
+    public List<LightCharacter> LightCharacters  = [];
+    public bool                 LightNoLoginSkip = false;
 }

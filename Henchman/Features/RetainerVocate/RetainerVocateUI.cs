@@ -4,6 +4,7 @@ using Dalamud.Interface;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Henchman.Features.IntoTheLight;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
@@ -16,6 +17,7 @@ namespace Henchman.Features.RetainerVocate;
 public class RetainerVocateUI : FeatureUI
 {
     internal readonly RetainerVocate  feature = new();
+    private           bool            configChanged;
     public override   string          Name     => "Retainer Vocate";
     public override   string          Category => Henchman.Category.Economy;
     public override   FontAwesomeIcon Icon     => FontAwesomeIcon.ConciergeBell;
@@ -44,94 +46,116 @@ public class RetainerVocateUI : FeatureUI
 
     public override unsafe void Draw()
     {
-        var configChanged = false;
+        configChanged = false;
 
         if (!QuestManager.IsQuestComplete(66196))
             ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
         else
         {
-            DrawCentered("###Start", () => Layout.DrawButton(() =>
-                                                             {
-                                                                 if (StartButton() && !IsTaskEnqueued(Name))
-                                                                 {
-                                                                     EnqueueTask(new TaskRecord(token => feature.RunFullCreation(token, C.UseMaxRetainerAmount
-                                                                                                                                                ? 10
-                                                                                                                                                : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
-                                                                 }
-                                                             }));
+            DrawCentered("###StartRetainerVocate", () => Layout.DrawButton(() =>
+                                                                           {
+                                                                               if (StartButton() && !IsTaskEnqueued(Name))
+                                                                               {
+                                                                                   EnqueueTask(new TaskRecord(token => feature.RunFullCreation(token, C.UseMaxRetainerAmount
+                                                                                                                                                              ? 10
+                                                                                                                                                              : (uint)C.RetainerAmount + 1, C.RetainerClass, C.QstClassJob), Name));
+                                                                               }
+                                                                           }));
 
 
-            ImGui.Text("Fill all retainer slots");
-            ImGui.SameLine(150 * GlobalFontScale);
-            configChanged |= ImGui.Checkbox("##fillAllSlots", ref C.UseMaxRetainerAmount);
+            DrawCentered("##RetainerVocateSlots", () =>
+                                                  {
+                                                      if (!C.UseMaxRetainerAmount)
+                                                      {
+                                                          if (RetainerManager.Instance()->MaxRetainerEntitlement == 0)
+                                                          {
+                                                              ImGuiEx.Text(EzColor.Red, "Could not read the maximum allowed amount of retainers on your account.");
+                                                              ImGuiEx.Text(EzColor.Red, "Please interact with a \"Retainer Vocate\" to progress.");
+                                                          }
+                                                          else
+                                                          {
+                                                              ImGui.Text("Fill all retainer slots");
+                                                              ImGui.SameLine(150 * GlobalFontScale);
+                                                              configChanged |= ImGui.Checkbox("##fillAllSlots", ref C.UseMaxRetainerAmount);
+                                                              ImGui.Text("Retainer amount");
+                                                              ImGui.SameLine(150          * GlobalFontScale);
+                                                              ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                              configChanged |= ImGui.Combo("##retainerAmount", ref C.RetainerAmount, Enumerable.Range(1, 10)
+                                                                                                                                               .Select(x => x.ToString())
+                                                                                                                                               .ToArray(), 10);
+                                                              ImGui.Text("City");
+                                                              ImGui.SameLine(150          * GlobalFontScale);
+                                                              ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                              configChanged |= ImGuiEx.EnumCombo("##retainerCity", ref C.RetainerCity);
+                                                              ImGui.Text("Assign Exploration");
+                                                              ImGui.SameLine(150 * GlobalFontScale);
+                                                              configChanged |= ImGui.Checkbox("##firstExploration", ref C.SendOnFirstExploration);
+                                                          }
+                                                      }
+                                                  });
             if (!C.UseMaxRetainerAmount)
             {
-                ImGui.Text("Retainer amount");
-
-                if (RetainerManager.Instance()->MaxRetainerEntitlement == 0)
-                {
-                    ImGuiEx.Text(EzColor.Red, "Could not read the maximum allowed amount of retainers on your account.");
-                    ImGuiEx.Text(EzColor.Red, "Please interact with a \"Retainer Vocate\" to progress.");
-                }
-                else
-                {
-                    ImGui.SameLine(150          * GlobalFontScale);
-                    ImGui.SetNextItemWidth(120f * GlobalFontScale);
-                    configChanged |= ImGui.Combo("##retainerAmount", ref C.RetainerAmount, Enumerable.Range(1, 10)
-                                                                                                     .Select(x => x.ToString())
-                                                                                                     .ToArray(), 10);
-                }
+                if (RetainerManager.Instance()->MaxRetainerEntitlement != 0)
+                    DrawCentered("##RetainerVocateNameList", () => DrawRetainerVocateTable());
             }
-
-            ImGui.Text("City");
-            ImGui.SameLine(150          * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            configChanged |= ImGuiEx.EnumCombo("##retainerCity", ref C.RetainerCity);
-            ImGui.Text("Race");
-            ImGui.SameLine(150 * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            configChanged |= ImGuiEx.EnumCombo("##retainerRace", ref C.RetainerRace);
-            ImGui.Text("Gender");
-            ImGui.SameLine(150 * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            configChanged |= ImGuiEx.EnumCombo("##retainerGender", ref C.RetainerGender);
-            ImGui.Text("Personality");
-            ImGui.SameLine(150 * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            configChanged |= ImGuiEx.EnumCombo("##retainerPersonality", ref C.RetainerPersonality);
-
-            ImGui.Text("Retainer Class");
-            ImGui.SameLine(150 * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            if (ImGuiEx.ExcelSheetCombo<ClassJob>("##retainerJob", out var selected, s => s.GetRowOrDefault(C.RetainerClass) is { } row
-                                                                                                  ? s.GetRow(C.RetainerClass)
-                                                                                                     .Abbreviation.ExtractText()
-                                                                                                  : string.Empty, x => x.Abbreviation.ExtractText(),
-                                                  x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26))
+            else
             {
-                C.RetainerClass = selected.RowId;
-                configChanged   = true;
-            }
+                DrawCentered("##RetainerVocateRandomizeDetails", () =>
+                                                                 {
+                                                                     ImGui.Text("Fill all retainer slots");
+                                                                     ImGui.SameLine(150 * GlobalFontScale);
+                                                                     configChanged |= ImGui.Checkbox("##fillAllSlots", ref C.UseMaxRetainerAmount);
+                                                                     ImGui.Text("Race");
+                                                                     ImGui.SameLine(150          * GlobalFontScale);
+                                                                     ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                     configChanged |= ImGuiEx.EnumCombo("##retainerRace", ref C.RetainerRace);
+                                                                     ImGui.Text("Gender");
+                                                                     ImGui.SameLine(150          * GlobalFontScale);
+                                                                     ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                     configChanged |= ImGuiEx.EnumCombo("##retainerGender", ref C.RetainerGender);
+                                                                     ImGui.Text("Personality");
+                                                                     ImGui.SameLine(150          * GlobalFontScale);
+                                                                     ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                     configChanged |= ImGuiEx.EnumCombo("##retainerPersonality", ref C.RetainerPersonality);
 
-            ImGui.Text("Assign Exploration");
-            ImGui.SameLine(150 * GlobalFontScale);
-            configChanged |= ImGui.Checkbox("##firstExploration", ref C.SendOnFirstExploration);
+                                                                     ImGui.Text("Retainer Class");
+                                                                     ImGui.SameLine(150          * GlobalFontScale);
+                                                                     ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                     if (ImGuiEx.ExcelSheetCombo<ClassJob>("##retainerJob", out var selected, s => s.GetRowOrDefault(C.RetainerClass) is { } row
+                                                                                                                                                           ? s.GetRow(C.RetainerClass)
+                                                                                                                                                              .Abbreviation.ExtractText()
+                                                                                                                                                           : string.Empty, x => x.Abbreviation.ExtractText(),
+                                                                                                           x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26))
+                                                                     {
+                                                                         C.RetainerClass = selected.RowId;
+                                                                         configChanged   = true;
+                                                                     }
+
+                                                                     ImGui.Text("Assign Exploration");
+                                                                     ImGui.SameLine(150 * GlobalFontScale);
+                                                                     configChanged |= ImGui.Checkbox("##firstExploration", ref C.SendOnFirstExploration);
+                                                                 });
+            }
 
             ImGui.Separator();
 
             ImGui.NewLine();
-            ImGui.Text("Class/Job for Quest:");
-            ImGui.SameLine(150 * GlobalFontScale);
-            ImGui.SetNextItemWidth(120f * GlobalFontScale);
-            if (ImGuiEx.ExcelSheetCombo<ClassJob>("##qstCombatJob", out var classJobSheet, s => s.GetRowOrDefault(C.QstClassJob) is { } row
-                                                                                                        ? s.GetRow(C.QstClassJob)
-                                                                                                           .Abbreviation.ExtractText()
-                                                                                                        : string.Empty,
-                                                  x => x.Abbreviation.ExtractText(), x => x.RowId is >= 1 and <= 7 or >= 19 and <= 42))
-            {
-                C.QstClassJob = classJobSheet.RowId;
-                configChanged = true;
-            }
+
+            DrawCentered("##RetainerVocateQstClass", () =>
+                                                     {
+                                                         ImGui.Text("Class/Job for Quest:");
+                                                         ImGui.SameLine(150          * GlobalFontScale);
+                                                         ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                         if (ImGuiEx.ExcelSheetCombo<ClassJob>("##qstCombatJob", out var classJobSheet, s => s.GetRowOrDefault(C.QstClassJob) is { } row
+                                                                                                                                                     ? s.GetRow(C.QstClassJob)
+                                                                                                                                                        .Abbreviation.ExtractText()
+                                                                                                                                                     : string.Empty,
+                                                                                               x => x.Abbreviation.ExtractText(), x => x.RowId is >= 1 and <= 7 or >= 19 and <= 42))
+                                                         {
+                                                             C.QstClassJob = classJobSheet.RowId;
+                                                             configChanged = true;
+                                                         }
+                                                     });
 
             if (ImGui.CollapsingHeader("Single Backup Tasks##singleTasks"))
             {
@@ -166,7 +190,7 @@ public class RetainerVocateUI : FeatureUI
                         ImGuiEx.Text(EzColor.Red, "You have no gearset registered for your chosen class.");
                     else if (ImGui.Button("Run Quest") && !Questionable.IsRunning() && !Utils.IsPluginBusy)
                     {
-                        ChangeToHighestGearsetForClassJobId(C.QstClassJob);
+                        ErrorIf(!ChangeToHighestGearsetForClassJobId(C.QstClassJob), $"No gearset for {C.QstClassJob} found!");
                         if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
                         {
                             FullError("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
@@ -183,11 +207,70 @@ public class RetainerVocateUI : FeatureUI
                         EnqueueTask(new TaskRecord(feature.GoToRetainerVocate, "Go to Retainer Vocate"));
                     EnqueueTask(new TaskRecord(token => feature.BuyAndEquipRetainerGear(token, C.UseMaxRetainerAmount
                                                                                                        ? 10
-                                                                                                       : (uint)C.RetainerAmount + 1, C.RetainerClass), "Buy and Equip Retainer Gear"));
+                                                                                                       : (uint)C.RetainerAmount + 1, C.UseMaxRetainerAmount ? C.RetainerClass : 0), "Buy and Equip Retainer Gear"));
                 }
             }
         }
 
         if (configChanged) EzConfig.Save();
+    }
+
+    private void DrawRetainerVocateTable()
+    {
+        var table = new Table<RetainerCharacter>(
+                                      "##RetainerVocateTable",
+                                      new List<TableColumn<RetainerCharacter>>
+                                      {
+                                              new("Name", Width: 160, DrawCustom: (retainer, index) =>
+                                                                                  {
+                                                                                      if (index > C.RetainerAmount) return;
+                                                                                      var oldName = retainer.Name;
+                                                                                      ImGui.SetNextItemWidth(160f);
+                                                                                      if (ImGui.InputText($"##newFirstName{index}", ref retainer.Name, 20))
+                                                                                      {
+                                                                                          var duplicate = C.RetainerCharacters
+                                                                                                           .Where((name, idx) => idx != index)
+                                                                                                           .Any(name => name.Name == C.RetainerCharacters[index].Name);
+                                                                                          if (duplicate)
+                                                                                              retainer.Name = oldName;
+                                                                                          else
+                                                                                              configChanged = true;
+                                                                                      }
+                                                                                  }),
+                                              new("Race", Width: 110, DrawCustom: (retainer, index) =>
+                                                                                 {
+                                                                                     ImGui.SetNextItemWidth(110f);
+                                                                                     configChanged |= ImGuiEx.EnumCombo($"##retainerRace{index}", ref retainer.Race);
+                                                                                 }),
+                                              new("Gender", Width: 110, DrawCustom: (retainer, index) =>
+                                                                                 {
+                                                                                     ImGui.SetNextItemWidth(110f);
+                                                                                     configChanged |= ImGuiEx.EnumCombo($"##retainerGender{index}", ref retainer.Gender);
+                                                                                 }),
+                                              new("Personality", Width: 110, DrawCustom: (retainer, index) =>
+                                                                                   {
+                                                                                       ImGui.SetNextItemWidth(110f);
+                                                                                       configChanged |= ImGuiEx.EnumCombo($"##retainerPersonality{index}", ref retainer.Personality);
+                                                                                   }),
+                                              new("Class", Width: 70, DrawCustom: (retainer, index) =>
+                                                                                  {
+                                                                                      ImGui.SetNextItemWidth(70f);
+                                                                                      if (ImGuiEx.ExcelSheetCombo<ClassJob>($"##retainerJob{index}", out var selected, s => s.GetRowOrDefault(retainer.Class) is { } row
+                                                                                                                                                                            ? s.GetRow(retainer.Class)
+                                                                                                                                                                               .Abbreviation.ExtractText()
+                                                                                                                                                                            : string.Empty, x => x.Abbreviation.ExtractText(),
+                                                                                                                            x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26))
+                                                                                      {
+                                                                                          retainer.Class       = selected.RowId;
+                                                                                          configChanged = true;
+                                                                                      }
+                                                                                  })
+                                      },
+                                      () => C.RetainerCharacters,
+                                      C.RetainerAmount + 1,
+                                      size: new Vector2(600, 27 + ((C.RetainerAmount + 1) * 27))
+                                     );
+
+        table.Draw();
     }
 }

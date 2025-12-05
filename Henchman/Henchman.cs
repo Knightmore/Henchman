@@ -20,6 +20,7 @@ using Henchman.Windows;
 using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Reflection;
+using ECommons.EzHookManager;
 using Module = ECommons.Module;
 
 namespace Henchman;
@@ -226,7 +227,7 @@ public class Henchman : IDalamudPlugin
                             return;
                         }
                         if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                            EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, name, token), $"Setup {name}"));
+                            EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, name, token: token), $"Setup {name}"));
                     }
 
                     break;

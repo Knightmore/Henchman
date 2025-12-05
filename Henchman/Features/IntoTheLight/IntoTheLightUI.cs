@@ -32,13 +32,13 @@ public class IntoTheLightUI : FeatureUI
 
     private readonly IEnumerable<int> values = Enumerable.Range(1, 40);
     private          LightCharacter?  charToDelete;
+    
+    private LightCharacter  newCharacter = new();
+    public override  string          Name     => "Into The Light";
+    public override  string          Category => Henchman.Category.Exploration;
+    public override  FontAwesomeIcon Icon     => FontAwesomeIcon.PersonRays;
 
-    private         LightCharacter  newCharacter = new();
-    public override string          Name     => "Into The Light";
-    public override string          Category => Henchman.Category.Exploration;
-    public override FontAwesomeIcon Icon     => FontAwesomeIcon.PersonRays;
-
-    public override Action? Help => () => { ImGui.Text("Configure your wanted character data hit Start."); };
+    public override Action? Help => () => { ImGui.Text("Configure your wanted character data, go to Titlemenu and hit Start."); };
 
     public override bool LoginNeeded => false;
 
@@ -52,13 +52,20 @@ public class IntoTheLightUI : FeatureUI
                                                                if (ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light", () => feature.Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
                                                            });
                                      });
+        DrawCentered("##LightNoLoginSkip", () =>
+                                           {
+                                               ImGui.Checkbox("No login skip", ref C.LightNoLoginSkip); 
+                                               HelpMarker(() => ImGui.Text("Let each new character login. Useful for character registration in AutoRetainer."), sameLine: true);
+                                           });
 
 
         var characterColumns = new List<TableColumn<LightCharacter>>
                                {
-                                       new("", Width: 30, DrawCustom: x =>
+                                       new("", Width: 30, DrawCustom: (x, index) =>
                                                                       {
-                                                                          if (ImGuiComponents.IconButton($"##{x.GetHashCode()}Remove", FontAwesomeIcon.Trash)) charToDelete = x;
+                                                                          if (ImGuiComponents.IconButton($"##Light{x.GetHashCode()}Remove", FontAwesomeIcon.Trash)) charToDelete = x;
+                                                                          ImGui.SameLine();
+                                                                          if (ImGuiComponents.IconButton($"##Light{x.GetHashCode()}Copy", FontAwesomeIcon.Copy)) ;
                                                                       }),
                                        new("First Name", x => string.IsNullOrEmpty(x.FirstName)
                                                                       ? "Random"
@@ -94,8 +101,11 @@ public class IntoTheLightUI : FeatureUI
                                                                 if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !C.LightCharacters.Any(x => !randomFirstName && x.FirstName == newCharacter.FirstName && !randomLastName && x.LastName == newCharacter.LastName && x.WorldId == newCharacter.WorldId))
                                                                 {
                                                                     C.LightCharacters.Add(newCharacter);
-                                                                    newCharacter  = new LightCharacter();
-                                                                    configChanged = true;
+                                                                    var tempCharacter = new LightCharacter(newCharacter);
+                                                                    tempCharacter.FirstName = "";
+                                                                    tempCharacter.LastName  = "";
+                                                                    newCharacter            = tempCharacter;
+                                                                    configChanged           = true;
                                                                 }
 
                                                                 row.TableNextColumn();

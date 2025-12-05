@@ -123,6 +123,13 @@ public class TestyTraderUI : FeatureUI
                 }
             }
         }
+        else
+        {
+            //TODO: Move to release after tests
+#if PRIVATE
+            DrawCentered("##UseARItemSell", () => configChanged |= ImGui.Checkbox("Use AR ItemSell", ref C.UseARItemSell));
+#endif
+        }
 
         if (characterToRemove != null)
             C.TestyTraderImportedCharacters.Remove(characterToRemove);
@@ -135,7 +142,7 @@ public class TestyTraderUI : FeatureUI
                                                     "##ARTraderTable",
                                                     new List<TableColumn<OfflineCharacterData>>
                                                     {
-                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: x =>
+                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
                                                                                                                                        {
                                                                                                                                            if (!C.EnableCharacterForTrade.TryAdd(x.CID, false))
                                                                                                                                            {
@@ -174,7 +181,7 @@ public class TestyTraderUI : FeatureUI
     {
         var characterColumns = new List<TableColumn<TestyTraderCharacterData>>
                                {
-                                       new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: x =>
+                                       new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
                                                                                                                   {
                                                                                                                       var isEnabled = x.Enabled;
                                                                                                                       if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
@@ -194,7 +201,7 @@ public class TestyTraderUI : FeatureUI
                                        new("World", x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
                                                             .Name.ExtractText(), 100, ColumnAlignment.Center),
-                                       new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: x =>
+                                       new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                  {
                                                                                                                      if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) characterToRemove = x;
                                                                                                                  })
@@ -302,7 +309,7 @@ public class TestyTraderUI : FeatureUI
                                                            }, sameLine: true);
                                             });
 
-            DrawCentered("##CenteredManualTraderTable", () => DrawManualTable());
+            DrawCentered("##ManualTraderTable", () => DrawManualTable());
         }
 
         if (configChanged) EzConfig.Save();
@@ -310,8 +317,9 @@ public class TestyTraderUI : FeatureUI
 
     private void DrawItemTab()
     {
-        DrawCentered("##CenteredTraderItemSelector", () =>
+        DrawCentered("##TraderItemSelector", () =>
                                                      {
+                                                         ImGui.SetNextItemWidth(500 * GlobalFontScale);
                                                          if (ImGui.BeginCombo("##addItem", "Add Item", ImGuiComboFlags.HeightLarge))
                                                          {
                                                              ImGuiEx.InputWithRightButtonsArea(() => { ImGui.InputTextWithHint("##itemSearch", "Search...", ref Search, 100); },
@@ -382,7 +390,7 @@ public class TestyTraderUI : FeatureUI
                                                          }
                                                      });
 
-        DrawCentered("##CenteredTraderItemTable", () => DrawItemTable());
+        DrawCentered("##TraderItemTable", () => DrawItemTable());
     }
 
     private void DrawItemTable()
@@ -392,8 +400,8 @@ public class TestyTraderUI : FeatureUI
                                           "##TraderItemTable",
                                           new List<TableColumn<TradeEntry>>
                                           {
-                                                  new("##Enable", Width: 25, DrawCustom: x => { configChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
-                                                  new("Name", Width: 300, DrawCustom: x =>
+                                                  new("##Enable", Width: 25, DrawCustom: (x, index) => { configChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
+                                                  new("Name", Width: 300, DrawCustom: (x, index) =>
                                                                                       {
                                                                                           if (ThreadLoadImageHandler.TryGetIconTextureWrap(Svc.Data.GetExcelSheet<Item>()
                                                                                                                                               .GetRow(x.Id % 1_000_000)
@@ -412,23 +420,23 @@ public class TestyTraderUI : FeatureUI
                                                                                                                 : "")
                                                                                                       );
                                                                                       }),
-                                                  new("Amount", Width: 120, DrawCustom: x =>
+                                                  new("Amount", Width: 120, DrawCustom: (x, index) =>
                                                                                         {
                                                                                             ImGui.SetNextItemWidth(120);
                                                                                             configChanged |= ImGui.InputUInt($"##{x.Id}Amount", ref x.Amount);
                                                                                         }),
-                                                  new("TradeType", Width: 120, DrawCustom: x =>
+                                                  new("TradeType", Width: 120, DrawCustom: (x, index) =>
                                                                                            {
                                                                                                ImGui.SetNextItemWidth(120);
                                                                                                configChanged |= ImGuiEx.EnumCombo($"##tradeType{x.Id}", ref x.Mode);
                                                                                            }),
-                                                  new("##Controls", Width: 35, Alignment: ColumnAlignment.Center, DrawCustom: x =>
+                                                  new("##Controls", Width: 45, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                               {
                                                                                                                                   if (ImGuiEx.IconButton(FontAwesomeIcon.Trash, x.Id.ToString())) itemToDelete = x;
                                                                                                                               })
                                           },
                                           () => C.TradeEntries,
-                                          size: new Vector2(625, 0)
+                                          size: new Vector2(635, 0)
                                          );
 
         table.Draw();

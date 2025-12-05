@@ -150,7 +150,7 @@ internal class OnABoatUI : FeatureUI
                                                     "##ARFisherTable",
                                                     new List<TableColumn<OfflineCharacterData>>
                                                     {
-                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: x =>
+                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
                                                                                                                                        {
                                                                                                                                            if (!C.EnableCharacterForOCFishing.TryAdd(x.CID, false))
                                                                                                                                            {

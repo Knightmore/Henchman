@@ -182,10 +182,23 @@ internal static class CombatTasks
                                 {
                                     if (markPosition.ToVector2()
                                                     .IsWithinRadius(new Vector2(175f, 223f)))
+                                    {
                                         await MoveTo(new Vector3(198.923f, -161.5932f, 115.7771f), true, token);
+                                        await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for area change", token);
+                                    }
+                                    else
+                                    {
+                                        if (Player.Position.ToVector2()
+                                                  .IsWithinRadius(new Vector2(175f, 223f)))
+                                        {
+                                            await MoveTo(new Vector3(201f, -162f, 118f), true, token);
+                                            await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for area change", token);
+                                        }
+                                    }
+                                    
                                 }
 
-                                if (Vnavmesh.QueryMeshPointOnFloor(markPosition with { Y = markPosition.Y + 20 }, false, 0.05f) is { } landablePosition)
+                                if (Vnavmesh.QueryMeshPointOnFloor(markPosition with { Y = markPosition.Y + 5 }, false, 0.05f) is { } landablePosition)
                                     await MoveToArea(landablePosition, token);
                                 else
                                     await MoveToArea(markPosition, token);

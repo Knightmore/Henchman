@@ -56,20 +56,19 @@ internal static class GeneralHelpers
     {
         var gearsetModule = RaptureGearsetModule.Instance();
         var filtered = gearsetModule->Entries.ToArray()
-                                             .Where(x => x.ClassJob == classJobId);
+                                             .Where(x => x.ClassJob == classJobId && x.Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists));
 
         var gearset = filtered.Any()
                               ? filtered.MaxBy(x => x.ItemLevel)
                               : (RaptureGearsetModule.GearsetEntry?)null;
 
-
         if (gearset != null)
         {
-            Verbose($"Highest set is {gearset.Value.Id + 1}");
-            RaptureGearsetModule.Instance()->EquipGearset(gearset.Value.Id);
+            Verbose($"Highest set is {gearset.Value.Id + 1} {gearset.Value.NameString}");
+            gearsetModule->EquipGearset(gearset.Value.Id);
             return true;
         }
-
+        
         return false;
     }
 

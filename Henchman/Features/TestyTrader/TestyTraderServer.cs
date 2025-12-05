@@ -32,6 +32,8 @@ internal partial class TestyTrader
             var result = $"Completed! You traded with {charsTraded} chars:" +
                          Environment.NewLine                                +
                          string.Join(Environment.NewLine, ServerSideTradingLog.Select(kvp => $"{Svc.Data.GetExcelSheet<Item>().GetRow(kvp.Key).Name.ExtractText()}: {kvp.Value:N0}"));
+            ServerSideTradingLog = new Dictionary<uint, int>();
+            charsTraded          = 0;
 
             Info(result);
             server.Disconnect();
@@ -107,6 +109,11 @@ internal partial class TestyTrader
                             break;
                         }
                         case TestyTraderMessageType.ClientFinished:
+                            if (C.UseARItemSell)
+                            {
+                                Svc.Commands.ProcessCommand("/ays itemsell");
+                                await WaitWhileAsync(() => IPC.AutoRetainer.IsBusy(), "Waiting for selling all items", token);
+                            }
                             return;
                     }
 

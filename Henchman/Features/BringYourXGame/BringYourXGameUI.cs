@@ -242,7 +242,7 @@ public class BringYourXGameUI : FeatureUI
                                     "##KeepsTable",
                                     new List<TableColumn<uint>>
                                     {
-                                            new("##enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: x =>
+                                            new("##enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
                                                                                                                        {
                                                                                                                            var enabled = C.EnabledTerritoriesForARank.Contains(x);
                                                                                                                            if (ImGui.Checkbox($"##{x}", ref enabled))

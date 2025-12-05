@@ -163,7 +163,7 @@ internal class OnABoat
             await Task.Delay(8 * GeneralDelayMs, token);
 
             if (Player.JobId != 18)
-                ChangeToHighestGearsetForClassJobId(18);
+                ErrorIf(!ChangeToHighestGearsetForClassJobId(18), "No gearset for jobId 18 found");
 
             await Task.Delay(4 * GeneralDelayMs, token);
 
@@ -200,7 +200,7 @@ internal class OnABoat
                     await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                 }
             }
-
+            
             if (C.UseOnlyVersatile)
             {
                 var versatileAmount = InventoryHelper.GetInventoryItemCount((int)Bait.VersatileLure);

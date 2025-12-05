@@ -145,7 +145,7 @@ internal class RetainerVocate
         using var scope = new TaskDescriptionScope($"Create {createRetainerAmount} Retainer");
 
         for (var i = 0; i < createRetainerAmount; i++)
-            await CreateSingleRetainer(token: token);
+            await CreateSingleRetainer(i, token);
 
         return true;
     }
@@ -420,7 +420,7 @@ internal class RetainerVocate
             await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
     }
 
-    private async Task CreateSingleRetainer(CancellationToken token = default)
+    private async Task CreateSingleRetainer(int index = 0, CancellationToken token = default)
     {
         var retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
 
@@ -435,10 +435,10 @@ internal class RetainerVocate
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringHireARetainer), "SelectString HireARetainer", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
 
-        await SetupRetainer(token: token);
+        await SetupRetainer(name: C.UseMaxRetainerAmount ? "" : C.RetainerName[index], token: token);
     }
 
-    internal async Task SetupRetainer(bool newRetainer = true, byte presetslot = 255, string name = "", CancellationToken token = default)
+    internal async Task SetupRetainer(bool newRetainer = true, byte presetslot = 255, string name = "", int characterIndex = -1, CancellationToken token = default)
     {
         uint validPresets;
         unsafe
@@ -454,14 +454,14 @@ internal class RetainerVocate
         else
         {
             await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
-            await WaitUntilAsync(() => SelectRetainerRaceAndGender((int)C.RetainerRace + (int)C.RetainerGender, token), "Select Retainer Race and Gender", token);
+            await WaitUntilAsync(() => SelectRetainerRaceAndGender(C.UseMaxRetainerAmount ? (int)C.RetainerRace + (int)C.RetainerGender : (int)C.RetainerCharacters[characterIndex].Race + (int)C.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
             await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
         }
         
         await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
         await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoSaveAppearance), "SelectYesNo SaveAppearance", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoFinalizeRetainer), "SelectYesNo FinalizeRetainer", token);
-        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(C.RetainerPersonality)), "SelectString RetainerPersonality", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(C.UseMaxRetainerAmount ? C.RetainerPersonality : C.RetainerCharacters[characterIndex].Personality)), "SelectString RetainerPersonality", token);
         if (newRetainer) await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireThisRetainer), "SelectYesNo HireThisRetainer", token);
         else await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoSatisfiedWithPersonality), "SelectYesNo SatisfiedWithPersonality", token);
     

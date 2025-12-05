@@ -119,14 +119,14 @@ internal class IntoTheLight
             using var loginTokenSrc  = new CancellationTokenSource();
             using var linkedLoginCts = CancellationTokenSource.CreateLinkedTokenSource(token, loginTokenSrc.Token);
 
-            var loginQueue  = WaitUntilAsync(() => ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
+            var loginQueue  = WaitUntilAsync(async () => !C.LightNoLoginSkip && await ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
             var directLogin = WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Checking for first Cutscene", linkedLoginCts.Token);
 
             var completedLoginTask = await Task.WhenAny(loginQueue, directLogin);
             linkedLoginCts.Cancel();
             await completedLoginTask;
 
-            if (completedLoginTask != loginQueue)
+            if (completedLoginTask == directLogin)
             {
                 Verbose("Progressing without queue!");
                 await WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
@@ -151,7 +151,7 @@ internal class IntoTheLight
             }
             else
                 await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoLeaveQueue), "Confirm leave queue", token);
-
+            
             await Task.Delay(4 * GeneralDelayMs, token);
         }
     }

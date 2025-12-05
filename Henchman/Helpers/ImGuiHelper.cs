@@ -220,6 +220,47 @@ internal static class ImGuiHelper
     {
         if (CenteredWidths.TryGetValue(id, out var cachedWidth))
         {
+            var regionWidth = ImGui.GetContentRegionAvail().X;
+            var offset      = (regionWidth - cachedWidth) * 0.5f;
+            if (offset > 0)
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (float)Math.Floor(offset));
+        }
+
+        ImGui.BeginGroup();
+        draw();
+        ImGui.EndGroup();
+
+        var measuredWidth = ImGui.GetItemRectSize().X;
+        CenteredWidths[id] = (float)Math.Round(measuredWidth);
+    }
+
+
+    /*public static void DrawCentered(string id, Action draw)
+    {
+        if (CenteredWidths.TryGetValue(id, out var cachedWidth))
+        {
+            var regionWidth = ImGui.GetContentRegionAvail().X;
+            var offset      = (regionWidth - cachedWidth) * 0.5f;
+            if (offset > 0)
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+        }
+
+        ImGui.BeginGroup();
+        draw();
+        ImGui.EndGroup();
+
+        var rectMin       = ImGui.GetItemRectMin().X;
+        var rectMax       = ImGui.GetItemRectMax().X;
+        var measuredWidth = rectMax - rectMin;
+
+        CenteredWidths[id] = measuredWidth;
+    }*/
+
+
+    /*public static void DrawCentered(string id, Action draw)
+    {
+        if (CenteredWidths.TryGetValue(id, out var cachedWidth))
+        {
             var regionWidth = ImGui.GetContentRegionAvail()
                                    .X;
             var offset = (regionWidth - cachedWidth) * 0.5f;
@@ -237,7 +278,7 @@ internal static class ImGuiHelper
                                      .X;
             CenteredWidths[id] = measuredWidth;
         }
-    }
+    }*/
 
     public static bool StartButton() => ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale));
 

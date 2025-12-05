@@ -1,3 +1,4 @@
+using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
@@ -17,18 +18,50 @@ public record TableColumn<T>(
         float             Width        = 0,
         ColumnAlignment   Alignment    = ColumnAlignment.Left,
         Func<T, Vector4>? GetTextColor = null,
-        Action<T>?        DrawCustom   = null
+        Action<T, int>?   DrawCustom   = null
 );
 
-public class Table<T>(
-        string               tableId,
-        List<TableColumn<T>> columns,
-        Func<IEnumerable<T>> getItems,
-        Func<T, bool>?       highlightPredicate = null,
-        Vector2              size               = default,
-        Action?              drawExtraRow       = null
-)
+public class Table<T>
 {
+    private string               TableId            { get; }
+    private List<TableColumn<T>> Columns            { get; }
+    private Func<IEnumerable<T>> GetItems           { get; }
+    private Func<T, bool>?       HighlightPredicate { get; }
+    private Vector2              Size               { get; }
+    private Action?              DrawExtraRow       { get; }
+    private int?                ItemAmountShown    { get; }
+
+    public Table(
+            string               tableId,
+            List<TableColumn<T>> columns,
+            Func<IEnumerable<T>> getItems,
+            Func<T, bool>?       highlightPredicate = null,
+            Vector2              size               = default,
+            Action?              drawExtraRow       = null)
+    {
+        TableId            = tableId;
+        Columns            = columns;
+        GetItems           = getItems;
+        HighlightPredicate = highlightPredicate;
+        Size               = size;
+        DrawExtraRow       = drawExtraRow;
+    }
+    public Table(
+            string               tableId,
+            List<TableColumn<T>> columns,
+            Func<IEnumerable<T>> getItems,
+            int                 itemAmountShown,
+            Func<T, bool>?       highlightPredicate = null,
+            Vector2              size               = default)
+    {
+        TableId            = tableId;
+        Columns            = columns;
+        GetItems           = getItems;
+        HighlightPredicate = highlightPredicate;
+        Size               = size;
+        ItemAmountShown    = itemAmountShown;
+    }
+
     private float GlobalFontScale => ImGui.GetIO()
                                           .FontGlobalScale;
 
@@ -38,7 +71,7 @@ public class Table<T>(
                                       ImGuiTableFlags.Borders |
                                       ImGuiTableFlags.ScrollY |
                                       ImGuiTableFlags.SizingStretchProp;
-        using var table = ImRaii.Table(tableId, columns.Count, flags, size * GlobalFontScale);
+        using var table = ImRaii.Table(TableId, Columns.Count, flags, Size * GlobalFontScale);
         if (!table.Success) return;
         ImGui.TableSetupScrollFreeze(0, 1);
         SetupColumns();
@@ -48,7 +81,7 @@ public class Table<T>(
 
     private void SetupColumns()
     {
-        foreach (var column in columns)
+        foreach (var column in Columns)
         {
             if (column.Width > 0)
                 ImGui.TableSetupColumn(column.Name, ImGuiTableColumnFlags.WidthFixed, column.Width * GlobalFontScale);
@@ -59,24 +92,27 @@ public class Table<T>(
 
     private void DrawRows()
     {
-        foreach (var item in getItems())
+        var            rowIndex = 0;
+
+        foreach (var item in GetItems())
         {
+            if (ItemAmountShown > 0 && rowIndex >= ItemAmountShown) break;
             ImGui.TableNextRow();
 
-            var isHighlighted = highlightPredicate?.Invoke(item) ?? false;
+            var isHighlighted = HighlightPredicate?.Invoke(item) ?? false;
             if (isHighlighted) ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(Theme.AccentPinkDim));
 
-            for (var i = 0; i < columns.Count; i++)
+            for (var i = 0; i < Columns.Count; i++)
             {
                 ImGui.TableNextColumn();
-                var column = columns[i];
+                var column = Columns[i];
 
                 if (column.DrawCustom != null)
                 {
                     if (column.Alignment == ColumnAlignment.Center)
-                        DrawCentered($"##Centered{column.Name}{i}", () => column.DrawCustom(item));
+                        DrawCentered($"##Centered{column.Name}{i}", () => column.DrawCustom(item, rowIndex));
                     else
-                        column.DrawCustom(item);
+                        column.DrawCustom(item, rowIndex);
                 }
                 else
                 {
@@ -85,9 +121,11 @@ public class Table<T>(
                     DrawCell(value, column.Alignment, textColor);
                 }
             }
+
+            rowIndex++;
         }
 
-        drawExtraRow?.Invoke();
+        DrawExtraRow?.Invoke();
     }
 
     private void DrawCell(string value, ColumnAlignment alignment, Vector4? textColor)
