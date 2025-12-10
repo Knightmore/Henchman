@@ -95,7 +95,7 @@ public class Layout(ImTextureID logoTextureHandle = default)
                     using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextPrimary))
                     {
                         ImGui.PushFont(UiBuilder.IconFont);
-                        ImGui.Text(FontAwesomeIcon.List.ToIconString());
+                        ImGui.Text(selectedFeature.Icon.ToIconString());
                         ImGui.PopFont();
 
                         ImGui.SameLine();

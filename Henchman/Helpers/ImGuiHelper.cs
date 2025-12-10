@@ -118,7 +118,14 @@ internal static class ImGuiHelper
             if (feature.Requirements.Count == 0) continue;
 
             ImGui.Separator();
-            ImGuiEx.TextCentered(feature.Name);
+            DrawCentered(feature.Name, () =>
+                                     {
+                                         ImGui.PushFont(UiBuilder.IconFont);
+                                         ImGui.TextUnformatted(feature.Icon.ToIconString());
+                                         ImGui.PopFont();
+                                         ImGui.SameLine();
+                                         ImGui.TextUnformatted(feature.Name);
+                                     });
             ImGui.NewLine();
 
             foreach (var req in feature.Requirements) DrawPluginRequirement(req.pluginName, req.mandatory, longestStringWidth, requirementWidth, spacing);

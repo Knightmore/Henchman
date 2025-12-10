@@ -174,6 +174,7 @@ internal static class WorldTasks
 
     internal static async Task<bool> IsInFate(ushort fateId, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         await Task.Delay(GeneralDelayMs, token);
         unsafe
         {
@@ -183,6 +184,7 @@ internal static class WorldTasks
 
     internal static async Task<bool> IsFateActive(ushort fateId, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         await Task.Delay(GeneralDelayMs, token);
         return Svc.Fates.Any(x => x.FateId == fateId && x.Progress < 50);
     }

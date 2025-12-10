@@ -3,6 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
+using ECommons.ImGuiMethods;
 
 namespace Henchman.Windows.Layout;
 
@@ -186,17 +187,25 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
 
     private void DrawExpandedCategory(string categoryName, NavCategory category)
     {
-        using (ImRaii.PushColor(ImGuiCol.ChildBg, Theme.BackgroundCard))
+        var headerHeight    = 30f * GlobalFontScale;
+        var headerWidth     = ImGui.GetContentRegionAvail().X;
+        var cursorPosition = ImGui.GetCursorScreenPos();
+
+        var isHovered       = ImGui.IsMouseHoveringRect(cursorPosition, new Vector2(cursorPosition.X + headerWidth, cursorPosition.Y + headerHeight));
+        var isClicked       = isHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+
+        if (isClicked)
+            category.Collapsed = !category.Collapsed;
+        
+        using (ImRaii.PushColor(ImGuiCol.ChildBg, !isHovered ? Theme.BackgroundCard : Theme.ButtonHovered))
         {
             using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary))
             {
                 using (var headerChild = ImRaii.Child($"##CategoryHeader_{categoryName}", new Vector2(0, 30 * GlobalFontScale), true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     if (!headerChild.Success) return;
-
-                    var headerHeight    = 30f * GlobalFontScale;
-                    var textHeight      = ImGui.GetTextLineHeight();
-                    var verticalPadding = (headerHeight - textHeight) / 2f;
+                    var  textHeight      = ImGui.GetTextLineHeight();
+                    var  verticalPadding = (headerHeight - textHeight) / 2f;
 
                     ImGui.SetCursorPosY(verticalPadding);
 
@@ -210,61 +219,19 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                     using (ImRaii.PushFont(ImGui.GetFont())) ImGui.Text(categoryName.ToUpper());
 
                     var icon = category.Collapsed
-                                       ? FontAwesomeIcon.ChevronDown
-                                       : FontAwesomeIcon.ChevronUp;
+                                       ? FontAwesomeIcon.ChevronRight
+                                       : FontAwesomeIcon.ChevronDown;
                     var collapableIconString = icon.ToIconString();
+                    var iconSize             = ImGui.CalcTextSize(collapableIconString);
 
+                    ImGui.SetCursorPos(new Vector2(
+                                                   headerWidth - iconSize.X - (10f * GlobalFontScale),
+                                                   verticalPadding
+                                                  ));
 
-                    ImGui.SameLine(ImGui.GetContentRegionAvail()
-                                        .X                -
-                                   (30 * GlobalFontScale) -
-                                   ImGui.CalcTextSize(collapableIconString)
-                                        .X);
                     ImGui.PushFont(UiBuilder.IconFont);
-
-                    if (ImGui.Button(collapableIconString))
-                        category.Collapsed = !category.Collapsed;
-
+                    ImGui.TextUnformatted(collapableIconString);
                     ImGui.PopFont();
-
-                    ImGui.SameLine(ImGui.GetContentRegionAvail()
-                                        .X -
-                                   (15 * GlobalFontScale));
-
-                    using (ImRaii.PushColor(ImGuiCol.Text, Theme.AccentPink))
-                    {
-                        using (ImRaii.PushColor(ImGuiCol.Button, new Vector4(1f, 0.42f, 0.62f, 0.15f)))
-                        {
-                            using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(1f, 0.42f, 0.62f, 0.2f)))
-                            {
-                                using (ImRaii.PushColor(ImGuiCol.ButtonActive, new Vector4(1f, 0.42f, 0.62f, 0.25f)))
-                                {
-                                    using (ImRaii.PushColor(ImGuiCol.Border, Theme.AccentPink))
-                                    {
-                                        var style       = ImGui.GetStyle();
-                                        var oldRounding = style.FrameRounding;
-                                        var oldPadding  = style.FramePadding;
-                                        var oldBorder   = style.FrameBorderSize;
-
-                                        style.FrameRounding   = 10f * GlobalFontScale;
-                                        style.FramePadding    = new Vector2(8 * GlobalFontScale, 4 * GlobalFontScale);
-                                        style.FrameBorderSize = 1f;
-
-                                        var textSize              = ImGui.CalcTextSize($"{category.Items.Count}");
-                                        var buttonHeight          = textSize.Y + (style.FramePadding.Y * 2);
-                                        var buttonVerticalPadding = (headerHeight - buttonHeight) / 2f;
-
-                                        ImGui.SetCursorPosY(buttonVerticalPadding);
-
-                                        ImGui.Button($"{category.Items.Count}", new Vector2(25 * GlobalFontScale, 0));
-                                        style.FrameRounding   = oldRounding;
-                                        style.FramePadding    = oldPadding;
-                                        style.FrameBorderSize = oldBorder;
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

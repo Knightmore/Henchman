@@ -38,4 +38,10 @@ internal static class Conditionals
         await WaitUntilAsync(() => condition(), taskDescription, token);
         await WaitWhileAsync(() => condition(), taskDescription, token);
     }
+
+    internal static async Task WaitPulseConditionAsync(Func<Task<bool>> condition, string taskDescription = "", CancellationToken token = default)
+    {
+        await WaitUntilAsync(() => condition(), taskDescription, token);
+        await WaitWhileAsync(() => condition(), taskDescription, token);
+    }
 }

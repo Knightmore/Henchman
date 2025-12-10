@@ -108,11 +108,21 @@ internal class OnABoat
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
     internal Vector3 GetFishingPosition => new(Rng.Next(2) == 0
-                                                       ? 7
-                                                       : -7, 6.711f, Rng.NextSingle() * -10);
+                                                       ? (float)(7  + (Rng.NextDouble() * 0.5))
+                                                       : (float)(-7 - (Rng.NextDouble() * 0.5)), 6.711f, Rng.NextSingle() * -10);
 
-    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                           && DateTime.UtcNow.Minute < 13;
-    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("_Title", out var addon) && addon->IsVisible;
+    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                           && DateTime.UtcNow.Minute <= 13;
+    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
+
+    enum OceanFishingState
+    {
+        WaitingForVoyage,
+        CharacterSelection,
+        Preparation,
+        Boarding,
+        FishingVoyage,
+        PostVoyage
+    }
 
     internal async Task Start(CancellationToken token = default)
     {
@@ -121,262 +131,322 @@ internal class OnABoat
         AutoHook.CreateAndSelectAnonymousPreset(PresetSpectral);
         AutoHook.CreateAndSelectAnonymousPreset(HighGPPresetNormal);
         AutoHook.CreateAndSelectAnonymousPreset(HighGPPresetSpectral);
+
+
+        var state = Player.Territory is 900 or 1163 ? OceanFishingState.FishingVoyage : OceanFishingState.WaitingForVoyage;
+        if (state == OceanFishingState.FishingVoyage)
+            dutyStarted = true;
+
         while (!token.IsCancellationRequested)
         {
-            await WaitUntilAsync(() => IsRegistrationOpen, "Waiting for Ocean Fishing time window", token);
-            if (C.OCFishingHandleAR)
+            switch (state)
             {
-                if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+                case OceanFishingState.WaitingForVoyage:
+                    await WaitUntilAsync(() => IsRegistrationOpen, "Waiting for Ocean Fishing time window", token);
+                    state = OceanFishingState.CharacterSelection;
+                    break;
+
+                case OceanFishingState.CharacterSelection:
+                    await SelectCharacter(token);
+                    state = OceanFishingState.Preparation;
+                    break;
+
+                case OceanFishingState.Preparation:
+                    await PrepareForVoyage(token);
+                    state = OceanFishingState.Boarding;
+                    break;
+
+                case OceanFishingState.Boarding:
+                    await BoardVoyage(token);
+                    state = OceanFishingState.FishingVoyage;
+                    break;
+
+                case OceanFishingState.FishingVoyage:
+                    await Fish(token);
+                    state = OceanFishingState.PostVoyage;
+                    break;
+
+                case OceanFishingState.PostVoyage:
+                    await PostVoyageCleanup(token);
+                    state = OceanFishingState.WaitingForVoyage;
+                    break;
+            }
+        }
+    }
+
+    internal async Task SelectCharacter(CancellationToken token = default)
+    {
+        if (C.OCFishingHandleAR)
+        {
+            if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+            {
+                AskARforAccess = true;
+
+                await WaitUntilAsync(() => InPostProcess || (!IPC.AutoRetainer.IsBusy() && !Lifestream.IsBusy() && IsInTitleScreen), "Waiting for AR PostProccess", token);
+                AskARforAccess  = false;
+                CachedMultiMode = IPC.AutoRetainer.GetMultiModeEnabled();
+                StopAutoRetainer();
+
+                GetCurrentARCharacterData();
+                var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
+                                                      .OrderBy(x => x.ClassJobLevelArray[17])
+                                                      .First();
+
+                if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && C.OCFishingStop100)
                 {
-                    AskARforAccess = true;
 
-                    await WaitUntilAsync(() => InPostProcess || (!IPC.AutoRetainer.IsBusy() && !Lifestream.IsBusy() && IsInTitleScreen), "Waiting for AR PostProccess", token);
-                    AskARforAccess  = false;
-                    CachedMultiMode = IPC.AutoRetainer.GetMultiModeEnabled();
-                    StopAutoRetainer();
-
-                    GetCurrentARCharacterData();
-                    var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
-                                                          .OrderBy(x => x.ClassJobLevelArray[17])
-                                                          .First();
-                    
-                    if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && C.OCFishingStop100)
-                    {
-                    
-                        IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
-                        IPC.AutoRetainer.SetMultiModeEnabled(true);
-                        UnsubscribeEvents();
-                        InPostProcess = false;
-                        return;
-                    }
-
-                    await Lifestream.SwitchToChar(lowestFisherCharacter.Name, lowestFisherCharacter.World, token);
+                    IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                    IPC.AutoRetainer.SetMultiModeEnabled(true);
+                    UnsubscribeEvents();
+                    InPostProcess = false;
+                    return;
                 }
-                else
-                    FullError("Auto Retainer not enabled! Use On A Boat - Single Character mode or enabled Auto Retainer for this feature to work!");
+
+                await Lifestream.SwitchToChar(lowestFisherCharacter.Name, lowestFisherCharacter.World, token);
             }
             else
-                await Lifestream.SwitchToChar(C.OceanChar, C.OceanWorld, token);
+                FullError("Auto Retainer not enabled! Use On A Boat - Single Character mode or enabled Auto Retainer for this feature to work!");
+        }
+        else
+            await Lifestream.SwitchToChar(C.OceanChar, C.OceanWorld, token);
+    }
 
-            Chat.ExecuteCommand("/nastatus off");
+    internal async Task PrepareForVoyage(CancellationToken token = default)
+    {
+        Chat.ExecuteCommand("/nastatus off");
 
-            await Task.Delay(8 * GeneralDelayMs, token);
+        await Task.Delay(8 * GeneralDelayMs, token);
 
-            if (Player.JobId != 18)
-                ErrorIf(!ChangeToHighestGearsetForClassJobId(18), "No gearset for jobId 18 found");
+        if (Player.JobId != 18)
+            ErrorIf(!ChangeToHighestGearsetForClassJobId(18), "No gearset for jobId 18 found");
 
-            await Task.Delay(4 * GeneralDelayMs, token);
+        await Task.Delay(4 * GeneralDelayMs, token);
 
-            if (!QuestManager.IsQuestComplete(69379))
-            {
-                if (SubscriptionManager.IsInitialized(IPCNames.Questionable))
-                {
-                    ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
-                    await WaitUntilAsync(() => Player.Territory == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
-                    await Questionable.CompleteQuest("3843", 69379, token);
-                }
-                else
-                    ErrorThrow($"{Player.NameWithWorld} has not unlocked ocean fishing!");
-            }
-
-            if (Player.Territory != 129)
+        if (!QuestManager.IsQuestComplete(69379))
+        {
+            if (SubscriptionManager.IsInitialized(IPCNames.Questionable))
             {
                 ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
                 await WaitUntilAsync(() => Player.Territory == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
-                bool arcGuildUnlocked;
-                unsafe
-                {
-                    arcGuildUnlocked = UIState.Instance()->IsAetheryteUnlocked(43);
-                }
-
-                if (arcGuildUnlocked)
-                {
-                    if (Lifestream.AethernetTeleportById(43)) await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for Aethernet Transition", token);
-                }
-                else
-                {
-                    await MoveTo(new Vector3(-335f, 12f, 54f), false, token);
-                    await InteractWithByBaseId(43, token);
-                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                }
+                await Questionable.CompleteQuest("3843", 69379, token);
             }
-            
-            if (C.UseOnlyVersatile)
+            else
+                ErrorThrow($"{Player.NameWithWorld} has not unlocked ocean fishing!");
+        }
+
+        if (Player.Territory != 129)
+        {
+            ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
+            await WaitUntilAsync(() => Player.Territory == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
+            bool arcGuildUnlocked;
+            unsafe
             {
-                var versatileAmount = InventoryHelper.GetInventoryItemCount((int)Bait.VersatileLure);
-                if (versatileAmount <= 3)
-                {
-                    await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
-                    await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
-                    await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
-                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.VersatileLure, 4 - versatileAmount), $"Buy Item {Bait.VersatileLure}", token);
-                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
-                    await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
-                    await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
-                }
+                arcGuildUnlocked = UIState.Instance()->IsAetheryteUnlocked(43);
+            }
+
+            if (arcGuildUnlocked)
+            {
+                if (Lifestream.AethernetTeleportById(43)) await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for Aethernet Transition", token);
             }
             else
             {
-                var ragAmount   = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
-                var krillAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Krill);
-                var plumpAmount = InventoryHelper.GetInventoryItemCount((int)Bait.PlumpWorm);
-
-                if (ragAmount < 99 || krillAmount < 99 || plumpAmount < 99)
-                {
-                    await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
-                    await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
-                    await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
-                    if (ragAmount < 99)
-                    {
-                        await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Ragworm, 99 - ragAmount), $"Buy Item {Bait.Ragworm}", token);
-                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
-                        await Task.Delay(GeneralDelayMs * 2, token)
-                                  .ConfigureAwait(true);
-                    }
-
-                    if (krillAmount < 99)
-                    {
-                        await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Krill, 99 - krillAmount), $"Buy Item {Bait.Krill}", token);
-                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
-                        await Task.Delay(GeneralDelayMs * 2, token)
-                                  .ConfigureAwait(true);
-                    }
-
-                    if (plumpAmount < 99)
-                    {
-                        await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.PlumpWorm, 99 - plumpAmount), $"Buy Item {Bait.PlumpWorm}", token);
-                        await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
-                        await Task.Delay(GeneralDelayMs * 2, token)
-                                  .ConfigureAwait(true);
-                    }
-
-                    await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
-                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
-                    await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
-                }
+                await MoveTo(new Vector3(-335f, 12f, 54f), false, token);
+                await InteractWithByBaseId(43, token);
+                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
             }
+        }
 
-            if (InventoryHelper.GetItemAmountInNeedOfRepair(30) > 0)
+        if (C.UseOnlyVersatile)
+        {
+            var versatileAmount = InventoryHelper.GetInventoryItemCount((int)Bait.VersatileLure);
+            if (versatileAmount <= 3)
             {
                 await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
-                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, RepairId), "Waiting to open repair", token);
-                unsafe
-                {
-                    RepairManager.Instance()->RepairEquipped(true);
-                }
-
-                await Task.Delay(4 * GeneralDelayMs, token);
-                unsafe
-                {
-                    var agentRepair = (AgentRepair*)AgentModule.Instance()->GetAgentByInternalId(AgentId.Repair);
-                    agentRepair->UIModuleInterface->GetRaptureAtkModule()->CloseAddon(agentRepair->AddonId);
-                }
-
+                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
+                await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
+                await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.VersatileLure, 4 - versatileAmount), $"Buy Item {Bait.VersatileLure}", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
                 await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
             }
+        }
+        else
+        {
+            var ragAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
+            var krillAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Krill);
+            var plumpAmount = InventoryHelper.GetInventoryItemCount((int)Bait.PlumpWorm);
 
-            var randomPoint = GetRandomPoint(dryskthotaA, dryskthotaB);
-            await MoveTo(new Vector3(randomPoint.X, 4, randomPoint.Y), false, token);
-
-            await InteractWithByBaseId(BaseIdDryskthota, token);
-            await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringBoardOCShip), "Waiting for boarding SelectString", token);
-            if (QuestManager.IsQuestComplete(68089)) await WaitUntilAsync(() => TrySelectEntryNumber(0), "Waiting for route SelectString", token);
-
-            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoEmbark), "Waiting for SelectYesNo Embark", token);
-            await WaitUntilAsync(() => Svc.Condition[ConditionFlag.WaitingForDutyFinder], "Waiting for accepting duty finder", token);
-            await WaitUntilAsync(() => TryConfirmContentsFinder(), "Waiting for contentsFinder Confirm", token);
-
-            await WaitUntilAsync(() => dutyStarted, "Waiting for duty to start", token);
-            await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for voyage to begin", token);
-            await Task.Delay(2 * GeneralDelayMs, token);
-
-            await WalkToRailing(token);
-            await Task.Delay(4 * GeneralDelayMs, token);
-
-            AutoHook.SetPluginState(true);
-
-            while (dutyStarted)
+            if (ragAmount < 99 || krillAmount < 99 || plumpAmount < 99)
             {
-                if (Player.Available && Player.Territory is 900 or 1163)
+                await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
+                await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
+                if (ragAmount < 99)
                 {
-                    SpectralActiveCache = IsSpectralActive;
-                    if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Ragworm, 99 - ragAmount), $"Buy Item {Bait.Ragworm}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                if (krillAmount < 99)
+                {
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Krill, 99 - krillAmount), $"Buy Item {Bait.Krill}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                if (plumpAmount < 99)
+                {
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.PlumpWorm, 99 - plumpAmount), $"Buy Item {Bait.PlumpWorm}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
+            }
+        }
+
+        if (InventoryHelper.GetItemAmountInNeedOfRepair(30) > 0)
+        {
+            await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+            await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, RepairId), "Waiting to open repair", token);
+            unsafe
+            {
+                RepairManager.Instance()->RepairEquipped(true);
+            }
+
+            await Task.Delay(4 * GeneralDelayMs, token);
+            unsafe
+            {
+                var agentRepair = (AgentRepair*)AgentModule.Instance()->GetAgentByInternalId(AgentId.Repair);
+                agentRepair->UIModuleInterface->GetRaptureAtkModule()->CloseAddon(agentRepair->AddonId);
+            }
+
+            await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
+        }
+    }
+
+    internal async Task BoardVoyage(CancellationToken token = default)
+    {
+        var randomPoint = GetRandomPoint(dryskthotaA, dryskthotaB);
+        await MoveTo(new Vector3(randomPoint.X, 4, randomPoint.Y), false, token);
+
+        await InteractWithByBaseId(BaseIdDryskthota, token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringBoardOCShip), "Waiting for boarding SelectString", token);
+        if (QuestManager.IsQuestComplete(68089)) await WaitUntilAsync(() => TrySelectEntryNumber(0), "Waiting for route SelectString", token);
+
+        await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoEmbark), "Waiting for SelectYesNo Embark", token);
+        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.WaitingForDutyFinder], "Waiting for accepting duty finder", token);
+        await WaitUntilAsync(() => TryConfirmContentsFinder(), "Waiting for contentsFinder Confirm", token);
+        
+        await WaitUntilAsync(() => dutyStarted, "Waiting for duty to start", token);
+        await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for voyage to begin", token);
+        await Task.Delay(2 * GeneralDelayMs, token);
+    }
+
+    internal async Task Fish(CancellationToken token = default)
+    {
+        await WalkToRailing(token);
+        await Task.Delay(4 * GeneralDelayMs, token);
+
+        AutoHook.SetPluginState(true);
+
+        while (dutyStarted)
+        {
+            if (Player.Available && Player.Territory is 900 or 1163)
+            {
+                SpectralActiveCache = IsSpectralActive;
+                if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
+                {
+                    await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for new zone", token);
+                    while (!Svc.Condition[ConditionFlag.Fishing])
                     {
-                        await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for new zone", token);
-                        while (!Svc.Condition[ConditionFlag.Fishing])
-                        {
-                            unsafe
-                            {
-                                ActionManager.Instance()->UseAction(ActionType.Action, 289);
-                            }
-
-                            await Task.Delay(GeneralDelayMs, token);
-                        }
-                    }
-
-                    if (EventUtils.OceanFishingTimeLeft > 32)
-                    {
-                        unsafe{
-                            if(Player.BattleChara->MaxGatheringPoints < 750)
-                                AutoHook.SetPreset(IsSpectralActive
-                                                           ? PresetSpectralName
-                                                           : PresetNormalName);
-                            else
-                                AutoHook.SetPreset(IsSpectralActive
-                                                           ? HighGPPresetSpectralName
-                                                           : HighGPPresetNormalName);
-                        }
-
-                        if (C.UseOnlyVersatile)
-                            ChangeBait((int)Bait.VersatileLure);
-                        else
-                            ChangeBait((int)GetCurrentBait);
-
                         unsafe
                         {
-                            if (!Svc.Condition[ConditionFlag.Fishing])
-                                ActionManager.Instance()->UseAction(ActionType.Action, 289);
+                            ActionManager.Instance()->UseAction(ActionType.Action, 289);
                         }
 
-                        await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || SpectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
-                        if (SpectralActiveCache != IsSpectralActive)
-                        {
-                            unsafe
-                            {
-                                ActionManager.Instance()->UseAction(ActionType.Action, 296);
-                            }
-                        }
+                        await Task.Delay(GeneralDelayMs, token);
                     }
                 }
 
-                await Task.Delay(GeneralDelayMs, token);
+                if (EventUtils.OceanFishingTimeLeft > 32)
+                {
+                    unsafe
+                    {
+                        if (Player.BattleChara->MaxGatheringPoints < 750)
+                            AutoHook.SetPreset(IsSpectralActive
+                                                       ? PresetSpectralName
+                                                       : PresetNormalName);
+                        else
+                            AutoHook.SetPreset(IsSpectralActive
+                                                       ? HighGPPresetSpectralName
+                                                       : HighGPPresetNormalName);
+                    }
+
+                    if (C.UseOnlyVersatile)
+                        ChangeBait((int)Bait.VersatileLure);
+                    else
+                        ChangeBait((int)GetCurrentBait);
+
+                    unsafe
+                    {
+                        if (!Svc.Condition[ConditionFlag.Fishing])
+                            ActionManager.Instance()->UseAction(ActionType.Action, 289);
+                    }
+
+                    await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || SpectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
+                    if (SpectralActiveCache != IsSpectralActive)
+                    {
+                        unsafe
+                        {
+                            ActionManager.Instance()->UseAction(ActionType.Action, 296);
+                        }
+                    }
+                }
             }
 
-            await Task.Delay(GeneralDelayMs * 4, token);
+            await Task.Delay(GeneralDelayMs, token);
+        }
+    }
 
-            await WaitUntilAsync(() => CloseIKDResult(), "Waiting for Ocean Fishing results", token);
+    internal async Task PostVoyageCleanup(CancellationToken token = default)
+    {
+        await Task.Delay(GeneralDelayMs * 4, token);
 
-            await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
+        await WaitUntilAsync(() => CloseIKDResult(), "Waiting for Ocean Fishing results", token);
 
-            await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
+        await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Player", token);
 
-            if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
+
+        await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
+
+        if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            if (C.DiscardAfterVoyage)
             {
-                if (C.DiscardAfterVoyage)
+                if (Lifestream.GetHousePathData(Player.CID).FC is { PathToEntrance.Count: > 0 })
                 {
-                    Chat.ExecuteCommand("/ays discard");
-                    await WaitWhileAsync(IPC.AutoRetainer.IsBusy, "Wait until discard finished", token);
+                    await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for house transistion", token);
                 }
-
-                if (InPostProcess)
-                {
-                    IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
-                    IPC.AutoRetainer.SetMultiModeEnabled(true);
-                    InPostProcess = false;
-                }
-                else if (CachedMultiMode)
-                    IPC.AutoRetainer.SetMultiModeEnabled(true);
+                Chat.ExecuteCommand("/ays discard");
+                await WaitWhileAsync(IPC.AutoRetainer.IsBusy, "Wait until discard finished", token);
             }
+
+            if (InPostProcess)
+            {
+                IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                IPC.AutoRetainer.SetMultiModeEnabled(true);
+                InPostProcess = false;
+            }
+            else if (CachedMultiMode)
+                IPC.AutoRetainer.SetMultiModeEnabled(true);
         }
     }
 

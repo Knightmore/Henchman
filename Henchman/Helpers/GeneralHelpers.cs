@@ -250,4 +250,6 @@ internal static class GeneralHelpers
 
         return new Vector2(randomX, randomY);
     }
+
+    internal static bool IsScreenAndPlayerReady() => Player.Interactable && !Player.IsAnimationLocked && IsScreenReady();
 }
