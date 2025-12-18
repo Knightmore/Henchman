@@ -218,12 +218,12 @@ internal static class MovementTasks
     internal static async Task TeleportTo(uint territoryId, uint aetheryteTerritoryId, uint aetheryteId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        if (Player.Territory != aetheryteTerritoryId && Player.Territory != territoryId)
+        if (Player.Territory.RowId != aetheryteTerritoryId && Player.Territory.RowId != territoryId)
         {
             using var scope = new TaskDescriptionScope($"Teleport to {territoryId}");
             await CheckIfPlayerIsStunned(token);
             ErrorThrowIf(!Lifestream.Teleport(aetheryteId, 0), $"Teleport to {aetheryteId} failed.");
-            await WaitUntilAsync(() => Player.Territory == aetheryteTerritoryId || Player.Territory == territoryId, "Check for right territory", token);
+            await WaitUntilAsync(() => Player.Territory.RowId == aetheryteTerritoryId || Player.Territory.RowId == territoryId, "Check for right territory", token);
         }
     }
 
@@ -234,7 +234,7 @@ internal static class MovementTasks
                            .GetRow(aetheryteId)
                            .Territory.Value;
 
-        if (Player.Territory != territory.RowId)
+        if (Player.Territory.RowId != territory.RowId)
         {
             using var scope = new TaskDescriptionScope($"Teleport to aetheryte {aetheryteId}");
             await CheckIfPlayerIsStunned(token);
@@ -245,7 +245,7 @@ internal static class MovementTasks
                 await Task.Delay(GeneralDelayMs * 8, token);
             }
 
-            await WaitUntilAsync(() => Player.Territory == territory.RowId, $"Check for right territory {territory.RowId}", token);
+            await WaitUntilAsync(() => Player.Territory.RowId == territory.RowId, $"Check for right territory {territory.RowId}", token);
             await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !Player.IsBusy, "Wait for Transition", token);
         }
     }
@@ -261,7 +261,7 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
         if (!Player.Mounted) UseSprint();
-        await WaitUntilAsync(() => Player.Territory == nextTerritoryId, "Check for right territory", token);
+        await WaitUntilAsync(() => Player.Territory.RowId == nextTerritoryId, "Check for right territory", token);
     }
 
     internal static async Task<bool> RoamUntilTargetNearby(List<Vector3> pointList, uint targetNameId, bool gotKilledWhileDetour, bool detourForARanks, float distanceToSpot = 60f, CancellationToken token = default)
@@ -323,7 +323,7 @@ internal static class MovementTasks
 
                         var isDummyTarget = targetNameId == int.MaxValue;
                         var exVersion = Svc.Data.GetExcelSheet<TerritoryType>()
-                                           .GetRow(Player.Territory)
+                                           .GetRow(Player.Territory.RowId)
                                            .ExVersion.RowId;
 
                         if ((isDummyTarget && exVersion == 0 && killedARanks == 1) ||
@@ -387,7 +387,7 @@ internal static class MovementRPCs
         if (token.IsCancellationRequested) return false;
         using var scope = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
 
-        if (Player.CurrentWorld != world)
+        if (Player.CurrentWorldName != world)
         {
             if (Lifestream.ChangeWorld(world))
                 await WaitPulseConditionAsync(() => Lifestream.IsBusy(), "Waiting for World change", token);

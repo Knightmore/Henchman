@@ -38,7 +38,7 @@ internal static class CombatTasks
             while (retries < 3)
             {
                 Verbose($"Try: {retries}");
-                if (Player.Territory != mark.TerritoryId)
+                if (Player.Territory.RowId != mark.TerritoryId)
                 {
                     if (!mark.Positions.TryGetFirst(out var markPosition))
                     {
@@ -158,7 +158,7 @@ internal static class CombatTasks
                     }
 
                     // TODO: Switch to MappingTheRealm once/if ever released.
-                    if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
+                    if (Player.Territory.RowId == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
                 }
 
                 await CheckChocobo(token);
@@ -178,7 +178,7 @@ internal static class CombatTasks
                                 Verbose($"Trying position {i + 1}/{distanceOrderedPositions.Count} for {mark.Name}");
 
                                 // TODO: Remove once MappingTheRealm is done. This is a reroute to properly get inside the underwater dome.
-                                if (Player.Territory == 613)
+                                if (Player.Territory.RowId == 613)
                                 {
                                     if (markPosition.ToVector2()
                                                     .IsWithinRadius(new Vector2(175f, 223f)))

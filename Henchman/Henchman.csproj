@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<Project Sdk="Dalamud.NET.Sdk/13.0.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.0">
     <PropertyGroup>
-        <Version>2.0.1.16</Version>
+        <Version>2.0.2.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -13,6 +13,7 @@
         <PackageId>Henchman</PackageId>
         <Configurations>Debug;Release;Private</Configurations>
         <LocalCS>false</LocalCS>
+        <TargetFramework>net10.0-windows7.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -78,7 +79,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="DalamudPackager" Version="13.1.0" />
         <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
     </ItemGroup>
 </Project>

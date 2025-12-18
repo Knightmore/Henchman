@@ -25,7 +25,7 @@ internal static class GeneralHelpers
     }
 
     public static bool IsPlayerMelee => Svc.Data.GetExcelSheet<ClassJob>()
-                                           .GetRow(Player.JobId)
+                                           .GetRow(Player.ClassJob.RowId)
                                            .Role is 1 or 2;
 
     public static          bool  IsPlayerBusy                                                       => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
@@ -117,7 +117,7 @@ internal static class GeneralHelpers
         const float MaxRange           = 2f;
 
         var jobRole = Svc.Data.GetExcelSheet<ClassJob>()
-                        ?.GetRow(Player.JobId)
+                        ?.GetRow(Player.ClassJob.RowId)
                          .Role ??
                       0;
         var adjustedRadius = baseHitboxRadius +
@@ -208,7 +208,7 @@ internal static class GeneralHelpers
     internal static Vector2 ConvertCurrentToMapXZ()
     {
         var map = Svc.Data.GetExcelSheet<TerritoryType>()
-                     .GetRow(Player.Territory)
+                     .GetRow(Player.Territory.RowId)
                      .Map.Value;
         return WorldToMap(Player.Position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
     }

@@ -42,7 +42,7 @@ internal class BringYourXGame
         foreach (var territory in ARankPositions)
         {
             Verbose($"Look for A-Rank in: {territory.Key} - {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory.Key).PlaceName.Value.Name.ExtractText()}");
-            if (Player.Territory != territory.Key)
+            if (Player.Territory.RowId != territory.Key)
             {
                 var closestAetheryte = GetAetheryte(territory.Key, territory.Value[0]);
 
@@ -55,7 +55,7 @@ internal class BringYourXGame
                 }
 
                 // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
+                if (Player.Territory.RowId == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
             }
 
             await RoamUntilTargetNearby(territory.Value, int.MaxValue, false, true, 10, token);
@@ -74,7 +74,7 @@ internal class BringYourXGame
             ErrorThrowIf(retries == 3, "Emergency Stop. Player already died three times");
 
             Verbose($"Try: {retries}");
-            if (Player.Territory != huntMark.TerritoryId)
+            if (Player.Territory.RowId != huntMark.TerritoryId)
             {
                 if (!huntMark.Positions.TryGetFirst(out var markPosition))
                 {
@@ -93,7 +93,7 @@ internal class BringYourXGame
                 }
 
                 // TODO: Switch to MappingTheRealm once/if ever released.
-                if (Player.Territory == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
+                if (Player.Territory.RowId == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
             }
 
             if (!await RoamUntilTargetNearby(huntMark.Positions, huntMark.BNpcNameRowId, false, C.DetourForARanks, token: token))

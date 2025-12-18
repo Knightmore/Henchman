@@ -1,7 +1,10 @@
 #if PRIVATE
 using Henchman.Features.Private.MappingTheRealm;
 using Henchman.Features.Private;
+using FFXIVClientStructs.Interop.Generated;
+using InteropGenerator.Runtime;
 #endif
+using System.IO;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface;
@@ -20,6 +23,7 @@ using Henchman.Windows;
 using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Plugin.Services;
 using ECommons.EzHookManager;
 using Module = ECommons.Module;
 

@@ -220,13 +220,13 @@ public class OnYourMarkUi : FeatureUI
                                             new List<TableColumn<MobHuntOrder>>
                                             {
                                                     new("Name", h => Utils.ToTitleCaseExtended(h.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage)),
-                                                    new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, ColumnAlignment.Center),
+                                                    new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, Alignment : ColumnAlignment.Center),
                                                     new("Finished", h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
                                                                                                           (byte)h.SubrowId) ==
                                                                          h.NeededKills
                                                                                  ? FontAwesomeIcon.Check.ToIconString()
-                                                                                 : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
-                                                        h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
+                                                                                 : FontAwesomeIcon.Times.ToIconString(), 100, Alignment : ColumnAlignment.Center,
+                                                        GetTextColor: h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
                                                                                               (byte)h.SubrowId) ==
                                                              h.NeededKills
                                                                      ? Theme.SuccessGreen

@@ -69,20 +69,20 @@ public class IntoTheLightUI : FeatureUI
                                                                       }),
                                        new("First Name", x => string.IsNullOrEmpty(x.FirstName)
                                                                       ? "Random"
-                                                                      : x.FirstName, 110, ColumnAlignment.Center),
+                                                                      : x.FirstName, 110, Alignment : ColumnAlignment.Center),
                                        new("Last Name", x => string.IsNullOrEmpty(x.LastName)
                                                                      ? "Random"
-                                                                     : x.LastName, 110, ColumnAlignment.Center),
+                                                                     : x.LastName, 110, Alignment : ColumnAlignment.Center),
                                        new("Data Center", x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
                                                                   .GetRow(x.DataCenterId)
-                                                                  .Name.ExtractText(), 100, ColumnAlignment.Center),
+                                                                  .Name.ExtractText(), 100, Alignment : ColumnAlignment.Center),
                                        new("World", x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
-                                                            .Name.ExtractText(), 100, ColumnAlignment.Center),
-                                       new("ClassJob", x => x.ClassJob.ToString(), 100, ColumnAlignment.Center),
+                                                            .Name.ExtractText(), 100, Alignment : ColumnAlignment.Center),
+                                       new("ClassJob", x => x.ClassJob.ToString(), 100, Alignment : ColumnAlignment.Center),
                                        new("Preset", x => x.PresetId == 255
                                                                   ? "None"
-                                                                  : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].LabelString}", 130, ColumnAlignment.Center)
+                                                                  : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].LabelString}", 130, Alignment: ColumnAlignment.Center)
                                };
 
         var table = new Table<LightCharacter>(

@@ -38,7 +38,7 @@ public class TestyTraderUI : FeatureUI
                                                                                                   })
                                                                                       .ToList();
 
-    private readonly TestyTrader feature = new();
+    private static readonly TestyTrader feature = new();
 
     private readonly List<ItemSearchCategory> searchCategories = Svc.Data.GetExcelSheet<ItemSearchCategory>()
                                                                     .Where(x => x.Category > 1)
@@ -47,7 +47,7 @@ public class TestyTraderUI : FeatureUI
 
     internal TestyTraderCharacterData? characterToRemove;
 
-    private bool configChanged;
+    private static bool configChanged;
 
     private TestyTraderCharacterData newCharacter = new();
 
@@ -86,6 +86,45 @@ public class TestyTraderUI : FeatureUI
             (IPCNames.vnavmesh, true),
             (IPCNames.Lifestream, true)
     ];
+
+    private static Dictionary<string, World> Worlds =
+            Svc.Data.GetExcelSheet<World>()
+               .DistinctBy(x => x.Name.ExtractText())
+               .ToDictionary(x => x.Name.ExtractText(), x => x);
+
+    private static Table<OfflineCharacterData> ARTable = new (
+                                                              "##ARTraderTable",
+                                                              new List<TableColumn<OfflineCharacterData>>
+                                                              {
+                                                                      new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                                                 {
+                                                                                                                                                     if (!C.EnableCharacterForTrade.TryAdd(x.CID, false))
+                                                                                                                                                     {
+                                                                                                                                                         var isEnabled = C.EnableCharacterForTrade[x.CID];
+                                                                                                                                                         if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                                                         if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
+                                                                                                                                                         {
+                                                                                                                                                             C.EnableCharacterForTrade[x.CID] = !isEnabled;
+                                                                                                                                                             configChanged                    = true;
+                                                                                                                                                         }
+
+                                                                                                                                                         if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                                                     }
+                                                                                                                                                     else
+                                                                                                                                                         configChanged = true;
+                                                                                                                                                 }),
+                                                                      new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
+                                                                      new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                                      new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                                      new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment : ColumnAlignment.Center),
+                                                                      new("AR active", x => x.WorkshopEnabled.ToString(), 75, Alignment : ColumnAlignment.Center),
+                                                                      new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
+                                                              },
+                                                              () => feature.GetCurrentARCharacterData(),
+                                                              highlightPredicate: x => x.CID == Player.CID,
+                                                              size: new Vector2(570, 0)
+                                                             );
 
     public override void Draw()
     {
@@ -138,7 +177,7 @@ public class TestyTraderUI : FeatureUI
 
     private void DrawARTable()
     {
-        var table = new Table<OfflineCharacterData>(
+        /*var table = new Table<OfflineCharacterData>(
                                                     "##ARTraderTable",
                                                     new List<TableColumn<OfflineCharacterData>>
                                                     {
@@ -160,21 +199,21 @@ public class TestyTraderUI : FeatureUI
                                                                                                                                            else
                                                                                                                                                configChanged = true;
                                                                                                                                        }),
-                                                            new("Name", x => x.Name, 135, ColumnAlignment.Center),
-                                                            new("World", x => x.World, 90, ColumnAlignment.Center),
+                                                            new("Name", x => x.Name, 135, typeof(string), Alignment : ColumnAlignment.Center),
+                                                            new("World", x => x.World, 90, Alignment : ColumnAlignment.Center),
                                                             new("DataCenter", x => Svc.Data.GetExcelSheet<World>()
                                                                                       .FirstOrDefault(y => y.Name == x.World)
-                                                                                      .DataCenter.Value.Name.ExtractText(), 90, ColumnAlignment.Center),
-                                                            new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, ColumnAlignment.Center),
-                                                            new("AR active", x => x.WorkshopEnabled.ToString(), 75, ColumnAlignment.Center),
-                                                            new("Inv.", x => x.InventorySpace.ToString(), 75, ColumnAlignment.Center)
+                                                                                      .DataCenter.Value.Name.ExtractText(), 90, Alignment : ColumnAlignment.Center),
+                                                            new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment : ColumnAlignment.Center),
+                                                            new("AR active", x => x.WorkshopEnabled.ToString(), 75, Alignment : ColumnAlignment.Center),
+                                                            new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
                                                     },
                                                     () => feature.GetCurrentARCharacterData(),
-                                                    x => x.CID == Player.CID,
-                                                    new Vector2(570, 0)
-                                                   );
+                                                    highlightPredicate: x => x.CID == Player.CID,
+                                                    size: new Vector2(570, 0)
+                                                   );*/
 
-        table.Draw();
+        ARTable.Draw();
     }
 
     private void DrawManualTable()
@@ -194,25 +233,26 @@ public class TestyTraderUI : FeatureUI
 
                                                                                                                       if (isEnabled) ImGui.PopStyleColor();
                                                                                                                   }),
-                                       new("Name", x => x.Name, 135, ColumnAlignment.Center),
+                                       new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
                                        new("Data Center", x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
                                                                   .GetRow(x.DataCenterId)
-                                                                  .Name.ExtractText(), 100, ColumnAlignment.Center),
+                                                                  .Name.ExtractText(), 100, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
                                        new("World", x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
-                                                            .Name.ExtractText(), 100, ColumnAlignment.Center),
+                                                            .Name.ExtractText(), 100, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
                                        new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                  {
                                                                                                                      if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) characterToRemove = x;
                                                                                                                  })
                                };
+
         var table = new Table<TestyTraderCharacterData>(
                                                         "##ManualTraderTable",
                                                         characterColumns,
                                                         () => C.TestyTraderImportedCharacters,
-                                                        h => h.Name == Player.Name && h.WorldId == Player.HomeWorldId,
-                                                        new Vector2(450, 0),
-                                                        () =>
+                                                        highlightPredicate: h => h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
+                                                        size: new Vector2(450, 0),
+                                                        drawExtraRow:() =>
                                                         {
                                                             ImGui.TableNextRow();
                                                             using var row = new ColumnScope(characterColumns.Count);
@@ -281,6 +321,21 @@ public class TestyTraderUI : FeatureUI
                                                         if (ImGui.Button("Deselect All"))
                                                         {
                                                             foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = false;
+                                                            configChanged = true;
+                                                        }
+                                                    });
+                DrawCentered("##TradeFilteredCharSelector", () =>
+                                                    {
+                                                        if (ImGui.Button("Select All Shown"))
+                                                        {
+                                                            foreach (var character in ARTable.FilteredItems) C.EnableCharacterForTrade[character.CID] = true;
+                                                            configChanged = true;
+                                                        }
+
+                                                        ImGui.SameLine();
+                                                        if (ImGui.Button("Deselect All Shown"))
+                                                        {
+                                                            foreach (var character in ARTable.FilteredItems) C.EnableCharacterForTrade[character.CID] = false;
                                                             configChanged = true;
                                                         }
                                                     });

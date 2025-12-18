@@ -108,8 +108,8 @@ internal class OnABoat
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
     internal Vector3 GetFishingPosition => new(Rng.Next(2) == 0
-                                                       ? (float)(7  + (Rng.NextDouble() * 0.5))
-                                                       : (float)(-7 - (Rng.NextDouble() * 0.5)), 6.711f, Rng.NextSingle() * -10);
+                                                       ? (float)(7  + (Rng.NextDouble() * 0.25))
+                                                       : (float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
 
     internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                           && DateTime.UtcNow.Minute <= 13;
     private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
@@ -133,7 +133,7 @@ internal class OnABoat
         AutoHook.CreateAndSelectAnonymousPreset(HighGPPresetSpectral);
 
 
-        var state = Player.Territory is 900 or 1163 ? OceanFishingState.FishingVoyage : OceanFishingState.WaitingForVoyage;
+        var state = Player.Territory.RowId is 900 or 1163 ? OceanFishingState.FishingVoyage : OceanFishingState.WaitingForVoyage;
         if (state == OceanFishingState.FishingVoyage)
             dutyStarted = true;
 
@@ -217,7 +217,7 @@ internal class OnABoat
 
         await Task.Delay(8 * GeneralDelayMs, token);
 
-        if (Player.JobId != 18)
+        if (Player.ClassJob.RowId != 18)
             ErrorIf(!ChangeToHighestGearsetForClassJobId(18), "No gearset for jobId 18 found");
 
         await Task.Delay(4 * GeneralDelayMs, token);
@@ -227,17 +227,17 @@ internal class OnABoat
             if (SubscriptionManager.IsInitialized(IPCNames.Questionable))
             {
                 ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
-                await WaitUntilAsync(() => Player.Territory == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
+                await WaitUntilAsync(() => Player.Territory.RowId == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
                 await Questionable.CompleteQuest("3843", 69379, token);
             }
             else
                 ErrorThrow($"{Player.NameWithWorld} has not unlocked ocean fishing!");
         }
 
-        if (Player.Territory != 129)
+        if (Player.Territory.RowId != 129)
         {
             ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
-            await WaitUntilAsync(() => Player.Territory == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
+            await WaitUntilAsync(() => Player.Territory.RowId == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
             bool arcGuildUnlocked;
             unsafe
             {
@@ -358,7 +358,7 @@ internal class OnABoat
 
         while (dutyStarted)
         {
-            if (Player.Available && Player.Territory is 900 or 1163)
+            if (Player.Available && Player.Territory.RowId is 900 or 1163)
             {
                 SpectralActiveCache = IsSpectralActive;
                 if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
@@ -431,10 +431,6 @@ internal class OnABoat
         {
             if (C.DiscardAfterVoyage)
             {
-                if (Lifestream.GetHousePathData(Player.CID).FC is { PathToEntrance.Count: > 0 })
-                {
-                    await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for house transistion", token);
-                }
                 Chat.ExecuteCommand("/ays discard");
                 await WaitWhileAsync(IPC.AutoRetainer.IsBusy, "Wait until discard finished", token);
             }

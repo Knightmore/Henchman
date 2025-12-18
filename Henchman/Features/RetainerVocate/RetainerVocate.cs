@@ -94,7 +94,7 @@ internal class RetainerVocate
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
         }
 
-        if (Player.Territory != retainerVocateData.TerritoryId)
+        if (Player.Territory.RowId != retainerVocateData.TerritoryId)
 
         {
             await TeleportTo(retainerVocateData.AetheryteTerritoryId, retainerVocateData.TerritoryId, retainerVocateData.AetheryteId, token);
@@ -159,7 +159,7 @@ internal class RetainerVocate
         var classJob = Svc.Data.GetExcelSheet<ClassJob>()
                           .GetRow(combatClass);
 
-        if (Player.JobId != classJob.RowId)
+        if (Player.ClassJob.RowId != classJob.RowId)
         {
             var changedGearSet = ChangeToHighestGearsetForClassJobId(classJob.RowId);
             ErrorThrowIf(changedGearSet == null, $"No gearset assigned for the chosen class {classJob.Name.ExtractText()}");
@@ -231,7 +231,7 @@ internal class RetainerVocate
         var       vendorData = VendorData(retainerClassId);
         await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
 
-        if (vendorData.ZoneTransitionPosition != null && Player.Territory != vendorData.TerritoryId)
+        if (vendorData.ZoneTransitionPosition != null && Player.Territory.RowId != vendorData.TerritoryId)
             await MoveToNextZone(vendorData.ZoneTransitionPosition.Value, vendorData.TerritoryId, token);
 
         await MoveToStationaryObject(vendorData.InteractablePosition, vendorData.BaseId, token: token);

@@ -255,7 +255,7 @@ public class BringYourXGameUI : FeatureUI
                                                                                                                        }),
                                             new("Territory", x => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                      .GetRow(x)
-                                                                     .PlaceName.Value.Name.GetText(), 200, ColumnAlignment.Center)
+                                                                     .PlaceName.Value.Name.GetText(), 200, Alignment: ColumnAlignment.Center)
                                     },
                                     () => zone,
                                     size: new Vector2(300, 0)

@@ -211,16 +211,16 @@ public class BumpOnALogUi : FeatureUI
                                         new List<TableColumn<HuntMark>>
                                         {
                                                 new("Name", h => Utils.ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
-                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, ColumnAlignment.Center),
+                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment : ColumnAlignment.Center),
                                                 new("Finished", h => h.GetOpenMonsterNoteKills == 0
                                                                              ? FontAwesomeIcon.Check.ToIconString()
-                                                                             : FontAwesomeIcon.Times.ToIconString(), 100, ColumnAlignment.Center,
-                                                    h => h.GetOpenMonsterNoteKills == 0
+                                                                             : FontAwesomeIcon.Times.ToIconString(), 100, Alignment: ColumnAlignment.Center,
+                                                    GetTextColor:h => h.GetOpenMonsterNoteKills == 0
                                                                  ? Theme.SuccessGreen
                                                                  : Theme.ErrorRed)
                                         },
                                         () => marks,
-                                        h => h.IsCurrentTarget
+                                        highlightPredicate: h => h.IsCurrentTarget
                                        );
 
         table.Draw();

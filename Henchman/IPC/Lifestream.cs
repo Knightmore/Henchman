@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.EzIpcManager;
 using ECommons.GameHelpers;
@@ -24,6 +23,9 @@ public static class Lifestream
 
     [EzIPC]
     public static Func<bool> IsBusy;
+
+    [EzIPC]
+    public static Func<IDalamudPlugin> Instance;
 
     /// <summary>
     ///     Requests aethernet teleport to be executed by ID from <see cref="Aetheryte" /> sheet, if possible.
@@ -74,7 +76,7 @@ public static class Lifestream
 
     public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
-        if (Player.Available && Player.Name == charName && Player.HomeWorld == worldName) return;
+        if (Player.Available && Player.Name == charName && Player.HomeWorld.Value.Name.ExtractText()== worldName) return;
         var inTitleMenu = false;
         unsafe
         {
@@ -129,34 +131,34 @@ public static class Lifestream
         {
             case LifestreamDestination.Home:
             {
-                if(TeleportToHome())
+                if (TeleportToHome())
                     await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                 break;
             }
 
             case LifestreamDestination.FC:
             {
-                if(TeleportToFC())
+                if (TeleportToFC())
                     await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                 break;
             }
             case LifestreamDestination.Apartment:
             {
-                if(TeleportToApartment())
+                if (TeleportToApartment())
                     await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                 break;
             }
             case LifestreamDestination.Inn:
             {
-                ExecuteCommand("Inn");
+                ExecuteCommand("inn");
                 await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                 break;
             }
             case LifestreamDestination.Auto:
             {
-                ExecuteCommand("Auto");
+                ExecuteCommand("auto");
                 await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
-                    break;
+                break;
             }
             default:
                 return false;
@@ -164,20 +166,26 @@ public static class Lifestream
 
         await Task.Delay(GeneralDelayMs, token);
         await WaitWhileAsync(() => IsBusy(), "Wait for Lifestream", token);
+        if ((C is { ReturnOnceDone: true, ReturnTo: LifestreamDestination.FC } &&
+             GetHousePathData(Player.CID)
+                    .FC is { PathToEntrance.Count: > 0 }) ||
+            (C is { ReturnOnceDone: true, ReturnTo: LifestreamDestination.Home } &&
+             GetHousePathData(Player.CID)
+                    .Private is { PathToEntrance.Count: > 0 })) await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for House transistion", token);
         return true;
     }
 
     [Serializable]
     public class HousePathData
     {
-        public int           ResidentialDistrict;
-        public int           Ward;
-        public int           Plot;
-        public List<Vector3> PathToEntrance = [];
-        public List<Vector3> PathToWorkshop = [];
-        public bool          IsPrivate;
         public ulong         CID;
         public bool          EnableHouseEnterModeOverride = false;
         public int           EnterModeOverride            = 0;
+        public bool          IsPrivate;
+        public List<Vector3> PathToEntrance = [];
+        public List<Vector3> PathToWorkshop = [];
+        public int           Plot;
+        public int           ResidentialDistrict;
+        public int           Ward;
     }
 }

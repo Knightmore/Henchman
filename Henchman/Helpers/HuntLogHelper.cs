@@ -21,7 +21,7 @@ internal static class HuntLogHelper
     internal static unsafe int GetClassJobRankInfo()
     {
         var classMonsterNoteId = Svc.Data.GetExcelSheet<ClassJob>()
-                                    .GetRow(Player.JobId)
+                                    .GetRow(Player.ClassJob.RowId)
                                     .MonsterNote.RowId.ToInt();
         var classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
 

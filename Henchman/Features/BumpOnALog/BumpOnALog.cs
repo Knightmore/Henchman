@@ -85,7 +85,7 @@ internal class BumpOnALog
                                            ? GcHuntRanks[(byte)Player.GrandCompany]
                                             .HuntMarks.GetLength(1)
                                            : ClassHuntRanks[(uint)Svc.Data.GetExcelSheet<ClassJob>()
-                                                                     .GetRow(Player.JobId)
+                                                                     .GetRow(Player.ClassJob.RowId)
                                                                      .MonsterNote.RowId.ToInt()]
                                             .HuntMarks.GetLength(1))
                          .Select(col =>
@@ -94,7 +94,7 @@ internal class BumpOnALog
                                                             ? GcHuntRanks[(byte)Player.GrandCompany]
                                                                    .HuntMarks[currentRank, col]
                                                             : ClassHuntRanks[(uint)Svc.Data.GetExcelSheet<ClassJob>()
-                                                                                      .GetRow(Player.JobId)
+                                                                                      .GetRow(Player.ClassJob.RowId)
                                                                                       .MonsterNote.RowId.ToInt()]
                                                                    .HuntMarks[currentRank, col];
 

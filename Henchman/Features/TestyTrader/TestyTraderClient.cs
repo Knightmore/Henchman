@@ -387,11 +387,12 @@ internal partial class TestyTrader
 
     internal List<OfflineCharacterData> GetCurrentARCharacterData()
     {
-        if (!EzThrottler.Throttle("TestyTradersARCharacters"))
-            return characters;
-        characters.Clear();
-        var                        cids       = IPC.AutoRetainer.GetRegisteredCIDs();
-        foreach (var cid in cids) characters.Add(IPC.AutoRetainer.GetOfflineCharacterData(cid));
+        if (EzThrottler.Throttle("TestyTradersARCharacters"))
+        {
+            characters.Clear();
+            var cids = IPC.AutoRetainer.GetRegisteredCIDs();
+            foreach (var cid in cids) characters.Add(IPC.AutoRetainer.GetOfflineCharacterData(cid));
+        }
 
         return characters;
     }

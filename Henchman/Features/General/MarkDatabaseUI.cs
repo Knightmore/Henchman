@@ -39,7 +39,7 @@ internal class MarkDatabaseUI : FeatureUI
 
         ImGui.Separator();
 
-        var flatList = HuntMarks.Values.Where(x => x.TerritoryId == Player.Territory)
+        var flatList = HuntMarks.Values.Where(x => x.TerritoryId == Player.Territory.RowId)
                                 .SelectMany(x => x.Positions
                                                   .Where(y => Player.DistanceTo(y) <= 70 && currentTarget is IBattleNpc battleNpc && battleNpc.NameId == x.BNpcNameRowId)
                                                   .Select(pos => (Id: x.BNpcNameRowId, Name: Utils.ToTitleCaseExtended(x.BNpcNameSheet.Singular, Svc.ClientState.ClientLanguage), Position: pos)))
@@ -47,13 +47,13 @@ internal class MarkDatabaseUI : FeatureUI
 
         if (ImGui.Button("Copy new area marker (current position)"))
         {
-            if (currentTarget is IBattleNpc battleNpc && flatList.All(x => x.Id != battleNpc.NameId) && Player.Territory > 0)
+            if (currentTarget is IBattleNpc battleNpc && flatList.All(x => x.Id != battleNpc.NameId) && Player.Territory.RowId > 0)
             {
                 var newPosition = new JsonHuntMark
                                   {
                                           BnpcName    = battleNpc.NameId,
                                           FateId      = 0,
-                                          TerritoryId = Player.Territory,
+                                          TerritoryId = Player.Territory.RowId,
                                           X           = Player.Position.X,
                                           Y           = Player.Position.Y,
                                           Z           = Player.Position.Z
@@ -87,7 +87,7 @@ internal class MarkDatabaseUI : FeatureUI
             ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableHeadersRow();
 
-            foreach (var mark in HuntMarks.Values.Where(x => x.TerritoryId == Player.Territory))
+            foreach (var mark in HuntMarks.Values.Where(x => x.TerritoryId == Player.Territory.RowId))
             {
                 foreach (var position in mark.Positions)
                 {

@@ -208,7 +208,7 @@ internal class OnYourMark
     private async Task GoToHuntboard(Location location, string expansion, List<string> billsSelectString, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        if (Player.Territory != location.TerritoryId)
+        if (Player.Territory.RowId != location.TerritoryId)
         {
             if (expansion == "A Realm Reborn" && Player.GrandCompany == GrandCompany.Maelstrom)
             {

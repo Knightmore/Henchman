@@ -64,14 +64,14 @@ internal class ChocobokeepUI : FeatureUI
                                                        new("KeepId", h => h.ChocoboTaxiStandId.ToString()),
                                                        new("Territory", h => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                                 .GetRow(h.TerritoryId)
-                                                                                .PlaceName.Value.Name.ExtractText(), 200, ColumnAlignment.Center),
+                                                                                .PlaceName.Value.Name.ExtractText(), 200, Alignment : ColumnAlignment.Center),
                                                        new("Place Name", h => Svc.Data.GetExcelSheet<ChocoboTaxiStand>()
                                                                                  .GetRow(h.ChocoboTaxiStandId)
-                                                                                 .PlaceName.ExtractText(), 200, ColumnAlignment.Center),
+                                                                                 .PlaceName.ExtractText(), 200, Alignment : ColumnAlignment.Center),
                                                        new("Unlocked", h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
                                                                                     ? FontAwesomeIcon.Check.ToIconString()
-                                                                                    : FontAwesomeIcon.Times.ToIconString(), 50, ColumnAlignment.Center,
-                                                           h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
+                                                                                    : FontAwesomeIcon.Times.ToIconString(), 50, Alignment: ColumnAlignment.Center,
+                                                           GetTextColor: h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
                                                                         ? Theme.SuccessGreen
                                                                         : Theme.ErrorRed)
                                                },
