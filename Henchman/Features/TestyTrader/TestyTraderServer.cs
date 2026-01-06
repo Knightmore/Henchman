@@ -82,7 +82,7 @@ internal partial class TestyTrader
                                 return;
                             }
 
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPCs_GoToPlayer), [Player.Territory, Player.Position, Player.CurrentWorld, Player.CID]), token);
+                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPCs_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
                             break;
                         }
                         case TestyTraderMessageType.Arrived:

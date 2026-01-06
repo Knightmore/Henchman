@@ -64,7 +64,12 @@ internal class OnABoat
     private  List<OfflineCharacterData> characters = [];
     internal bool                       dutyStarted;
     internal bool                       EventsSubscribed;
-    internal bool                       InPostProcess;
+
+    internal string HighGPPresetNormal       = "AH4_H4sIAAAAAAAACu1Zy1LjOBT9FUrrqMryQ37s0hmgqUkDRWBYdM1Ctq8TFY6VlmVohsq/d8m2ktgk0JnpxTDjnaN77/G5Dx2pnBc0rpSYsFKVk2yOohd0WrA4h3Geo0jJCkZIG6e8gK0xNaaLFEV2EI7QteRCcvWMIjJCF+Xp9ySvUki3y9p/3WB9ESJZaLD6wdZPNQ4NRuh8dbuQUC5EnqKIWFYH+W3ofdRCvwNgvcttsqiWB/J0ieX2CPrU6+AbEJHnkCiTmEsssutmv89CyJSz3ABQ4nYA3NbtjJeL02cod17k9Rh6XqeE1LSAPcBswTP1ifGap14ozcJMseShRJHXVpEGr3F3UcMW9ZopDkUCO3xoP452W2qbUMn/gglTzWCYt/aj7d5AOG307YLlnD2UZ+xRSA3QWTDp6PZ3DDeQiEeQKCK6Svvmhwaveu71OHQ5jmPxCCjKWF6aZn7i83O2rIsyLuY5yNIQ0oOQosjxLfdVpp13BGs939+VZJ09uuGqm3YrZk9sdVGoiisuinPGC1NKTEZoWkn4AmXJ5oAihEbosuaELkUBqEV4XgGKdE334E1Fqf423rWEEvYzRBgdsDdvrO1bPrMVJEqyfFJJCYX6RVn2UP9RrhqvyWcv16ZhuwnvdUOfoUgWS1ac4JOrBFhxYtx65dpLvS5aM2wzJVZaJ3gxnylY1fq8TbwdyLH8Nb3dhXvV2NkTX8aMqzOe5+Ub9puqKK8qg3BX8G8VaGYoiz3fJomL0yALsEuojcPYSrHvBxCDzUInsNF6hKa8VFeZZlmi6OtLzVeXYKMsoU/8w1n+AbJkiudwoj004KWQS5Z/FuJBQxiVuwf2sN2L2qp7/sRWpsntUlMql/haJk3wTElRzI8Jt5yd8CnMoUiZfD4a4TdRxfmGe+uxkZNat3qBNg03cVvax0Z2GO/xupV8dSQv37OdTeSRzDqxb3Br/fQuGmcK5IRV84Wa8qU+Nklj6G+v+r5UyeZc1g9G7x2j917YP1XevJqsR2ijimYKb+BbxSWkM8VUpc9qfXvqj+bPTeBPD9pHmqe7EprmNgVrNsQwZG8OmVHgiagKtRs3QldF/nxXwv0CiktR39vHj4znOntT3B2lpqFjB3ZGMHGCGLt+6OA4BhczkjjE9xJKiYfWo/3S7B6W5hs2fxJyOWjyoMkfVpOH0Rzk/YPLu+fSjDp2iolPHOxSLe+hk2Ea2FkQZlbqEXJQ3r3D8v675Hn+vrj/j281w4QPt+RBRv8jMsockqTgxJhCTLDLIMVxQDOcEJ+RGFLKgsO3ZHpYRq/zark6uR8uyoMs/zt2zCDLgyx/HFlOQx8cYmeYEKDYpRbFMbM9HPgejRPfzmhG0PpP8525/Tfz62ahUWr9u/m63aryqw/6jTB3P3G7LLTdkKbY9d0Yux4JcRgwC1PLoeBkTmo5gNY/AHUODJ60HQAA";
+    internal string HighGPPresetNormalName   = "anon_Henchman - Ocean Normal";
+    internal string HighGPPresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZQP5/Ot0wUGLQOIwvKA5sGxb1oLN+k4DjMs6n8fOR+laRtgVkjLQ95a+95zj69PjlP3GU0qXUxpqctpNkfJMzrOaSphIiVKtKrAQmbyXORgJs/meaHgW1GwBUoyKkuw2gTehZ9xlLhRbKErJQol9BNKHAudlce/mKw48JdhE79u8FvEZ1R/cF949GGDyEKnq5uFgnJRSI4Sx7Z7hV6vdAgyDnsA9ptUp4tqWbeCo4Q4NnmDUZdVSAlMbyU622Hu22ULxQWVA50JHNLDI23WiSgXx09QbtX1dwj7fo9w0O0IfYDZQmT6CxU1bTNQdgMzTdlDiRJ/szH7uNuocYt6RbWAnMEWn2A3L+g30O1SlfgXplQ3Oumq7ma7O+332uybBZWCPpQn9LFQBqA30C3Hs/rj18CKR1AocUyTDityTwFej0DXzy9ifkqX9cIn+VyCKruiZu9NWmiTvdX0oKK10fAvrWjvUd0QMhtzU8x+0tVZriuhRZGfUpF37cKOhc4rBd+gLOkcUIKQhS5qTuiiyAG1CE8rQInp2wG886LU/xnvSkEJhxkijAbmm4r1/Auf2QqYVlROK6Ug1x+0yh3UD1vrQbbo3jybIp9fU8G/H10UakklspBJaJIP0ml2+hX0tl9fIWeLJc2P8NElA5q/FGjUN9PFqiUw07CqPfqlE61CJ+pjGrANt7fTs59imVKhT4SU5Svz11VeXlYdwm0uflRgmKHYy7LAjxzsRyHHxE9THHFgOI6AUaA+te0MrS10Lkp9mRmWJUrun2u+pgUbO4lDJxxe5T+gSqqFhCMTYQCbln4tigcD0VnbHdD6uxk3i6g7QpzQWGAXM9OqyOcHomxvK+oc5pBzqp6GAv8qqlTuFtyYQns89xLdIN7kDZDYDhlm0ETdlnCjxEpC04RGnM3IH7EKfdesp8kc4tULeoVZG2cUPsk0qCmt5gt9LpbmHHOaiV3p1+84lWoOSvNh60RozNmP90/6Vw7ttYU2FtYp5Bp+VEIBn2mqK3N4mteZUTajbHqy6fxuWlS53s6z0GUun25LuFtAflHUb8qTRyqkaVHXxS1fjFzGg8xzceb5GSYRBDglDsMRiYOUezH34gitrcNGSIaN8JrOfxZqOTrgKOXRAUfZfGIHtLlDeMgYDm3OMXEyglPfs3Hm2pHrZ4R6fNgB/WEH/FsJKUf/G4U8+t8om0/sf24cZiHxXAxxTDEJfR/H4EfYDyB1U4+EbkAG/S8Y9r8rWS1XR3fvegls9q9ttPk93/F8n8zfmz6s/z9CGB+Mz/xgjH46yub/9FOfhoylJMUp8WJMwAkwZU6EM8q450cBhYCj9ffuqrH9U+t+M9BYrPneXHC2drp3V9td6fbvOR0WsIxlgCn3OSYpRJj6jGMIMwpZ5AWU2Gj9G/K19XzRGwAA";
+    internal string HighGPPresetSpectralName = "anon_Henchman - Ocean Spectral";
+    internal bool   InPostProcess;
 
     internal Vector3 PositionDryskthota = new(-408, 4, 75);
 
@@ -75,15 +80,10 @@ internal class OnABoat
     internal string PresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZTvr7dOFxi0HUAUlofRauU4N61FandsB4ZB/e8rN0nbtA0MK6Sd1eatte89Pvfm5Nh1X9Co0mJMlFbjYobSF3TKSVbCqCxRqmUFFjKTE8bBTF7MuJDwRQg6R2lBSgVWk5C34Rc5St04sdC1ZEIy/YxSx0IX6vQ7Lasc8u2wiV/V+A3iC1p/cLc8urBhbKHz5e1cgpqLMkepY9udhV5f6RhkEnUA7DepjufVYt2KHKW+Y/tvMGqzRFkC1TuJzm6Y+/ayQuaMlD2dCR2/g+c3WWdMzU+fQe2sG+wRDoIO4bB9IuQBpnNW6E+ErWmbAdUOTDWhDwqlwebBHOLuoiYN6jXRDDiFnjJ8x3b3YNy9frotkmQ/YEx0LZuWRPhGttdk385JyciDOiOPQhqAzkBbnWd1x2+AikeQKHVMz44L9EAQXodA295PbHZOFus+jPisBKnaRY0UTFpk+wfVdKDilZH0dy1J583dEDLP6VZMn8jyguuKaSb4OWG8bRd2LDSpJHwBpcgMUIqQhS7XnNCl4IAahOcloNT07QjeRCj9j/GuJSg4zhBh1DNfr7ie3/KZLoFqScpxJSVw/UFV7qF+WK1H2R5UfHR1RLjgf30GTucLwk/wyRUFwk8m8Agl47OTSyEXpERWo6mpFkvjAIzPphqWayPe1tfobiQ/pqxduMNqntgiI0yfsbJUr8zfVFxdVS3CHWffKjDMUJ5nDrghxeAHMfZDSnCcU4IpEOpmnuNkuYdWFpowpa8Kw1Kh9OvLmq9pwcYkksiJ+qv8A6QimpVwYiIMYN3Sz0I8GIjWv+6BPGxfOTOrQJtC2pevGapb5TuRMcA2eaql4LP3pNveTvoEZsBzIp/fjXCn4DdRNfFtYD3SFtSkbayk2eM7aG5oqqnztrX0hnT4Hom6lWz5TgJR4HqbzD4KnaBXSDRx5mUZFRrkmFSzuZ6whdn3nHpi/y1an4kqWW+s5sPOllG7d5Acngxe2eRXFtp4XCu2G/hWMQn5VBNdmc3WHH/2FfhzQvtpPQ2y+a/JprXOsai43s2z0BUvn+8U3M+BX4r1yXr0SFhpWtQ+xh2Lje3YcyAmOAfXwb4TBziJgwJTN/LCJI5JSBK0so57qt/vqTdk9iTk4m0zHaT8P5fy4ICDbP5NBwygICQPzKkycbGfhSHOIA9xEpIw9jybJnnc64BBvwP+LllZDv43CHnwv0E2v7D/+WGQ0SBLcJCbH9m0oDihQYahoEVSeHZOAtLrf2G//12X1WJ5cj8cAgc1DyY4yOYXN8E4C7PEznAeRC72vdzFJHRsTNw4pHaROXaUoNWf7VVj88/V181A7Yvme33B2Xhg/6Vte9PbvfAMczdyfXCxV1Af+7Zt4ySKE+y4QRzQCJyCemj1Nw8lKWu/GwAA";
     internal string PresetSpectralName = "anon_Henchman - Ocean Leveling Spectral";
 
-    internal string HighGPPresetNormal       = "AH4_H4sIAAAAAAAACu1Zy1LjOBT9FUrrqMryQ37s0hmgqUkDRWBYdM1Ctq8TFY6VlmVohsq/d8m2ktgk0JnpxTDjnaN77/G5Dx2pnBc0rpSYsFKVk2yOohd0WrA4h3Geo0jJCkZIG6e8gK0xNaaLFEV2EI7QteRCcvWMIjJCF+Xp9ySvUki3y9p/3WB9ESJZaLD6wdZPNQ4NRuh8dbuQUC5EnqKIWFYH+W3ofdRCvwNgvcttsqiWB/J0ieX2CPrU6+AbEJHnkCiTmEsssutmv89CyJSz3ABQ4nYA3NbtjJeL02cod17k9Rh6XqeE1LSAPcBswTP1ifGap14ozcJMseShRJHXVpEGr3F3UcMW9ZopDkUCO3xoP452W2qbUMn/gglTzWCYt/aj7d5AOG307YLlnD2UZ+xRSA3QWTDp6PZ3DDeQiEeQKCK6Svvmhwaveu71OHQ5jmPxCCjKWF6aZn7i83O2rIsyLuY5yNIQ0oOQosjxLfdVpp13BGs939+VZJ09uuGqm3YrZk9sdVGoiisuinPGC1NKTEZoWkn4AmXJ5oAihEbosuaELkUBqEV4XgGKdE334E1Fqf423rWEEvYzRBgdsDdvrO1bPrMVJEqyfFJJCYX6RVn2UP9RrhqvyWcv16ZhuwnvdUOfoUgWS1ac4JOrBFhxYtx65dpLvS5aM2wzJVZaJ3gxnylY1fq8TbwdyLH8Nb3dhXvV2NkTX8aMqzOe5+Ub9puqKK8qg3BX8G8VaGYoiz3fJomL0yALsEuojcPYSrHvBxCDzUInsNF6hKa8VFeZZlmi6OtLzVeXYKMsoU/8w1n+AbJkiudwoj004KWQS5Z/FuJBQxiVuwf2sN2L2qp7/sRWpsntUlMql/haJk3wTElRzI8Jt5yd8CnMoUiZfD4a4TdRxfmGe+uxkZNat3qBNg03cVvax0Z2GO/xupV8dSQv37OdTeSRzDqxb3Br/fQuGmcK5IRV84Wa8qU+Nklj6G+v+r5UyeZc1g9G7x2j917YP1XevJqsR2ijimYKb+BbxSWkM8VUpc9qfXvqj+bPTeBPD9pHmqe7EprmNgVrNsQwZG8OmVHgiagKtRs3QldF/nxXwv0CiktR39vHj4znOntT3B2lpqFjB3ZGMHGCGLt+6OA4BhczkjjE9xJKiYfWo/3S7B6W5hs2fxJyOWjyoMkfVpOH0Rzk/YPLu+fSjDp2iolPHOxSLe+hk2Ea2FkQZlbqEXJQ3r3D8v675Hn+vrj/j281w4QPt+RBRv8jMsockqTgxJhCTLDLIMVxQDOcEJ+RGFLKgsO3ZHpYRq/zark6uR8uyoMs/zt2zCDLgyx/HFlOQx8cYmeYEKDYpRbFMbM9HPgejRPfzmhG0PpP8525/Tfz62ahUWr9u/m63aryqw/6jTB3P3G7LLTdkKbY9d0Yux4JcRgwC1PLoeBkTmo5gNY/AHUODJ60HQAA";
-    internal string HighGPPresetNormalName   = "anon_Henchman - Ocean Normal";
-    internal string HighGPPresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZQP5/Ot0wUGLQOIwvKA5sGxb1oLN+k4DjMs6n8fOR+laRtgVkjLQ95a+95zj69PjlP3GU0qXUxpqctpNkfJMzrOaSphIiVKtKrAQmbyXORgJs/meaHgW1GwBUoyKkuw2gTehZ9xlLhRbKErJQol9BNKHAudlce/mKw48JdhE79u8FvEZ1R/cF949GGDyEKnq5uFgnJRSI4Sx7Z7hV6vdAgyDnsA9ptUp4tqWbeCo4Q4NnmDUZdVSAlMbyU622Hu22ULxQWVA50JHNLDI23WiSgXx09QbtX1dwj7fo9w0O0IfYDZQmT6CxU1bTNQdgMzTdlDiRJ/szH7uNuocYt6RbWAnMEWn2A3L+g30O1SlfgXplQ3Oumq7ma7O+332uybBZWCPpQn9LFQBqA30C3Hs/rj18CKR1AocUyTDityTwFej0DXzy9ifkqX9cIn+VyCKruiZu9NWmiTvdX0oKK10fAvrWjvUd0QMhtzU8x+0tVZriuhRZGfUpF37cKOhc4rBd+gLOkcUIKQhS5qTuiiyAG1CE8rQInp2wG886LU/xnvSkEJhxkijAbmm4r1/Auf2QqYVlROK6Ug1x+0yh3UD1vrQbbo3jybIp9fU8G/H10UakklspBJaJIP0ml2+hX0tl9fIWeLJc2P8NElA5q/FGjUN9PFqiUw07CqPfqlE61CJ+pjGrANt7fTs59imVKhT4SU5Svz11VeXlYdwm0uflRgmKHYy7LAjxzsRyHHxE9THHFgOI6AUaA+te0MrS10Lkp9mRmWJUrun2u+pgUbO4lDJxxe5T+gSqqFhCMTYQCbln4tigcD0VnbHdD6uxk3i6g7QpzQWGAXM9OqyOcHomxvK+oc5pBzqp6GAv8qqlTuFtyYQns89xLdIN7kDZDYDhlm0ETdlnCjxEpC04RGnM3IH7EKfdesp8kc4tULeoVZG2cUPsk0qCmt5gt9LpbmHHOaiV3p1+84lWoOSvNh60RozNmP90/6Vw7ttYU2FtYp5Bp+VEIBn2mqK3N4mteZUTajbHqy6fxuWlS53s6z0GUun25LuFtAflHUb8qTRyqkaVHXxS1fjFzGg8xzceb5GSYRBDglDsMRiYOUezH34gitrcNGSIaN8JrOfxZqOTrgKOXRAUfZfGIHtLlDeMgYDm3OMXEyglPfs3Hm2pHrZ4R6fNgB/WEH/FsJKUf/G4U8+t8om0/sf24cZiHxXAxxTDEJfR/H4EfYDyB1U4+EbkAG/S8Y9r8rWS1XR3fvegls9q9ttPk93/F8n8zfmz6s/z9CGB+Mz/xgjH46yub/9FOfhoylJMUp8WJMwAkwZU6EM8q450cBhYCj9ffuqrH9U+t+M9BYrPneXHC2drp3V9td6fbvOR0WsIxlgCn3OSYpRJj6jGMIMwpZ5AWU2Gj9G/K19XzRGwAA";
-    internal string HighGPPresetSpectralName = "anon_Henchman - Ocean Spectral";
-
     internal uint RepairId = 720915;
     internal uint ShopId   = 263015;
 
-    private bool SpectralActiveCache;
+    private bool spectralActiveCache;
 
     public unsafe IKDRoute CurrentRoute => Svc.Data.GetExcelSheet<IKDRoute>()
                                               .GetRow(EventFramework.Instance()->GetInstanceContentOceanFishing()->CurrentRoute);
@@ -111,18 +111,8 @@ internal class OnABoat
                                                        ? (float)(7  + (Rng.NextDouble() * 0.25))
                                                        : (float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
 
-    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                           && DateTime.UtcNow.Minute <= 13;
+    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
     private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
-
-    enum OceanFishingState
-    {
-        WaitingForVoyage,
-        CharacterSelection,
-        Preparation,
-        Boarding,
-        FishingVoyage,
-        PostVoyage
-    }
 
     internal async Task Start(CancellationToken token = default)
     {
@@ -133,7 +123,9 @@ internal class OnABoat
         AutoHook.CreateAndSelectAnonymousPreset(HighGPPresetSpectral);
 
 
-        var state = Player.Territory.RowId is 900 or 1163 ? OceanFishingState.FishingVoyage : OceanFishingState.WaitingForVoyage;
+        var state = Player.Territory.RowId is 900 or 1163
+                            ? OceanFishingState.FishingVoyage
+                            : OceanFishingState.WaitingForVoyage;
         if (state == OceanFishingState.FishingVoyage)
             dutyStarted = true;
 
@@ -182,9 +174,9 @@ internal class OnABoat
             {
                 AskARforAccess = true;
 
-                await WaitUntilAsync(() => InPostProcess || (!IPC.AutoRetainer.IsBusy() && !Lifestream.IsBusy() && IsInTitleScreen), "Waiting for AR PostProccess", token);
+                await WaitUntilAsync(() => InPostProcess || (!AutoRetainer.IsBusy() && !Lifestream.IsBusy() && IsInTitleScreen), "Waiting for AR PostProccess", token);
                 AskARforAccess  = false;
-                CachedMultiMode = IPC.AutoRetainer.GetMultiModeEnabled();
+                CachedMultiMode = AutoRetainer.GetMultiModeEnabled();
                 StopAutoRetainer();
 
                 GetCurrentARCharacterData();
@@ -194,9 +186,8 @@ internal class OnABoat
 
                 if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && C.OCFishingStop100)
                 {
-
-                    IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
-                    IPC.AutoRetainer.SetMultiModeEnabled(true);
+                    AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                    AutoRetainer.SetMultiModeEnabled(true);
                     UnsubscribeEvents();
                     InPostProcess = false;
                     return;
@@ -272,7 +263,7 @@ internal class OnABoat
         }
         else
         {
-            var ragAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
+            var ragAmount   = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
             var krillAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Krill);
             var plumpAmount = InventoryHelper.GetInventoryItemCount((int)Bait.PlumpWorm);
 
@@ -343,7 +334,7 @@ internal class OnABoat
         await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoEmbark), "Waiting for SelectYesNo Embark", token);
         await WaitUntilAsync(() => Svc.Condition[ConditionFlag.WaitingForDutyFinder], "Waiting for accepting duty finder", token);
         await WaitUntilAsync(() => TryConfirmContentsFinder(), "Waiting for contentsFinder Confirm", token);
-        
+
         await WaitUntilAsync(() => dutyStarted, "Waiting for duty to start", token);
         await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for voyage to begin", token);
         await Task.Delay(2 * GeneralDelayMs, token);
@@ -360,7 +351,7 @@ internal class OnABoat
         {
             if (Player.Available && Player.Territory.RowId is 900 or 1163)
             {
-                SpectralActiveCache = IsSpectralActive;
+                spectralActiveCache = IsSpectralActive;
                 if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
                 {
                     await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for new zone", token);
@@ -380,13 +371,17 @@ internal class OnABoat
                     unsafe
                     {
                         if (Player.BattleChara->MaxGatheringPoints < 750)
+                        {
                             AutoHook.SetPreset(IsSpectralActive
                                                        ? PresetSpectralName
                                                        : PresetNormalName);
+                        }
                         else
+                        {
                             AutoHook.SetPreset(IsSpectralActive
                                                        ? HighGPPresetSpectralName
                                                        : HighGPPresetNormalName);
+                        }
                     }
 
                     if (C.UseOnlyVersatile)
@@ -400,8 +395,8 @@ internal class OnABoat
                             ActionManager.Instance()->UseAction(ActionType.Action, 289);
                     }
 
-                    await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || SpectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
-                    if (SpectralActiveCache != IsSpectralActive)
+                    await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || spectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
+                    if (spectralActiveCache != IsSpectralActive)
                     {
                         unsafe
                         {
@@ -432,17 +427,17 @@ internal class OnABoat
             if (C.DiscardAfterVoyage)
             {
                 Chat.ExecuteCommand("/ays discard");
-                await WaitWhileAsync(IPC.AutoRetainer.IsBusy, "Wait until discard finished", token);
+                await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until discard finished", token);
             }
 
             if (InPostProcess)
             {
-                IPC.AutoRetainer.ARAPI.FinishCharacterPostProcess();
-                IPC.AutoRetainer.SetMultiModeEnabled(true);
+                AutoRetainer.ARAPI.FinishCharacterPostProcess();
+                AutoRetainer.SetMultiModeEnabled(true);
                 InPostProcess = false;
             }
             else if (CachedMultiMode)
-                IPC.AutoRetainer.SetMultiModeEnabled(true);
+                AutoRetainer.SetMultiModeEnabled(true);
         }
     }
 
@@ -467,7 +462,7 @@ internal class OnABoat
     {
         if (AskARforAccess)
         {
-            IPC.AutoRetainer.ARAPI.RequestCharacterPostprocess();
+            AutoRetainer.ARAPI.RequestCharacterPostprocess();
             Log("Requesting AR post process");
         }
         else
@@ -482,10 +477,10 @@ internal class OnABoat
 
     private void StopAutoRetainer()
     {
-        IPC.AutoRetainer.SetMultiModeEnabled(false);
-        IPC.AutoRetainer.SetSuppressed(true);
-        IPC.AutoRetainer.AbortAllTasks();
-        IPC.AutoRetainer.SetSuppressed(false);
+        AutoRetainer.SetMultiModeEnabled(false);
+        AutoRetainer.SetSuppressed(true);
+        AutoRetainer.AbortAllTasks();
+        AutoRetainer.SetSuppressed(false);
         PluginLog.Verbose("AutoRetainer MultiMode disabled.");
     }
 
@@ -493,21 +488,21 @@ internal class OnABoat
     {
         if (EventsSubscribed) return;
         PluginLog.Log("Subscribe");
-        IPC.AutoRetainer.ARAPI.OnCharacterPostprocessStep    += OnCharacterPostProcessStep;
-        IPC.AutoRetainer.ARAPI.OnCharacterReadyToPostProcess += OnCharacterReadyToPostProcess;
-        Svc.DutyState.DutyStarted                            += DutyStarted;
-        Svc.DutyState.DutyCompleted                          += DutyCompleted;
-        EventsSubscribed                                     =  true;
+        AutoRetainer.ARAPI.OnCharacterPostprocessStep    += OnCharacterPostProcessStep;
+        AutoRetainer.ARAPI.OnCharacterReadyToPostProcess += OnCharacterReadyToPostProcess;
+        Svc.DutyState.DutyStarted                        += DutyStarted;
+        Svc.DutyState.DutyCompleted                      += DutyCompleted;
+        EventsSubscribed                                 =  true;
     }
 
     internal void UnsubscribeEvents()
     {
         if (!EventsSubscribed) return;
         PluginLog.Log("Unsubscribe");
-        IPC.AutoRetainer.OnCharacterPostprocessStep    -= OnCharacterPostProcessStep;
-        IPC.AutoRetainer.OnCharacterReadyToPostProcess -= OnCharacterReadyToPostProcess;
-        Svc.DutyState.DutyStarted                      -= DutyStarted;
-        Svc.DutyState.DutyCompleted                    -= DutyCompleted;
+        AutoRetainer.OnCharacterPostprocessStep    -= OnCharacterPostProcessStep;
+        AutoRetainer.OnCharacterReadyToPostProcess -= OnCharacterReadyToPostProcess;
+        Svc.DutyState.DutyStarted                  -= DutyStarted;
+        Svc.DutyState.DutyCompleted                -= DutyCompleted;
         AutoHook.DeleteAllAnonymousPresets();
         AskARforAccess   = false;
         dutyStarted      = false;
@@ -531,10 +526,11 @@ internal class OnABoat
             return characters;
 
         characters.Clear();
-        var cids = IPC.AutoRetainer.GetRegisteredCIDs();
-        foreach (var cid in cids) characters.Add(IPC.AutoRetainer.GetOfflineCharacterData(cid));
+        var cids = AutoRetainer.GetRegisteredCIDs();
+        foreach (var cid in cids) characters.Add(AutoRetainer.GetOfflineCharacterData(cid));
 
-        characters = characters.OrderBy(x => x.ClassJobLevelArray[17]).Where(x => x.ClassJobLevelArray[17] >= 1)
+        characters = characters.OrderBy(x => x.ClassJobLevelArray[17])
+                               .Where(x => x.ClassJobLevelArray[17] >= 1)
                                .ToList();
         return characters;
     }
@@ -552,6 +548,16 @@ internal class OnABoat
 
         await Task.Delay(100);
         return false;
+    }
+
+    private enum OceanFishingState
+    {
+        WaitingForVoyage,
+        CharacterSelection,
+        Preparation,
+        Boarding,
+        FishingVoyage,
+        PostVoyage
     }
 
     internal struct BaitData(Bait normal, Bait daytime, Bait sunset, Bait nighttime)

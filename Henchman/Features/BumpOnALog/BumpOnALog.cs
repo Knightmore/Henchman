@@ -23,7 +23,6 @@ internal class BumpOnALog
 
     private async Task Process(bool gcLog, bool doDutyMarks = false, CancellationToken token = default)
     {
-        byte grandCompany;
         var currentRank = gcLog
                                   ? HuntLogHelper.GetGrandCompanyRankInfo()
                                   : HuntLogHelper.GetClassJobRankInfo();

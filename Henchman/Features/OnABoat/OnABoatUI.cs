@@ -22,7 +22,6 @@ internal class OnABoatUI : FeatureUI
     public override string          Category => Henchman.Category.Economy;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.Sailboat;
 
-    // TODO: Fill help
     public override Action? Help => () =>
                                     {
                                         ImGui.Text("""

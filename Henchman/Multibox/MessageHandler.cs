@@ -83,6 +83,7 @@ public static class MessageHandler
 
             var timestamp      = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var timestampBytes = BitConverter.GetBytes(timestamp);
+
             var headerBytes    = BitConverter.GetBytes((ushort)commandType);
             var jsonBytes      = Encoding.UTF8.GetBytes(json);
             var lengthBytes    = BitConverter.GetBytes(jsonBytes.Length);

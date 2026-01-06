@@ -70,8 +70,8 @@ public static class Bossmod
 
     public static void EnableAI()
     {
-        if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
-            Svc.Commands.ProcessCommand("/vbmai on");
+        if (SubscriptionManager.IsInitialized(IPCNames.BossMod) && GetActive() != "VBM Default")
+            SetActive("VBM AI");
 
         // Putting this here as the internal name and the IPC prefix of BMR are messed up
         if (SubscriptionManager.IsLoaded("BossModReborn"))
@@ -81,7 +81,7 @@ public static class Bossmod
     public static void DisableAI()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
-            Svc.Commands.ProcessCommand("/vbmai off");
+            ClearActive();
 
         // Putting this here as the internal name and the IPC prefix of BMR are messed up
         if (SubscriptionManager.IsLoaded("BossModReborn"))

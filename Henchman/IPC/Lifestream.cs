@@ -76,7 +76,7 @@ public static class Lifestream
 
     public static async Task SwitchToChar(string charName, string worldName, CancellationToken token = default)
     {
-        if (Player.Available && Player.Name == charName && Player.HomeWorld.Value.Name.ExtractText()== worldName) return;
+        if (Player.Available && Player.Name == charName && Player.HomeWorld.Value.Name.ExtractText() == worldName) return;
         var inTitleMenu = false;
         unsafe
         {

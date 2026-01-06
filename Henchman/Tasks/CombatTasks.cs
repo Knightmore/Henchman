@@ -284,7 +284,10 @@ internal static class CombatTasks
 
             if (dutyUnlocked && ADPathAvailable)
             {
-                AutoDuty.RunDutySupport(duty);
+                if(C.SoloUnsyncLogDuty)
+                    AutoDuty.RunDutyUsync(duty);
+                else
+                    AutoDuty.RunDutySupport(duty);
                 await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
             }
             else if (!dutyUnlocked && ADPathAvailable)
@@ -292,26 +295,28 @@ internal static class CombatTasks
                 if (!SubscriptionManager.IsInitialized(IPCNames.Questionable)) FullWarning("Questionable not enabled! Skipping duty!");
                 switch (duty)
                 {
-                    case 1245:
+                    case 1245:  // Halatali
                         await Questionable.CompleteQuest("697", 66233, token);
-                        AutoDuty.RunDutySupport(duty);
-                        await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
-                    case 1267:
+                    case 1267: // Qarn
                         await Questionable.CompleteQuest("764", 66300, token);
-                        AutoDuty.RunDutySupport(duty);
-                        await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
                         break;
-                    case 1303:
+                    case 1303: // Cutter's Cry
                         await Questionable.CompleteQuest("921", 66457, token);
-                        AutoDuty.RunDutySupport(duty);
-                        await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
-                        huntMarks.ForEach(x => x.IsCurrentTarget = false);
+                        break;
+                    case 1330: // Dzemael
+                        await Questionable.CompleteQuest("979", 66515, token);
+                        break;
+                    case 1331: // Aurum Vale
+                        await Questionable.CompleteQuest("1014", 66457, token);
                         break;
                 }
-                // TODO: Add Dzemael and Aurum Vale once they have Duty Support.
+                if (C.SoloUnsyncLogDuty)
+                    AutoDuty.RunDutyUsync(duty);
+                else
+                    AutoDuty.RunDutySupport(duty);
+                await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                huntMarks.ForEach(x => x.IsCurrentTarget = false);
             }
             else
                 FullWarning($"There is no AutoDuty Path for Duty {Svc.Data.Excel.GetSheet<TerritoryType>().GetRow(duty).PlaceName.Value.Name.ExtractText()}");

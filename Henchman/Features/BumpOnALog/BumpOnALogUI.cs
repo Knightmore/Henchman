@@ -256,7 +256,11 @@ public class BumpOnALogUi : FeatureUI
 
         ImGui.Text("Skip Duty Marks");
         ImGui.SameLine(200);
-        configChanged |= ImGui.Checkbox("##skipDutyFateMarks", ref C.SkipDutyMarks);
+        configChanged |= ImGui.Checkbox("##skipDutyMarks", ref C.SkipDutyMarks);
+
+        ImGui.Text("Solo Unsync Duty");
+        ImGui.SameLine(200);
+        configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
 
 
         if (configChanged) EzConfig.Save();

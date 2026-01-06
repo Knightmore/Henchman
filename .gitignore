@@ -399,4 +399,4 @@ FodyWeavers.xsd
 
 # Project Specific Private
 **/Private/
-**/Henchman.Generators/
+/Henchman.Generators/

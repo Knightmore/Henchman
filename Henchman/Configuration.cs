@@ -81,10 +81,11 @@ public class Configuration
      * Bump On A Log
      */
 
-    public bool SkipDutyMarks = false;
-    public int StopAfterGCRank = 3;
-    public int StopAfterJobRank = 5;
-    public bool ProgressGCRanks = false;
+    public bool SkipDutyMarks     = false;
+    public bool SoloUnsyncLogDuty = false;
+    public int  StopAfterGCRank   = 3;
+    public int  StopAfterJobRank  = 5;
+    public bool ProgressGCRanks   = false;
 
     /*
      * Testy Trader

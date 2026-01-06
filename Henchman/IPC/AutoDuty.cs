@@ -25,4 +25,11 @@ public static class AutoDuty
         SetConfig("dutyModeEnum", "Support");
         Run(territoryType, loops, bareMode);
     }
+
+    public static void RunDutyUsync(uint territoryType, int loops = 0, bool bareMode = false)
+    {
+        SetConfig("dutyModeEnum", "Regular");
+        SetConfig("Unsynced", "true");
+        Run(territoryType, loops, bareMode);
+    }
 }
