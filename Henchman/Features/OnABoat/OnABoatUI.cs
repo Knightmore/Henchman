@@ -91,6 +91,8 @@ internal class OnABoatUI : FeatureUI
                .DistinctBy(x => x.Name.ExtractText())
                .ToDictionary(x => x.Name.ExtractText(), x => x);
 
+    public void Start() => EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
+
     public override void Draw()
     {
         configChanged = false;
@@ -101,7 +103,7 @@ internal class OnABoatUI : FeatureUI
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (StartButton() && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
+                               if (StartButton() && !IsTaskEnqueued(Name)) Start();
                            }, () =>
                               {
                                   if (feature.IsRegistrationOpen)

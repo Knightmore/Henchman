@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -9,11 +6,16 @@ using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Henchman.Data;
 using Henchman.Features.BringYourXGame;
 using Henchman.Helpers;
 using Henchman.Multibox.Command;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Lumina.Text.ReadOnly;
 
 namespace Henchman.Tasks;
 
@@ -365,6 +367,17 @@ internal static class MovementTasks
         }
 
         return true;
+    }
+
+    internal static async Task UseFerry(uint ferryNpcId, ReadOnlySeString? ferrySelection, ReadOnlySeString ferryConfirmaton, string logDestination, CancellationToken token = default)
+    {
+        await InteractWithByBaseId(ferryNpcId, token);
+        var ferryNpc = Svc.Data.GetExcelSheet<ENpcBase>()
+                          .GetRow(ferryNpcId);
+        if (ferryNpc.ENpcData.Count > 1 && ferryNpc.ENpcData.Count(x => x.Is<Warp>()) > 1)
+            await WaitUntilAsync(() => TrySelectSpecificEntry(ferrySelection!.Value), $"Select passage to {logDestination}", token);
+        await WaitUntilAsync(() => ConfirmSpecificSelectOk(ferryConfirmaton), $"Confirm passage to {logDestination}", token);
+        await WaitWhileAsync(() => IsPlayerBusy, "Waiting for transition", token);
     }
 
     private static async Task CheckIfPlayerIsStunned(CancellationToken token = default)

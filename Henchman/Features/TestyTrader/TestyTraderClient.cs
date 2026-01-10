@@ -263,7 +263,7 @@ internal partial class TestyTrader
                     case TestyTraderMessageType.ConfirmTrade:
                         await WaitUntilAsync(() => TestyTraderTasks.CheckForTradeConfirmation(), "Waiting for Boss to finish", token);
                         await WaitUntilAsync(() => TestyTraderTasks.ConfirmTrade(), "Waiting to confirm trade", token);
-                        await WaitUntilAsync(() => ProcessYesNo(true, Lang.TradeText), "Confirm Trade", token);
+                        await WaitUntilAsync(() => RegexYesNo(true, Lang.TradeText), "Confirm Trade", token);
                         await MessageHandler.WriteMessageAsync(pipe, CommandType.Feature, new TestyTraderMessage
                                                                                           {
                                                                                                   Type        = TestyTraderMessageType.ClientStatusCheck,

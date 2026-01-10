@@ -15,6 +15,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
 using Henchman.Helpers;
 using Lumina.Excel.Sheets;
+using EventHandler = FFXIVClientStructs.FFXIV.Client.Game.Event.EventHandler;
 #if PRIVATE
 using Henchman.Features.Private;
 #endif
@@ -107,11 +108,18 @@ internal class OnABoat
 
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
-    internal Vector3 GetFishingPosition => new(Rng.Next(2) == 0
-                                                       ? (float)(7  + (Rng.NextDouble() * 0.25))
-                                                       : (float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
+    internal Vector3 GetFishingPosition()
+    {
+        Vector3 left = new((float)(7 + (Rng.NextDouble() * 0.25)), 6.711f, Rng.Next(2) == 0
+                                                                                   ? (Rng.NextSingle() * 10f) + -14f
+                                                                                   : (Rng.NextSingle() * 7f)  + -2f);
+        Vector3 right = new((float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
+        return Rng.Next(2) == 0
+                       ? left
+                       : right;
+    }
 
-    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
+internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
     private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
 
     internal async Task Start(CancellationToken token = default)
@@ -342,7 +350,13 @@ internal class OnABoat
 
     internal async Task Fish(CancellationToken token = default)
     {
-        await WalkToRailing(token);
+        bool canFish;
+        unsafe
+        {
+            canFish = ((FishingEventHandler*)EventFramework.Instance()->GetEventHandlerById(150001))->CanFish;
+        }
+        if (!canFish)
+            await WalkToRailing(token);
         await Task.Delay(4 * GeneralDelayMs, token);
 
         AutoHook.SetPluginState(true);
@@ -430,14 +444,10 @@ internal class OnABoat
                 await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until discard finished", token);
             }
 
-            if (InPostProcess)
-            {
-                AutoRetainer.ARAPI.FinishCharacterPostProcess();
+            if (InPostProcess || CachedMultiMode)
                 AutoRetainer.SetMultiModeEnabled(true);
-                InPostProcess = false;
-            }
-            else if (CachedMultiMode)
-                AutoRetainer.SetMultiModeEnabled(true);
+            
+            InPostProcess = false;
         }
     }
 
@@ -448,7 +458,7 @@ internal class OnABoat
         var position       = positionalData.position;
         var rotation       = positionalData.rotation;
 #else
-        var position = GetFishingPosition;
+        var position = GetFishingPosition();
         var rotation = position.X > 0 ? 1.5f : -1.5F;
 #endif
         await MoveTo(position, token: token);
@@ -481,6 +491,7 @@ internal class OnABoat
         AutoRetainer.SetSuppressed(true);
         AutoRetainer.AbortAllTasks();
         AutoRetainer.SetSuppressed(false);
+        AutoRetainer.ARAPI.FinishCharacterPostProcess();
         PluginLog.Verbose("AutoRetainer MultiMode disabled.");
     }
 

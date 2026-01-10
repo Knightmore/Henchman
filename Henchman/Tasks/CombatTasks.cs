@@ -197,6 +197,35 @@ internal static class CombatTasks
                                     }
                                     
                                 }
+                                else if (Player.Territory.RowId == 138 && !Player.CanFly)
+                                {
+                                    if (markPosition.ToVector2()
+                                                    .IsWithinRadius(new Vector2(-300f, 600f), 300f))
+                                    {
+                                        await MoveTo(new Vector3(-317f, -36.2f, 351f), true, token);
+                                        await UseFerry(1003584, Lang.SelectStringWarpIsleOfUmbra, Lang.SelectYesnoPassageToIsleOfUmbra, "Isle of Umbra", token);
+                                    }
+                                }
+                                else if (Player.Territory.RowId == 137 && !Player.CanFly)
+                                {
+                                    if ((markPosition.X < 200f || markPosition.Z < 57f))
+                                    {
+                                        if (!IsAetheryteUnlocked(12) && (Player.Position.ToVector2() is { X : > 200f, Y: > 57f }))
+                                        {
+                                            await MoveTo(new Vector3(346f, 33f, 93f), true, token);
+                                            await UseFerry(1003588, null, Lang.SelectYesnoPassageToRaincatcherGully, "Raincatcher Gully", token);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!IsAetheryteUnlocked(11) && (Player.Position.ToVector2() is { X: < 200f } || Player.Position.ToVector2() is { Y: < 57f }))
+
+                                        {
+                                            await MoveTo(new Vector3(22, 34f, 225f), true, token);
+                                            await UseFerry(1003589, null, Lang.SelectYesnoPassageToHiddenFalls, "Hidden Falls", token);
+                                        }
+                                    }
+                                }
 
                                 if (Vnavmesh.QueryMeshPointOnFloor(markPosition with { Y = markPosition.Y + 5 }, false, 0.05f) is { } landablePosition)
                                     await MoveToArea(landablePosition, token);

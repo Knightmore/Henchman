@@ -121,13 +121,13 @@ internal static class Lang
                                                              .GetRow(13206)
                                                              .Unknown0;
 
-    internal static string SelectStringSkipCutscene => Svc.Data.GetExcelSheet<Addon>()
+    internal static ReadOnlySeString SelectStringSkipCutscene => Svc.Data.GetExcelSheet<Addon>()
                                                           .GetRow(3)
-                                                          .Text.ExtractText();
+                                                          .Text;
 
-    internal static string SelectStringMouseKeyboard => Svc.Data.GetExcelSheet<Addon>()
+    internal static ReadOnlySeString SelectStringMouseKeyboard => Svc.Data.GetExcelSheet<Addon>()
                                                            .GetRow(3392)
-                                                           .Text.ExtractText();
+                                                           .Text;
 
     internal static ReadOnlySeString DialogueNameTaken => Svc.Data.GetExcelSheet<Error>()
                                                              .GetRow(13004)
@@ -151,4 +151,19 @@ internal static class Lang
                                                                                                                        ? row.ReadStringColumn(1)
                                                                                                                             .ExtractText()
                                                                                                                        : "";
+
+    internal static ReadOnlySeString SelectStringWarpIsleOfUmbra => Svc.Data.GetExcelSheet<Warp>()
+                                                             .GetRow(131134)
+                                                             .Name;
+    internal static ReadOnlySeString SelectYesnoPassageToIsleOfUmbra => Svc.Data.GetExcelSheet<Warp>()
+                                                                           .GetRow(131134)
+                                                                           .Question;
+
+    internal static ReadOnlySeString SelectYesnoPassageToRaincatcherGully => Svc.Data.GetExcelSheet<Warp>()
+                                                                           .GetRow(131119)
+                                                                           .Question;
+
+    internal static ReadOnlySeString SelectYesnoPassageToHiddenFalls => Svc.Data.GetExcelSheet<Warp>()
+                                                                                .GetRow(131120)
+                                                                                .Question;
 }

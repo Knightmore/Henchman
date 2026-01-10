@@ -94,7 +94,7 @@ internal class IntoTheLight
                 using var namingTokenSrc  = new CancellationTokenSource();
                 using var linkedNamingCts = CancellationTokenSource.CreateLinkedTokenSource(token, namingTokenSrc.Token);
 
-                var charConfirmation = WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoNewGame), "Checking for New Game Yesno.", linkedNamingCts.Token);
+                var charConfirmation = WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesnoNewGame), "Checking for New Game Yesno.", linkedNamingCts.Token);
                 var takenName = WaitUntilAsync(() =>
                                                {
                                                    unsafe
@@ -131,9 +131,9 @@ internal class IntoTheLight
                 Verbose("Progressing without queue!");
                 await WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
 
-                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringSkipCutscene), "Skip cutscene", token);
+                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringSkipCutscene.ToRegex()), "Skip cutscene", token);
 
-                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringMouseKeyboard), "Skip input controls", token);
+                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringMouseKeyboard.ToRegex()), "Skip input controls", token);
                 while (true)
                 {
                     unsafe
@@ -146,11 +146,11 @@ internal class IntoTheLight
                     await Task.Delay(8 * GeneralDelayMs, token);
                 }
 
-                await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
+                await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
                 await OpenDataCenter(token);
             }
             else
-                await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesnoLeaveQueue), "Confirm leave queue", token);
+                await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesnoLeaveQueue), "Confirm leave queue", token);
             
             await Task.Delay(4 * GeneralDelayMs, token);
         }

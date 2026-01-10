@@ -446,18 +446,26 @@ internal class RetainerVocate
             validPresets = Framework.Instance()->CharamakeAvatarSaveData->Release.GetValidSlotCount();
         }
 
-        if (validPresets > 0 && presetslot != 255)
+        if (validPresets > 0)
         {
-            await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
-            await WaitUntilAsync(() => AddonHelpers.SelectPreset(presetslot), "Select Preset", token);
+            if(presetslot != 255)
+            {
+                await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
+                await WaitUntilAsync(() => AddonHelpers.SelectPreset(presetslot), "Select Preset", token);
+            }
+            else
+            {
+                await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
+                await WaitUntilAsync(() => SelectRetainerRaceAndGender(C.UseMaxRetainerAmount ? (int)C.RetainerRace + (int)C.RetainerGender : (int)C.RetainerCharacters[characterIndex].Race + (int)C.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
+                await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
+            }
         }
         else
         {
-            await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo HireARetainer", token);
             await WaitUntilAsync(() => SelectRetainerRaceAndGender(C.UseMaxRetainerAmount ? (int)C.RetainerRace + (int)C.RetainerGender : (int)C.RetainerCharacters[characterIndex].Race + (int)C.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
             await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
         }
-        
+
         await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
         await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoSaveAppearance), "SelectYesNo SaveAppearance", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoFinalizeRetainer), "SelectYesNo FinalizeRetainer", token);

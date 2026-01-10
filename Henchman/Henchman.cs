@@ -25,6 +25,7 @@ using System.Linq;
 using System.Reflection;
 using Dalamud.Plugin.Services;
 using ECommons.EzHookManager;
+using Henchman.Features.OnABoat;
 using Module = ECommons.Module;
 
 namespace Henchman;
@@ -115,8 +116,9 @@ public class Henchman : IDalamudPlugin
                                           Open plugin window
                                           /henchman BumpOnALog <Class|GC> [RunDuties] → Run current huntlog rank for Class/GC
                                           /henchman OnYourMark → Runs with currently selected HuntBills
-                                          /henchman RetainerVocate <1-10> <RetainerClassAbbr> <QuestClassAbbr> <FirstExploration> -> Run retainer creation with selected parameters and random names
-                                          /henchman SetupRetainer <Name> <PresetId> -> Runs Retainer Setup for Retainer Fantasia. Keep PresetId and/or Name empty to randomize them.
+                                          /henchman RetainerVocate <1-10> <RetainerClassAbbr> <QuestClassAbbr> <FirstExploration> → Run retainer creation with selected parameters and random names
+                                          /henchman SetupRetainer <Name> <PresetId> → Runs Retainer Setup for Retainer Fantasia. Keep PresetId and/or Name empty to randomize them.
+                                          /henchman OnABoat → Run On A Boat (also works when you are already on a voyage)
                                           /henchman Stop
                                           """);
         EzCmd.Add("/knightman", OnCommand);
@@ -243,6 +245,11 @@ public class Henchman : IDalamudPlugin
                     break;
                 }
             }
+        }
+        else if (args.EqualsIgnoreCase("OnABoat"))
+        {
+            if (TryGetFeature<OnABoatUI>(out var onABoat) && !IsTaskEnqueued(onABoat.Name))
+                onABoat.Start();
         }
         else if (args.EqualsIgnoreCase("Stop"))
             CancelAllTasks();

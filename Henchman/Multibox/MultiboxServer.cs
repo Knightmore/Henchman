@@ -182,14 +182,14 @@ public class MultiboxServer
         {
             Verbose("Accept Task stopped!");
             pipe?.Dispose();
-            Disconnect();
+            //Disconnect();
             Dispose();
         }
         catch (Exception ex)
         {
             InternalError($"Error with server {pipeName}: {ex.Message}");
             pipe?.Dispose();
-            Disconnect();
+            //Disconnect();
             Dispose();
         }
     }

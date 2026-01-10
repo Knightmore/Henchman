@@ -224,7 +224,7 @@ internal static class GeneralHelpers
 
     private static float ConvertWorldCoordToMapCoord(float worldCoord, uint scale, int offset) => (worldCoord * 0.02f) + 1.0f + (2048f / scale) + (0.02f * offset);
 
-    internal static bool IsWithinRadius(this Vector2 x, Vector2 y, float radius = 50f) => Vector2.DistanceSquared(x, y) <= radius * radius;
+    internal static bool IsWithinRadius(this Vector2 A, Vector2 B, float radius = 50f) => Vector2.DistanceSquared(A, B) <= radius * radius;
 
     internal static unsafe int GetHaterCount() => UIState.Instance()->Hater.HaterCount;
 

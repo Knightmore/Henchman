@@ -36,7 +36,7 @@ internal partial class TestyTrader
             charsTraded          = 0;
 
             Info(result);
-            server.Disconnect();
+            //server.Disconnect();
             server.Dispose();
         }
     }
@@ -156,7 +156,7 @@ internal partial class TestyTrader
                                                                                                      {
                                                                                                              Type = TestyTraderMessageType.ConfirmTrade
                                                                                                      }.ToJson(), token);
-                            await WaitUntilAsync(() => ProcessYesNo(true, Lang.TradeText), "Confirm Trade", token);
+                            await WaitUntilAsync(() => RegexYesNo(true, Lang.TradeText), "Confirm Trade", token);
                             await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.TradeOpen], "Waiting for Trade to close", token);
                             TestyTraderTasks.CalculateInventoryDifference(ServerSideInventory, ServerSideTradingLog, ServerSideGil);
                             continue;

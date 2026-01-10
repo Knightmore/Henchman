@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
 using ECommons.UIHelpers.AddonMasterImplementations;
@@ -7,6 +6,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
 using Lumina.Text.ReadOnly;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
@@ -72,7 +73,7 @@ internal class AddonTasks
         if (TryGetAddonMaster<AddonMaster.SelectYesno>(out var addon) && addon.IsAddonReady)
         {
             if (text.ToRegex()
-                    .IsMatch(addon.SeStringNullTerminated.TextValue))
+                    .IsMatch(addon.SeString.TextValue.NormalizeWhitespaces()))
             {
                 if (accept)
                 {
@@ -93,6 +94,10 @@ internal class AddonTasks
         return false;
     }
 
+    internal static Task<bool> TrySelectSpecificEntry(Regex regex) => TrySelectSpecificEntry(x => regex.IsMatch(x.NormalizeWhitespaces()));
+
+    internal static Task<bool> TrySelectSpecificEntry(ReadOnlySeString seString) => TrySelectSpecificEntry(x => seString.ToRegex().IsMatch(x.NormalizeWhitespaces()));
+
     internal static Task<bool> TrySelectSpecificEntry(string text)
     {
         return TrySelectSpecificEntry(x => x.StartsWith(text, StringComparison.InvariantCultureIgnoreCase));
@@ -109,7 +114,7 @@ internal class AddonTasks
         {
             if (TryGetAddonByName<AddonSelectString>("SelectString", out var addon) && IsAddonReady(&addon->AtkUnitBase))
             {
-                if (new AddonMaster.SelectString(addon).Entries.TryGetFirst(x => inputTextTest(x.Text), out var entry))
+                if (new AddonMaster.SelectString(addon).Entries.TryGetFirst(x => inputTextTest(x.Text.NormalizeWhitespaces()), out var entry))
                 {
                     entry.Select();
                     Log($"TrySelectSpecificEntry: selecting {entry}");
@@ -212,7 +217,7 @@ internal class AddonTasks
         if (TryGetAddonMaster<AddonMaster.SelectOk>(out var addon) && addon.IsAddonReady)
         {
             if (text.ToRegex()
-                    .IsMatch(addon.Text))
+                    .IsMatch(addon.Text.NormalizeWhitespaces()))
                 return true;
         }
 
@@ -225,7 +230,7 @@ internal class AddonTasks
         if (TryGetAddonMaster<AddonMaster.SelectOk>(out var addon) && addon is { IsAddonReady: true, IsVisible: true })
         {
             if (text.ToRegex()
-                    .IsMatch(addon.Text))
+                    .IsMatch(addon.Text.NormalizeWhitespaces()))
             {
                 addon.Ok();
                 return true;
