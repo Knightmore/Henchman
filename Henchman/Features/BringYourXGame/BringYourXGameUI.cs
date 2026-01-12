@@ -19,7 +19,7 @@ using Map = Lumina.Excel.Sheets.Map;
 namespace Henchman.Features.BringYourXGame;
 
 [Feature]
-public class BringYourXGameUI : FeatureUI
+public class BringYourXGameUI : FeatureUI<Configuration>
 {
     private readonly ImmutableSortedSet<uint> ARankTerritories = BRanks
                                                                 .Values
@@ -106,7 +106,13 @@ public class BringYourXGameUI : FeatureUI
             (IPCNames.RotationSolverReborn, false)
     ];
 
-    public override bool LoginNeeded => false;
+    public override                 bool          LoginNeeded   => false;
+    public sealed override required Configuration Configuration { get; init; }
+
+    public BringYourXGameUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+    }
 
     public override void Draw()
     {
@@ -150,14 +156,14 @@ public class BringYourXGameUI : FeatureUI
                                          {
                                              if (ImGui.Button("Select All"))
                                              {
-                                                 C.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
+                                                 Configuration.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
                                                  configChanged                = true;
                                              }
 
                                              ImGui.SameLine();
                                              if (ImGui.Button("Deselect All"))
                                              {
-                                                 C.EnabledTerritoriesForARank.Clear();
+                                                 Configuration.EnabledTerritoriesForARank.Clear();
                                                  configChanged = true;
                                              }
                                          });
@@ -179,14 +185,14 @@ public class BringYourXGameUI : FeatureUI
                                                                    {
                                                                        if (ImGui.Button("Select Expansion"))
                                                                        {
-                                                                           C.EnabledTerritoriesForARank.AddRange(expansion.Value.Values.SelectMany(e => e));
+                                                                           Configuration.EnabledTerritoriesForARank.AddRange(expansion.Value.Values.SelectMany(e => e));
                                                                            configChanged = true;
                                                                        }
 
                                                                        ImGui.SameLine();
                                                                        if (ImGui.Button("Deselect Expansion"))
                                                                        {
-                                                                           C.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Value.Values.SelectMany(e => e)
+                                                                           Configuration.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Value.Values.SelectMany(e => e)
                                                                                                                                   .Contains(x));
 
                                                                            configChanged = true;
@@ -210,14 +216,14 @@ public class BringYourXGameUI : FeatureUI
                                                                               {
                                                                                   if (ImGui.Button("Select Zone"))
                                                                                   {
-                                                                                      C.EnabledTerritoriesForARank.AddRange(zone.Value);
+                                                                                      Configuration.EnabledTerritoriesForARank.AddRange(zone.Value);
                                                                                       configChanged = true;
                                                                                   }
 
                                                                                   ImGui.SameLine();
                                                                                   if (ImGui.Button("Deselect Zone"))
                                                                                   {
-                                                                                      C.EnabledTerritoriesForARank.RemoveWhere(t => zone.Value.Contains(t));
+                                                                                      Configuration.EnabledTerritoriesForARank.RemoveWhere(t => zone.Value.Contains(t));
 
                                                                                       configChanged = true;
                                                                                   }
@@ -233,7 +239,7 @@ public class BringYourXGameUI : FeatureUI
             }
         }
 
-        if (configChanged) EzConfig.Save();
+        if (configChanged) SaveConfig(Configuration);
     }
 
     private void DrawARankTable(List<uint> zone)
@@ -244,13 +250,13 @@ public class BringYourXGameUI : FeatureUI
                                     {
                                             new("##enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
                                                                                                                        {
-                                                                                                                           var enabled = C.EnabledTerritoriesForARank.Contains(x);
+                                                                                                                           var enabled = Configuration.EnabledTerritoriesForARank.Contains(x);
                                                                                                                            if (ImGui.Checkbox($"##{x}", ref enabled))
                                                                                                                            {
                                                                                                                                if (enabled)
-                                                                                                                                   C.EnabledTerritoriesForARank.Add(x);
+                                                                                                                                   Configuration.EnabledTerritoriesForARank.Add(x);
                                                                                                                                else
-                                                                                                                                   C.EnabledTerritoriesForARank.Remove(x);
+                                                                                                                                   Configuration.EnabledTerritoriesForARank.Remove(x);
                                                                                                                            }
                                                                                                                        }),
                                             new("Territory", x => Svc.Data.GetExcelSheet<TerritoryType>()
@@ -279,11 +285,11 @@ public class BringYourXGameUI : FeatureUI
                                                                                                                               }));
                                                                      if (C.TrackBRankSpots)
                                                                      {
-                                                                         if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
+                                                                         if (BRanks.TryGetValue(Configuration.BRankToFarm, out var mark))
                                                                          {
-                                                                             if (SpawnsRecordedFor != C.BRankToFarm)
+                                                                             if (SpawnsRecordedFor != Configuration.BRankToFarm)
                                                                              {
-                                                                                 SpawnsRecordedFor = C.BRankToFarm;
+                                                                                 SpawnsRecordedFor = Configuration.BRankToFarm;
                                                                                  PossibleSpawnPoints.Clear();
                                                                                  foreach (var position in mark.Positions) PossibleSpawnPoints.Add(position);
                                                                                  FoundSpawns.Clear();
@@ -298,12 +304,12 @@ public class BringYourXGameUI : FeatureUI
                          ImGui.Text("B-Rank to Farm:");
                          ImGui.SameLine(150);
                          ImGui.SetNextItemWidth(150f);
-                         if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(C.BRankToFarm) is { } row
-                                                                                                      ? Utils.ToTitleCaseExtended(s.GetRow(C.BRankToFarm)
+                         if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(Configuration.BRankToFarm) is { } row
+                                                                                                      ? Utils.ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
                                                                                                                                    .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
                                                                                                       : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
                          {
-                             C.BRankToFarm = brank.RowId;
+                             Configuration.BRankToFarm = brank.RowId;
                              configChanged = true;
                          }
 
@@ -314,7 +320,7 @@ public class BringYourXGameUI : FeatureUI
 
         if (C.TrackBRankSpots)
         {
-            if (BRanks.TryGetValue(C.BRankToFarm, out var mark))
+            if (BRanks.TryGetValue(Configuration.BRankToFarm, out var mark))
             {
                 map = Svc.Data.GetExcelSheet<TerritoryType>()
                          .GetRow(mark.TerritoryId)
@@ -352,7 +358,7 @@ public class BringYourXGameUI : FeatureUI
                              if (ImGui.Button("Print spawn locations to chat"))
                              {
                                  var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
-                                                 .GetRow(BRanks[C.BRankToFarm].TerritoryId)
+                                                 .GetRow(BRanks[Configuration.BRankToFarm].TerritoryId)
                                                  .Map.Value;
                                  foreach (var position in FoundSpawns)
                                  {
@@ -361,7 +367,7 @@ public class BringYourXGameUI : FeatureUI
                                      var message = new XivChatEntry
                                                    {
                                                            Type = XivChatType.Echo,
-                                                           Message = new SeStringBuilder().AddUiForeground($"B-Rank {BRanks[C.BRankToFarm].Name} found @ ", 561)
+                                                           Message = new SeStringBuilder().AddUiForeground($"B-Rank {BRanks[Configuration.BRankToFarm].Name} found @ ", 561)
                                                                                           .Append(mapLink)
                                                                                           .AddUiForegroundOff()
                                                                                           .Build()
@@ -384,7 +390,11 @@ public class BringYourXGameUI : FeatureUI
             }
         }
 
-        if (configChanged) EzConfig.Save();
+        if (configChanged)
+        {
+            EzConfig.Save();
+            SaveConfig(Configuration);
+        }
     }
 
 

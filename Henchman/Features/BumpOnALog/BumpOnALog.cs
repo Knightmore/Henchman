@@ -10,6 +10,7 @@ namespace Henchman.Features.BumpOnALog;
 
 internal class BumpOnALog
 {
+    private static Configuration? Configuration => GetFeatureConfig<BumpOnALogUI, Configuration>();
     internal async Task StartGCRank(CancellationToken token = default, bool doDutyMarks = false)
     {
         await Process(true, doDutyMarks, token);
@@ -42,7 +43,7 @@ internal class BumpOnALog
                                  .OrderBy(x => x!.TerritoryId)
                                  .ToList();
         await ProcessHuntMarks(overworldMarks, true, currentRank, gcLog, token);
-        if (gcLog && (!C.SkipDutyMarks || doDutyMarks))
+        if (gcLog && (!Configuration!.SkipDutyMarks || doDutyMarks))
         {
             if (SubscriptionManager.IsInitialized(IPCNames.AutoDuty))
                 await ProcessDutyMarks(dutyMarks, token);

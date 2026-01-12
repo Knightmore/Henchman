@@ -15,7 +15,7 @@ using Action = System.Action;
 namespace Henchman.Features.OnYourMark;
 
 [Feature]
-public class OnYourMarkUi : FeatureUI
+public class OnYourMarkUI : FeatureUI<Configuration>
 {
     internal readonly OnYourMark      feature = new();
     public override  string          Name     => "On Your Mark";
@@ -49,8 +49,8 @@ public class OnYourMarkUi : FeatureUI
                                        DrawRequirements(Requirements);
                                    };
 
-    public override bool LoginNeeded => true;
-
+    public override                 bool          LoginNeeded   => true;
+    public sealed override required Configuration Configuration { get; init; }
     public override List<(string pluginName, bool mandatory)> Requirements =>
     [
             (IPCNames.vnavmesh, true),
@@ -59,6 +59,11 @@ public class OnYourMarkUi : FeatureUI
             (IPCNames.Wrath, false),
             (IPCNames.RotationSolverReborn, false)
     ];
+
+    public OnYourMarkUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+    }
 
     public override unsafe void Draw()
     {
@@ -148,10 +153,10 @@ public class OnYourMarkUi : FeatureUI
 
                             ImGui.Spacing();
 
-                            var enabled = C.EnableHuntBills[key];
+                            var enabled = Configuration.EnableHuntBills[key];
                             if (ImGui.Checkbox($"Enable##{key}", ref enabled))
                             {
-                                C.EnableHuntBills[key] = enabled;
+                                Configuration.EnableHuntBills[key] = enabled;
                                 configChanged          = true;
                             }
 
@@ -209,7 +214,7 @@ public class OnYourMarkUi : FeatureUI
                     DrawSettings();
             }
 
-            if (configChanged) EzConfig.Save();
+            if (configChanged) SaveConfig(Configuration);
         }
     }
 
@@ -256,6 +261,10 @@ public class OnYourMarkUi : FeatureUI
         ImGui.Text("Skip Fate Marks");
         ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
-        if (configChanged) EzConfig.Save();
+        if (configChanged)
+        {
+            EzConfig.Save();
+            SaveConfig(Configuration);
+        }
     }
 }

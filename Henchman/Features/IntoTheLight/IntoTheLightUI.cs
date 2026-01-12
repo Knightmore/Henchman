@@ -14,7 +14,7 @@ using Action = System.Action;
 namespace Henchman.Features.IntoTheLight;
 
 [Feature]
-public class IntoTheLightUI : FeatureUI
+public class IntoTheLightUI : FeatureUI<Configuration>
 {
     public enum ClassJob
     {
@@ -27,6 +27,8 @@ public class IntoTheLightUI : FeatureUI
         Thaumaturge,
         Arcanist
     }
+
+    public sealed override required Configuration Configuration { get; init; }
 
     private readonly IntoTheLight feature = new();
 
@@ -42,6 +44,11 @@ public class IntoTheLightUI : FeatureUI
 
     public override bool LoginNeeded => false;
 
+    public IntoTheLightUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+    }
+
     public override unsafe void Draw()
     {
         var configChanged = false;
@@ -54,7 +61,7 @@ public class IntoTheLightUI : FeatureUI
                                      });
         DrawCentered("##LightNoLoginSkip", () =>
                                            {
-                                               ImGui.Checkbox("No login skip", ref C.LightNoLoginSkip); 
+                                               ImGui.Checkbox("No login skip", ref Configuration.LightNoLoginSkip); 
                                                HelpMarker(() => ImGui.Text("Let each new character login. Useful for character registration in AutoRetainer."), sameLine: true);
                                            });
 
@@ -88,7 +95,7 @@ public class IntoTheLightUI : FeatureUI
         var table = new Table<LightCharacter>(
                                               "##LightCharacterTable",
                                               characterColumns,
-                                              () => C.LightCharacters,
+                                              () => Configuration.LightCharacters,
                                               size: new Vector2(750, 0),
                                               drawExtraRow: () =>
                                                             {
@@ -98,9 +105,9 @@ public class IntoTheLightUI : FeatureUI
                                                                 var randomFirstName = string.IsNullOrEmpty(newCharacter.FirstName);
                                                                 var randomLastName  = string.IsNullOrEmpty(newCharacter.LastName);
 
-                                                                if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !C.LightCharacters.Any(x => !randomFirstName && x.FirstName == newCharacter.FirstName && !randomLastName && x.LastName == newCharacter.LastName && x.WorldId == newCharacter.WorldId))
+                                                                if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !Configuration.LightCharacters.Any(x => !randomFirstName && x.FirstName == newCharacter.FirstName && !randomLastName && x.LastName == newCharacter.LastName && x.WorldId == newCharacter.WorldId))
                                                                 {
-                                                                    C.LightCharacters.Add(newCharacter);
+                                                                    Configuration.LightCharacters.Add(newCharacter);
                                                                     var tempCharacter = new LightCharacter(newCharacter);
                                                                     tempCharacter.FirstName = "";
                                                                     tempCharacter.LastName  = "";
@@ -170,11 +177,11 @@ public class IntoTheLightUI : FeatureUI
 
         if (charToDelete != null)
         {
-            C.LightCharacters.Remove(charToDelete);
+            Configuration.LightCharacters.Remove(charToDelete);
             charToDelete  = null;
             configChanged = true;
         }
 
-        if (configChanged) EzConfig.Save();
+        if (configChanged) SaveConfig(Configuration);
     }
 }

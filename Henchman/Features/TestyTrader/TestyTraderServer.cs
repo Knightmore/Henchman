@@ -21,11 +21,22 @@ internal partial class TestyTrader
     internal static uint                  charsTraded;
     internal        MultiboxServer        server;
 
+    private readonly List<uint> accessibleTerritories = Svc.Data.GetExcelSheet<TerritoryType>()
+                                                             .Where(x => Svc.Data.GetExcelSheet<Aetheryte>()
+                                                                            .Any(y => y.Territory.RowId == x.RowId && y.Order > 0))
+                                                             .Select(x => x.RowId)
+                                                             .ToList();
+
     internal async Task Server(CancellationToken token = default)
     {
         server = new MultiboxServer("TestyTrader", 8, (clientSession, _) => ServerSessionHandler(clientSession, token), token);
         try
         {
+            if (!accessibleTerritories.Contains(Player.Territory.RowId))
+            {
+                FullWarning("You can not start you boss in a territory that isn't accessible through an aetheryte!");
+                return;
+            }
             await server.StartRoundRobinAsync();
         } finally
         {
@@ -82,6 +93,17 @@ internal partial class TestyTrader
                                 return;
                             }
 
+                            if (Configuration!.MoveBossToHenchman && responseData.TradingWorld != null && !responseData.TradingWorld.Equals(Player.CurrentWorldName, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                var currentPositon   = Player.Position;
+                                var closestAetheryte = GetAetheryte(Player.Territory.RowId, Player.Position);
+                                Lifestream.ChangeWorld(responseData.TradingWorld);
+                                await WaitWhileAsync(() => Lifestream.IsBusy(), "Waiting for world change", token);
+                                await TeleportTo(closestAetheryte, token);
+                                await MoveTo(currentPositon, true, token);
+                                await Dismount(token);
+                            }
+
                             await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPCs_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
                             break;
                         }
@@ -109,7 +131,7 @@ internal partial class TestyTrader
                             break;
                         }
                         case TestyTraderMessageType.ClientFinished:
-                            if (C.UseARItemSell)
+                            if (Configuration!.UseARItemSell)
                             {
                                 Svc.Commands.ProcessCommand("/ays itemsell");
                                 await WaitWhileAsync(() => IPC.AutoRetainer.IsBusy(), "Waiting for selling all items", token);

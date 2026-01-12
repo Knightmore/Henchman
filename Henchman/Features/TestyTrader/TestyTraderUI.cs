@@ -17,7 +17,7 @@ using Action = System.Action;
 namespace Henchman.Features.TestyTrader;
 
 [Feature]
-public class TestyTraderUI : FeatureUI
+public class TestyTraderUI : FeatureUI<Configuration>
 {
     private static readonly Item[] TradableItems = Svc.Data.GetExcelSheet<Item>()
                                                       .Where(x => x is { IsUntradable: false, RowId: 1 or > 100 } && !string.IsNullOrEmpty(x.Name.GetText()))
@@ -38,16 +38,17 @@ public class TestyTraderUI : FeatureUI
                                                                                                   })
                                                                                       .ToList();
 
-    private static readonly TestyTrader feature = new();
+    private static readonly TestyTrader Feature = new();
 
     private readonly List<ItemSearchCategory> searchCategories = Svc.Data.GetExcelSheet<ItemSearchCategory>()
                                                                     .Where(x => x.Category > 1)
                                                                     .OrderBy(x => x.Category)
                                                                     .ToList();
 
-    internal TestyTraderCharacterData? characterToRemove;
+    internal TestyTraderCharacterData? CharacterToRemove;
 
-    private static bool configChanged;
+    public sealed override required Configuration Configuration { get; init; }
+    private static                  bool          ConfigChanged;
 
     private TestyTraderCharacterData newCharacter = new();
 
@@ -92,59 +93,66 @@ public class TestyTraderUI : FeatureUI
                .DistinctBy(x => x.Name.ExtractText())
                .ToDictionary(x => x.Name.ExtractText(), x => x);
 
-    private static Table<OfflineCharacterData> ARTable = new (
-                                                              "##ARTraderTable",
-                                                              new List<TableColumn<OfflineCharacterData>>
-                                                              {
-                                                                      new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
-                                                                                                                                                 {
-                                                                                                                                                     if (!C.EnableCharacterForTrade.TryAdd(x.CID, false))
-                                                                                                                                                     {
-                                                                                                                                                         var isEnabled = C.EnableCharacterForTrade[x.CID];
-                                                                                                                                                         if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+    private Table<OfflineCharacterData> ARTable;
 
-                                                                                                                                                         if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
-                                                                                                                                                         {
-                                                                                                                                                             C.EnableCharacterForTrade[x.CID] = !isEnabled;
-                                                                                                                                                             configChanged                    = true;
-                                                                                                                                                         }
+    public TestyTraderUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
 
-                                                                                                                                                         if (isEnabled) ImGui.PopStyleColor();
-                                                                                                                                                     }
-                                                                                                                                                     else
-                                                                                                                                                         configChanged = true;
-                                                                                                                                                 }),
-                                                                      new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
-                                                                      new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                                      new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                                      new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment : ColumnAlignment.Center),
-                                                                      new("AR active", x => x.WorkshopEnabled.ToString(), 75, Alignment : ColumnAlignment.Center),
-                                                                      new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
-                                                              },
-                                                              () => feature.GetCurrentARCharacterData(),
-                                                              highlightPredicate: x => x.CID == Player.CID,
-                                                              size: new Vector2(570, 0)
-                                                             );
+        ARTable = new Table<OfflineCharacterData>(
+                                                  "##ARTraderTable",
+                                                  new List<TableColumn<OfflineCharacterData>>
+                                                  {
+                                                          new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                                     {
+                                                                                                                                         if (!Configuration.EnableCharacterForTrade.TryAdd(x.CID, false))
+                                                                                                                                         {
+                                                                                                                                             var isEnabled = Configuration.EnableCharacterForTrade[x.CID];
+                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                                             if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
+                                                                                                                                             {
+                                                                                                                                                 Configuration.EnableCharacterForTrade[x.CID] = !isEnabled;
+                                                                                                                                                 ConfigChanged                                 = true;
+                                                                                                                                             }
+
+                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                                         }
+                                                                                                                                         else
+                                                                                                                                             ConfigChanged = true;
+                                                                                                                                     }),
+                                                          new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
+                                                          new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                          new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                          new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment : ColumnAlignment.Center),
+                                                          new("AR active", x => x.WorkshopEnabled.ToString(), 75, Alignment : ColumnAlignment.Center),
+                                                          new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
+                                                  },
+                                                  () => Feature.GetCurrentARCharacterData(),
+                                                  highlightPredicate: x => x.CID == Player.CID,
+                                                  size: new Vector2(570, 0)
+                                                 );
+    }
 
     public override void Draw()
     {
-        configChanged = false;
+        ConfigChanged = false;
         DrawCentered("###TraderStart", () => Layout.DrawButton(() =>
                                                                {
                                                                    if (StartButton() && !IsTaskEnqueued(Name))
                                                                    {
-                                                                       EnqueueTask(C.TradeSession == TradeSession.Boss
-                                                                                           ? new TaskRecord(feature.Server, "Testy Trader - Boss Mode")
-                                                                                           : new TaskRecord(feature.Client, "Testy Trader - Henchman Mode"));
+                                                                       EnqueueTask(Configuration.TradeSession == TradeSession.Boss
+                                                                                           ? new TaskRecord(Feature.Server, "Testy Trader - Boss Mode")
+                                                                                           : new TaskRecord(Feature.Client, "Testy Trader - Henchman Mode"));
                                                                    }
                                                                }));
         DrawCentered("###TradeSessionType", () =>
                                             {
                                                 ImGui.SetNextItemWidth(150f);
-                                                configChanged |= ImGuiEx.EnumCombo("##tradeSession", ref C.TradeSession);
+                                                ConfigChanged |= ImGuiEx.EnumCombo("##tradeSession", ref Configuration.TradeSession);
                                             });
 
-        if (C.TradeSession == TradeSession.Henchman)
+        if (Configuration.TradeSession == TradeSession.Henchman)
         {
             using var tabs = ImRaii.TabBar("Tabs");
             if (tabs)
@@ -166,13 +174,27 @@ public class TestyTraderUI : FeatureUI
         {
             //TODO: Move to release after tests
 #if PRIVATE
-            DrawCentered("##UseARItemSell", () => configChanged |= ImGui.Checkbox("Use AR ItemSell", ref C.UseARItemSell));
+            DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox("Use AR ItemSell", ref Configuration.UseARItemSell));
 #endif
+            DrawCentered("##BossToHenchmanWorld", () =>
+                                                  {
+                                                      ConfigChanged |= ImGui.Checkbox("Transfer Boss to Henchman World", ref Configuration.MoveBossToHenchman);
+                                                      ImGui.SameLine();
+                                                      HelpMarker(() => ImGui.Text("""
+                                                                       If your next henchman is on another world, your boss will transfer to it and move back to exact same position where he started.
+                                                                       It won't check if you can travel to another datacenter!
+                                                                       
+                                                                       Example:  
+                                                                       Started on Shiva in Western La Noscea at the Shop in Aleport.
+                                                                       Second Henchman on Alpha.
+                                                                       Your boss will travel and then move to the exact same position on Alpha.
+                                                                       """));
+                                                  });
         }
 
-        if (characterToRemove != null)
-            C.TestyTraderImportedCharacters.Remove(characterToRemove);
-        if (configChanged) EzConfig.Save();
+        if (CharacterToRemove != null)
+            Configuration.TestyTraderImportedCharacters.Remove(CharacterToRemove);
+        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private void DrawARTable()
@@ -228,7 +250,7 @@ public class TestyTraderUI : FeatureUI
                                                                                                                       if (ImGuiEx.IconButton($"\uf021###{x.Name + x.WorldId}"))
                                                                                                                       {
                                                                                                                           x.Enabled     = !isEnabled;
-                                                                                                                          configChanged = true;
+                                                                                                                          ConfigChanged = true;
                                                                                                                       }
 
                                                                                                                       if (isEnabled) ImGui.PopStyleColor();
@@ -242,14 +264,14 @@ public class TestyTraderUI : FeatureUI
                                                             .Name.ExtractText(), 100, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
                                        new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                  {
-                                                                                                                     if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) characterToRemove = x;
+                                                                                                                     if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) CharacterToRemove = x;
                                                                                                                  })
                                };
 
         var table = new Table<TestyTraderCharacterData>(
                                                         "##ManualTraderTable",
                                                         characterColumns,
-                                                        () => C.TestyTraderImportedCharacters,
+                                                        () => Configuration.TestyTraderImportedCharacters,
                                                         highlightPredicate: h => h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
                                                         size: new Vector2(450, 0),
                                                         drawExtraRow:() =>
@@ -292,7 +314,7 @@ public class TestyTraderUI : FeatureUI
                                                                                                     {
                                                                                                         if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus))
                                                                                                         {
-                                                                                                            C.TestyTraderImportedCharacters.Add(newCharacter);
+                                                                                                            Configuration.TestyTraderImportedCharacters.Add(newCharacter);
                                                                                                             newCharacter = new TestyTraderCharacterData();
                                                                                                         }
                                                                                                     });
@@ -306,53 +328,53 @@ public class TestyTraderUI : FeatureUI
     {
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##TraderARSupport", () => configChanged |= ImGui.Checkbox("AR Support", ref C.TestyTraderARSupport));
-            if (C.TestyTraderARSupport)
+            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox("AR Support", ref Configuration.TestyTraderARSupport));
+            if (Configuration.TestyTraderARSupport)
             {
                 DrawCentered("##TradeCharSelector", () =>
                                                     {
                                                         if (ImGui.Button("Select All"))
                                                         {
-                                                            foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = true;
-                                                            configChanged = true;
+                                                            foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = true;
+                                                            ConfigChanged = true;
                                                         }
 
                                                         ImGui.SameLine();
                                                         if (ImGui.Button("Deselect All"))
                                                         {
-                                                            foreach (var keyValuePair in C.EnableCharacterForTrade) C.EnableCharacterForTrade[keyValuePair.Key] = false;
-                                                            configChanged = true;
+                                                            foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = false;
+                                                            ConfigChanged = true;
                                                         }
                                                     });
                 DrawCentered("##TradeFilteredCharSelector", () =>
                                                     {
                                                         if (ImGui.Button("Select All Shown"))
                                                         {
-                                                            foreach (var character in ARTable.FilteredItems) C.EnableCharacterForTrade[character.CID] = true;
-                                                            configChanged = true;
+                                                            foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = true;
+                                                            ConfigChanged = true;
                                                         }
 
                                                         ImGui.SameLine();
                                                         if (ImGui.Button("Deselect All Shown"))
                                                         {
-                                                            foreach (var character in ARTable.FilteredItems) C.EnableCharacterForTrade[character.CID] = false;
-                                                            configChanged = true;
+                                                            foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = false;
+                                                            ConfigChanged = true;
                                                         }
                                                     });
                 DrawCentered("##CenteredARTraderTable", () => DrawARTable());
             }
         }
         else
-            C.TestyTraderARSupport = false;
+            Configuration.TestyTraderARSupport = false;
 
-        if (!C.TestyTraderARSupport)
+        if (!Configuration.TestyTraderARSupport)
         {
             DrawCentered("##ImportTraders", () =>
                                             {
                                                 if (ImGui.Button("Import from Clipboard"))
                                                 {
                                                     var charString = ImGui.GetClipboardText();
-                                                    ImportCharacters(charString, C.TestyTraderImportedCharacters);
+                                                    ImportCharacters(charString, Configuration.TestyTraderImportedCharacters);
                                                 }
 
                                                 HelpMarker(() =>
@@ -367,7 +389,7 @@ public class TestyTraderUI : FeatureUI
             DrawCentered("##ManualTraderTable", () => DrawManualTable());
         }
 
-        if (configChanged) EzConfig.Save();
+        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private void DrawItemTab()
@@ -413,7 +435,7 @@ public class TestyTraderUI : FeatureUI
                                                                  for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                                                                  {
                                                                      var entry = filteredItems[i];
-                                                                     var cont = C.TradeEntries.Select(s => s.Id)
+                                                                     var cont = Configuration.TradeEntries.Select(s => s.Id)
                                                                                  .ToArray();
 
                                                                      if (ThreadLoadImageHandler.TryGetIconTextureWrap(entry.Item.Icon, false, out var texture))
@@ -426,7 +448,7 @@ public class TestyTraderUI : FeatureUI
                                                                      {
                                                                          if (!cont.Contains(entry.RowId))
                                                                          {
-                                                                             C.TradeEntries.Add(new TradeEntry
+                                                                             Configuration.TradeEntries.Add(new TradeEntry
                                                                                                 {
                                                                                                         Id     = entry.RowId,
                                                                                                         Amount = 0,
@@ -434,7 +456,7 @@ public class TestyTraderUI : FeatureUI
                                                                                                 });
                                                                          }
 
-                                                                         configChanged = true;
+                                                                         ConfigChanged = true;
                                                                      }
                                                                  }
                                                              }
@@ -455,7 +477,7 @@ public class TestyTraderUI : FeatureUI
                                           "##TraderItemTable",
                                           new List<TableColumn<TradeEntry>>
                                           {
-                                                  new("##Enable", Width: 25, DrawCustom: (x, index) => { configChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
+                                                  new("##Enable", Width: 25, DrawCustom: (x, index) => { ConfigChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
                                                   new("Name", Width: 300, DrawCustom: (x, index) =>
                                                                                       {
                                                                                           if (ThreadLoadImageHandler.TryGetIconTextureWrap(Svc.Data.GetExcelSheet<Item>()
@@ -478,19 +500,19 @@ public class TestyTraderUI : FeatureUI
                                                   new("Amount", Width: 120, DrawCustom: (x, index) =>
                                                                                         {
                                                                                             ImGui.SetNextItemWidth(120);
-                                                                                            configChanged |= ImGui.InputUInt($"##{x.Id}Amount", ref x.Amount);
+                                                                                            ConfigChanged |= ImGui.InputUInt($"##{x.Id}Amount", ref x.Amount);
                                                                                         }),
                                                   new("TradeType", Width: 120, DrawCustom: (x, index) =>
                                                                                            {
                                                                                                ImGui.SetNextItemWidth(120);
-                                                                                               configChanged |= ImGuiEx.EnumCombo($"##tradeType{x.Id}", ref x.Mode);
+                                                                                               ConfigChanged |= ImGuiEx.EnumCombo($"##tradeType{x.Id}", ref x.Mode);
                                                                                            }),
                                                   new("##Controls", Width: 45, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                               {
                                                                                                                                   if (ImGuiEx.IconButton(FontAwesomeIcon.Trash, x.Id.ToString())) itemToDelete = x;
                                                                                                                               })
                                           },
-                                          () => C.TradeEntries,
+                                          () => Configuration.TradeEntries,
                                           size: new Vector2(635, 0)
                                          );
 
@@ -498,8 +520,8 @@ public class TestyTraderUI : FeatureUI
 
         if (itemToDelete != null)
         {
-            C.TradeEntries.Remove(itemToDelete);
-            configChanged = true;
+            Configuration.TradeEntries.Remove(itemToDelete);
+            ConfigChanged = true;
         }
     }
 

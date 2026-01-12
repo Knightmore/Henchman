@@ -24,6 +24,7 @@ namespace Henchman.Features.RetainerVocate;
 
 internal class RetainerVocate
 {
+    private static Configuration? Configuration => GetFeatureConfig<RetainerVocateUI, Configuration>();
     private static uint GilShopItemId(uint itemId) => Svc.Data.GetSubrowExcelSheet<GilShopItem>()
                                                          .Flatten()
                                                          .FirstOrDefault(x => x.Item.RowId ==
@@ -58,8 +59,8 @@ internal class RetainerVocate
                                                                 .Contains("Magic");
 
     private static NpcData VendorData(uint retainerClass) => IsCombat(retainerClass)
-                                                                     ? NpcDatabase.BeginnerDoWDoMVendor[C.RetainerCity]
-                                                                     : NpcDatabase.BeginnerDoLVendor[C.RetainerCity];
+                                                                     ? NpcDatabase.BeginnerDoWDoMVendor[Configuration!.RetainerCity]
+                                                                     : NpcDatabase.BeginnerDoLVendor[Configuration!.RetainerCity];
 
     /*
      * Main Tasks
@@ -87,7 +88,7 @@ internal class RetainerVocate
     {
         if (token.IsCancellationRequested) return;
         using var scope              = new TaskDescriptionScope("Go to Retainer Vocate");
-        var       retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
+        var       retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
         byte      maxRetainerEntitlement;
         unsafe
         {
@@ -132,7 +133,7 @@ internal class RetainerVocate
         }
         else
         {
-            if (!C.UseMaxRetainerAmount)
+            if (!Configuration!.UseMaxRetainerAmount)
             {
                 createRetainerAmount = openRetainerAmount >= createRetainerAmount
                                                ? createRetainerAmount
@@ -154,7 +155,7 @@ internal class RetainerVocate
     {
         using var scope = new TaskDescriptionScope("Do Venture Quest");
         if (combatClass == 0)
-            combatClass = C.QstClassJob;
+            combatClass = Configuration!.QstClassJob;
 
         var classJob = Svc.Data.GetExcelSheet<ClassJob>()
                           .GetRow(combatClass);
@@ -217,7 +218,7 @@ internal class RetainerVocate
         if (maxRetainerEntitlement > 0 && anyRetainerNoJob)
         {
             if (retainerClassId == 0)
-                retainerClassId = C.RetainerClass;
+                retainerClassId = Configuration!.RetainerClass;
             await GoToVendor(retainerClassId, token);
             await PurchaseStarterGear(retainerAmount, retainerClassId, token);
             await AssignRetainerClassEquipMain(retainerAmount, retainerClassId, firstExploration, token);
@@ -310,7 +311,7 @@ internal class RetainerVocate
         else
         {
             classEntry = Svc.Data.GetExcelSheet<ClassJob>()
-                            .GetRow(C.RetainerClass)
+                            .GetRow(Configuration!.RetainerClass)
                             .Name.ExtractText();
         }
 
@@ -350,7 +351,7 @@ internal class RetainerVocate
             await WaitUntilAsync(() => EquipRetainer(MainHand(retainerClassId), token),
                                  $"Equip {MainHand(retainerClassId).Name.ExtractText()} to Retainer {nameString}", token);
             await WaitUntilAsync(() => CloseRetainerCharacter(token), "CloseRetainerWindow", token);
-            if ((C.SendOnFirstExploration || firstExploration) && InventoryHelper.GetInventoryItemCount(21072) > 2)
+            if ((Configuration!.SendOnFirstExploration || firstExploration) && InventoryHelper.GetInventoryItemCount(21072) > 2)
             {
                 unsafe
                 {
@@ -422,7 +423,7 @@ internal class RetainerVocate
 
     private async Task CreateSingleRetainer(int index = 0, CancellationToken token = default)
     {
-        var retainerVocateData = NpcDatabase.RetainerVocates[C.RetainerCity];
+        var retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
 
         await WaitUntilAsync(() => TargetNearestByBaseId(retainerVocateData.BaseId, token), "Target Retainer Vocate", token);
         await Task.Delay(GeneralDelayMs * 2, token)
@@ -435,7 +436,7 @@ internal class RetainerVocate
         await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringHireARetainer), "SelectString HireARetainer", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
 
-        await SetupRetainer(name: C.UseMaxRetainerAmount ? "" : C.RetainerName[index], token: token);
+        await SetupRetainer(name: Configuration!.UseMaxRetainerAmount ? "" : Configuration!.RetainerName[index], token: token);
     }
 
     internal async Task SetupRetainer(bool newRetainer = true, byte presetslot = 255, string name = "", int characterIndex = -1, CancellationToken token = default)
@@ -456,20 +457,20 @@ internal class RetainerVocate
             else
             {
                 await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
-                await WaitUntilAsync(() => SelectRetainerRaceAndGender(C.UseMaxRetainerAmount ? (int)C.RetainerRace + (int)C.RetainerGender : (int)C.RetainerCharacters[characterIndex].Race + (int)C.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
+                await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount ? (int)Configuration!.RetainerRace + (int)Configuration!.RetainerGender : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
                 await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
             }
         }
         else
         {
-            await WaitUntilAsync(() => SelectRetainerRaceAndGender(C.UseMaxRetainerAmount ? (int)C.RetainerRace + (int)C.RetainerGender : (int)C.RetainerCharacters[characterIndex].Race + (int)C.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
+            await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount ? (int)Configuration!.RetainerRace + (int)Configuration!.RetainerGender : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
             await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
         }
 
         await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
         await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoSaveAppearance), "SelectYesNo SaveAppearance", token);
         await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoFinalizeRetainer), "SelectYesNo FinalizeRetainer", token);
-        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(C.UseMaxRetainerAmount ? C.RetainerPersonality : C.RetainerCharacters[characterIndex].Personality)), "SelectString RetainerPersonality", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(Configuration!.UseMaxRetainerAmount ? Configuration!.RetainerPersonality : Configuration!.RetainerCharacters[characterIndex].Personality)), "SelectString RetainerPersonality", token);
         if (newRetainer) await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireThisRetainer), "SelectYesNo HireThisRetainer", token);
         else await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoSatisfiedWithPersonality), "SelectYesNo SatisfiedWithPersonality", token);
     
@@ -497,7 +498,7 @@ internal class RetainerVocate
                 if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgessAddon) && IsAddonReady(charaMakeProgessAddon))
                 {
                     Callback.Fire(charaMakeProgessAddon, true, 0, raceGender, 0, "", 0);
-                    Debug($"Choosing Retainer Race {C.RetainerRace} and Gender {C.RetainerGender}");
+                    Debug($"Choosing Retainer Race {Configuration!.RetainerRace} and Gender {Configuration!.RetainerGender}");
                     return true;
                 }
             }
@@ -545,7 +546,7 @@ internal class RetainerVocate
         {
             if (TryGetAddonByName<AtkUnitBase>("InputString", out var inputString) && IsAddonReady(inputString))
             {
-                Callback.Fire(inputString, true, 0, string.IsNullOrEmpty(name) ? (C.RetainerGender == RetainerDetails.RetainerGender.Male
+                Callback.Fire(inputString, true, 0, string.IsNullOrEmpty(name) ? (Configuration!.RetainerGender == RetainerDetails.RetainerGender.Male
                                                             ? NameGenerator.GenerateMasculineName
                                                             : NameGenerator.GenerateFeminineName) : name, "");
                 return true;

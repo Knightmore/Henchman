@@ -18,9 +18,9 @@ using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 namespace Henchman.Features.BumpOnALog;
 
 [Feature]
-public class BumpOnALogUi : FeatureUI
+public class BumpOnALogUI : FeatureUI<Configuration>
 {
-    internal readonly BumpOnALog          feature = new();
+    internal readonly BumpOnALog          Feature = new();
     private           int                 classMonsterNoteId;
     private           MonsterNoteRankInfo classMonsterNoteRankInfo;
     private           int                 currentClassLogRank;
@@ -56,6 +56,13 @@ public class BumpOnALogUi : FeatureUI
     ];
 
     public override bool LoginNeeded => true;
+
+    public sealed override required Configuration Configuration { get; init; }
+
+    public BumpOnALogUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+    }
 
     public override void Draw()
     {
@@ -103,7 +110,7 @@ public class BumpOnALogUi : FeatureUI
                            {
                                if (StartButton() && !IsTaskEnqueued(Name))
                                {
-                                   EnqueueTask(new TaskRecord(feature.StartClassRank, "Bump On A Log - Rank Log", onDone: () =>
+                                   EnqueueTask(new TaskRecord(Feature.StartClassRank, "Bump On A Log - Rank Log", onDone: () =>
                                                                                                                           {
                                                                                                                               Bossmod.DisableAI();
                                                                                                                               AutoRotation.Disable();
@@ -151,7 +158,7 @@ public class BumpOnALogUi : FeatureUI
                            {
                                if (StartButton() && !IsTaskEnqueued(Name))
                                {
-                                   EnqueueTask(new TaskRecord(token => feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () =>
+                                   EnqueueTask(new TaskRecord(token => Feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () =>
                                                                                                                                      {
                                                                                                                                          Bossmod.DisableAI();
                                                                                                                                          AutoRotation.Disable();
@@ -256,14 +263,18 @@ public class BumpOnALogUi : FeatureUI
 
         ImGui.Text("Skip Duty Marks");
         ImGui.SameLine(200);
-        configChanged |= ImGui.Checkbox("##skipDutyMarks", ref C.SkipDutyMarks);
+        configChanged |= ImGui.Checkbox("##skipDutyMarks", ref Configuration.SkipDutyMarks);
 
         ImGui.Text("Solo Unsync Duty");
         ImGui.SameLine(200);
         configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
 
 
-        if (configChanged) EzConfig.Save();
+        if (configChanged)
+        {
+            EzConfig.Save();
+            SaveConfig(Configuration);
+        }
     }
 
     public unsafe string GetGCRankTitle()

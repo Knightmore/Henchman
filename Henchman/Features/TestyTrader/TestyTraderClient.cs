@@ -20,8 +20,10 @@ namespace Henchman.Features.TestyTrader;
 
 internal partial class TestyTrader
 {
+    private static Configuration? Configuration => GetFeatureConfig<TestyTraderUI, Configuration>();
     public enum TestyTraderMessageType : ushort
     {
+        WorldCheck,
         Arrived,
         ReadyForTrade,
         AskList,
@@ -37,21 +39,21 @@ internal partial class TestyTrader
     internal async Task Client(CancellationToken token = default)
     {
         List<MultiboxClient.CharacterData> characters;
-        if (C.TestyTraderARSupport)
+        if (Configuration!.TestyTraderARSupport)
         {
             var enabledCharacters = GetCurrentARCharacterData()
-                   .Where(x => C.EnableCharacterForTrade[x.CID]);
+                   .Where(x => Configuration!.EnableCharacterForTrade[x.CID]);
             characters = enabledCharacters
                         .Select(c => new MultiboxClient.CharacterData(c.Name, c.World))
                         .ToList();
         }
         else
         {
-            characters = C.TestyTraderImportedCharacters.Where(x => x.Enabled)
-                          .Select(c => new MultiboxClient.CharacterData(c.Name, Svc.Data.GetExcelSheet<World>()
-                                                                                   .GetRow(c.WorldId)
-                                                                                   .Name.ExtractText()))
-                          .ToList();
+            characters = Configuration!.TestyTraderImportedCharacters.Where(x => x.Enabled)
+                                       .Select(c => new MultiboxClient.CharacterData(c.Name, Svc.Data.GetExcelSheet<World>()
+                                                                                                .GetRow(c.WorldId)
+                                                                                                .Name.ExtractText()))
+                                       .ToList();
         }
 
         client = new MultiboxClient("TestyTrader", (pipe, incomingMessageQueue, _) => ClientSessionHandler(pipe, incomingMessageQueue, token), characters, token);
@@ -102,7 +104,8 @@ internal partial class TestyTrader
                                                      {
                                                              Type        = TestyTraderMessageType.AskList,
                                                              TradeList   = askDict,
-                                                             IsTradeDone = tradeDone
+                                                             IsTradeDone = tradeDone,
+                                                             TradingWorld = Player.CurrentWorldName
                                                      };
 
                                 await MessageHandler.WriteMessageAsync(pipe, CommandType.Feature, askListMessage.ToJson(), token);
@@ -280,7 +283,7 @@ internal partial class TestyTrader
         tradeList = [];
         askList   = [];
 
-        foreach (var entry in C.TradeEntries)
+        foreach (var entry in Configuration!.TradeEntries)
         {
             switch (entry.Mode)
             {
@@ -339,7 +342,7 @@ internal partial class TestyTrader
         tradeList = [];
         askList   = [];
 
-        foreach (var entry in C.TradeEntries)
+        foreach (var entry in Configuration!.TradeEntries)
         {
             if (!entry.Enabled)
                 continue;
@@ -404,5 +407,6 @@ internal partial class TestyTrader
         public bool?                  IsTradeDone  { get; init; }
         public Dictionary<uint, uint> TradeList    { get; init; }
         public TestyTraderMessageType Type         { get; init; }
+        public string?                TradingWorld { get; init; }
     }
 }

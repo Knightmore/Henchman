@@ -12,6 +12,8 @@ namespace Henchman.Features.OnYourMark;
 
 internal class OnYourMark
 {
+    private static Configuration? Configuration => GetFeatureConfig<OnYourMarkUI, Configuration>();
+
     internal async Task Start(CancellationToken token = default)
     {
         var mobHuntOrderType = GetCorrectedMobHuntOrderTypes()
@@ -53,7 +55,7 @@ internal class OnYourMark
             Verbose($"Current mobHuntTypeOrder: {mobHuntOrderTypeEnumerator.Current.RowId}");
             var enabledBillsSelectString = new List<string>();
 
-            var configExpansionBills = C.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
 
             Verbose("--------------- BILLS ---------------");
             foreach (var expansionCategory in configExpansionBills)
@@ -139,7 +141,7 @@ internal class OnYourMark
             Verbose($"############### {expansion.Name.ExtractText()} ###############");
             var enabledBillsSelectString = new List<string>();
 
-            var configExpansionBills = C.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
 
             Verbose("--------------- BILLS ---------------");
             foreach (var expansionCategory in configExpansionBills)

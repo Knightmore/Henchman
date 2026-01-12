@@ -154,20 +154,20 @@ public class Henchman : IDalamudPlugin
                        .EqualsIgnoreCase("GC"))
             {
                 if (bool.TryParse(parameters[2], out var runDutyMarks))
-                    if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
-                        EnqueueTask(new TaskRecord(token => bumpOnALog.feature.StartGCRank(token, runDutyMarks), "Bump On A Log - GC Log"));
+                    if (TryGetFeature<BumpOnALogUI>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
+                        EnqueueTask(new TaskRecord(token => bumpOnALog.Feature.StartGCRank(token, runDutyMarks), "Bump On A Log - GC Log"));
             }
             else if (parameters.Length == 2 &&
                      parameters[1]
                             .EqualsIgnoreCase("Class"))
             {
-                if (TryGetFeature<BumpOnALogUi>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
-                    EnqueueTask(new TaskRecord(bumpOnALog.feature.StartClassRank, "Bump On A Log - Rank Log"));
+                if (TryGetFeature<BumpOnALogUI>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
+                    EnqueueTask(new TaskRecord(bumpOnALog.Feature.StartClassRank, "Bump On A Log - Rank Log"));
             }
         }
         else if (args.StartsWith("OnYourMark", StringComparison.InvariantCultureIgnoreCase))
         {
-            if (TryGetFeature<OnYourMarkUi>(out var onYourMark) && !IsTaskEnqueued(onYourMark.Name)) EnqueueTask(new TaskRecord(onYourMark.feature.Start, "On Your Mark"));
+            if (TryGetFeature<OnYourMarkUI>(out var onYourMark) && !IsTaskEnqueued(onYourMark.Name)) EnqueueTask(new TaskRecord(onYourMark.feature.Start, "On Your Mark"));
         }
         else if (args.StartsWith("RetainerVocate", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -185,7 +185,7 @@ public class Henchman : IDalamudPlugin
                             if (bool.TryParse(parameters[4], out var firstExploration))
                             {
                                 if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                                    EnqueueTask(new TaskRecord(token => retainerVocate.feature.RunFullCreation(token, amount, retainerClass.RowId, questClass.RowId, firstExploration), retainerVocate.Name));
+                                    EnqueueTask(new TaskRecord(token => retainerVocate.Feature.RunFullCreation(token, amount, retainerClass.RowId, questClass.RowId, firstExploration), retainerVocate.Name));
                             }
                         }
                     }
@@ -212,13 +212,13 @@ public class Henchman : IDalamudPlugin
                         return;
                     }
                     if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, token: token), "Setup Retainer"));
+                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, token: token), "Setup Retainer"));
                     break;
                 }
                 case 2:
                 {
                     if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, name: parameters[1], token: token), $"Setup {parameters[1]}"));
+                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, name: parameters[1], token: token), $"Setup {parameters[1]}"));
                     break;
                 }
                 case 3:
@@ -233,7 +233,7 @@ public class Henchman : IDalamudPlugin
                             return;
                         }
                         if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                            EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, presetId, name, token: token), $"Setup {name}"));
+                            EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, name, token: token), $"Setup {name}"));
                     }
 
                     break;
@@ -241,7 +241,7 @@ public class Henchman : IDalamudPlugin
                 default:
                 {
                     if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.feature.SetupRetainer(false, token: token), "Setup Retainer"));
+                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, token: token), "Setup Retainer"));
                     break;
                 }
             }

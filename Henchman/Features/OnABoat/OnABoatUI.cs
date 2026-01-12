@@ -13,14 +13,15 @@ using Action = System.Action;
 namespace Henchman.Features.OnABoat;
 
 [Feature]
-internal class OnABoatUI : FeatureUI
+internal class OnABoatUI : FeatureUI<Configuration>
 {
     internal static readonly OnABoat feature = new();
 
-    private static  bool            configChanged;
-    public override string          Name     => "On A Boat";
-    public override string          Category => Henchman.Category.Economy;
-    public override FontAwesomeIcon Icon     => FontAwesomeIcon.Sailboat;
+    private static                  bool            ConfigChanged;
+    public sealed override Configuration   Configuration { get; init; }
+    public override                 string          Name          => "On A Boat";
+    public override                 string          Category      => Henchman.Category.Economy;
+    public override                 FontAwesomeIcon Icon          => FontAwesomeIcon.Sailboat;
 
     public override Action? Help => () =>
                                     {
@@ -52,39 +53,7 @@ internal class OnABoatUI : FeatureUI
 
     public override bool LoginNeeded => false;
 
-    private Table<OfflineCharacterData> ARTable = new (
-                                                    "##ARFisherTable",
-                                                    new List<TableColumn<OfflineCharacterData>>
-                                                    {
-                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
-                                                                                                                                       {
-                                                                                                                                           if (!C.EnableCharacterForOCFishing.TryAdd(x.CID, false))
-                                                                                                                                           {
-                                                                                                                                               var isEnabled = C.EnableCharacterForOCFishing[x.CID];
-                                                                                                                                               if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
-
-                                                                                                                                               if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
-                                                                                                                                               {
-                                                                                                                                                   C.EnableCharacterForOCFishing[x.CID] = !isEnabled;
-                                                                                                                                                   configChanged                        = true;
-                                                                                                                                               }
-
-                                                                                                                                               if (isEnabled) ImGui.PopStyleColor();
-                                                                                                                                           }
-                                                                                                                                           else
-                                                                                                                                               configChanged = true;
-                                                                                                                                       }),
-                                                            new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
-                                                            new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                            new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                            new("Lvl", x => x.ClassJobLevelArray[17]
-                                                                             .ToString(), 35, Alignment : ColumnAlignment.Center),
-                                                            new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
-                                                    },
-                                                    () => feature.GetCurrentARCharacterData(),
-                                                    highlightPredicate: x => x.CID == Player.CID,
-                                                    size: new Vector2(500, 0)
-                                                   );
+    private Table<OfflineCharacterData> ARTable;
 
     private static Dictionary<string, World> Worlds =
             Svc.Data.GetExcelSheet<World>()
@@ -93,9 +62,47 @@ internal class OnABoatUI : FeatureUI
 
     public void Start() => EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
 
+    public OnABoatUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+        ARTable = new Table<OfflineCharacterData>(
+                                                  "##ARFisherTable",
+                                                  new List<TableColumn<OfflineCharacterData>>
+                                                  {
+                                                          new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                                     {
+                                                                                                                                         if (!Configuration.EnableCharacterForOCFishing.TryAdd(x.CID, false))
+                                                                                                                                         {
+                                                                                                                                             var isEnabled = Configuration.EnableCharacterForOCFishing[x.CID];
+                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                                             if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
+                                                                                                                                             {
+                                                                                                                                                 Configuration.EnableCharacterForOCFishing[x.CID] = !isEnabled;
+                                                                                                                                                 ConfigChanged                                    = true;
+                                                                                                                                             }
+
+                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                                         }
+                                                                                                                                         else
+                                                                                                                                             ConfigChanged = true;
+                                                                                                                                     }),
+                                                          new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
+                                                          new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                          new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
+                                                          new("Lvl", x => x.ClassJobLevelArray[17]
+                                                                           .ToString(), 35, Alignment : ColumnAlignment.Center),
+                                                          new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
+                                                  },
+                                                  () => feature.GetCurrentARCharacterData(),
+                                                  highlightPredicate: x => x.CID == Player.CID,
+                                                  size: new Vector2(500, 0)
+                                                 );
+    }
     public override void Draw()
     {
-        configChanged = false;
+        ConfigChanged = false;
         var utcNow = DateTime.UtcNow;
         var hour   = utcNow.Hour;
         var minute = utcNow.Minute;
@@ -130,7 +137,7 @@ internal class OnABoatUI : FeatureUI
                                         {
                                             ImGui.Text("Use only Versatile Lure:");
                                             ImGui.SameLine(200 * GlobalFontScale);
-                                            configChanged |= ImGui.Checkbox("##onlyVLure", ref C.UseOnlyVersatile);
+                                            ConfigChanged |= ImGui.Checkbox("##onlyVLure", ref Configuration.UseOnlyVersatile);
                                         });
 
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
@@ -139,54 +146,54 @@ internal class OnABoatUI : FeatureUI
                                             {
                                                 ImGui.Text("Use AR Discard after Voyage:");
                                                 ImGui.SameLine(200 * GlobalFontScale);
-                                                configChanged |= ImGui.Checkbox("##ARDiscard", ref C.DiscardAfterVoyage);
+                                                ConfigChanged |= ImGui.Checkbox("##ARDiscard", ref Configuration.DiscardAfterVoyage);
                                             });
 
             DrawCentered("##boatArCharacters", () =>
                                                {
                                                    ImGui.Text("Use with AutoRetainer Multimode:");
                                                    ImGui.SameLine(200 * GlobalFontScale);
-                                                   configChanged |= ImGui.Checkbox("##HandleAR", ref C.OCFishingHandleAR);
+                                                   ConfigChanged |= ImGui.Checkbox("##HandleAR", ref Configuration.OCFishingHandleAR);
                                                });
 
             DrawCentered("##boatArStopAt100", () =>
                                                {
                                                    ImGui.Text("Stop if selected chars are lvl 100:");
                                                    ImGui.SameLine(200 * GlobalFontScale);
-                                                   configChanged |= ImGui.Checkbox("##stopAt100", ref C.OCFishingStop100);
+                                                   ConfigChanged |= ImGui.Checkbox("##stopAt100", ref Configuration.OCFishingStop100);
                                                });
         }
 
-        if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        if (Configuration.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
             DrawCentered("##TradeCharSelector", () =>
                                                 {
                                                     if (ImGui.Button("Select All"))
                                                     {
-                                                        foreach (var keyValuePair in C.EnableCharacterForOCFishing) C.EnableCharacterForOCFishing[keyValuePair.Key] = true;
-                                                        configChanged = true;
+                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
+                                                        ConfigChanged = true;
                                                     }
 
                                                     ImGui.SameLine();
                                                     if (ImGui.Button("Deselect All"))
                                                     {
-                                                        foreach (var keyValuePair in C.EnableCharacterForOCFishing) C.EnableCharacterForOCFishing[keyValuePair.Key] = false;
-                                                        configChanged = true;
+                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
+                                                        ConfigChanged = true;
                                                     }
                                                 });
             DrawCentered("##TradeFilteredCharSelector", () =>
                                                         {
                                                             if (ImGui.Button("Select All Shown"))
                                                             {
-                                                                foreach (var character in ARTable.FilteredItems) C.EnableCharacterForOCFishing[character.CID] = true;
-                                                                configChanged = true;
+                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
+                                                                ConfigChanged = true;
                                                             }
 
                                                             ImGui.SameLine();
                                                             if (ImGui.Button("Deselect All Shown"))
                                                             {
-                                                                foreach (var character in ARTable.FilteredItems) C.EnableCharacterForOCFishing[character.CID] = false;
-                                                                configChanged = true;
+                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
+                                                                ConfigChanged = true;
                                                             }
                                                         });
             DrawCentered("##CenteredARFisherTable", () => DrawARTable());
@@ -198,24 +205,24 @@ internal class OnABoatUI : FeatureUI
                                                      ImGui.Text("Character Name:");
                                                      ImGui.SameLine(200 * GlobalFontScale);
                                                      ImGui.SetNextItemWidth(150f);
-                                                     configChanged |= ImGui.InputText("##character", ref C.OceanChar, 21);
+                                                     ConfigChanged |= ImGui.InputText("##character", ref Configuration.OceanChar, 21);
                                                  });
             DrawCentered("##boatWorld", () =>
                                         {
                                             ImGui.Text("World:");
                                             ImGui.SameLine(200 * GlobalFontScale);
                                             ImGui.SetNextItemWidth(150f);
-                                            if (ImGuiEx.ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == C.OceanWorld) is { } row
+                                            if (ImGuiEx.ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == Configuration.OceanWorld) is { } row
                                                                                                                               ? row.Name.ExtractText()
                                                                                                                               : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
                                             {
-                                                C.OceanWorld  = selectedWorld.Name.ExtractText();
-                                                configChanged = true;
+                                                Configuration.OceanWorld  = selectedWorld.Name.ExtractText();
+                                                ConfigChanged = true;
                                             }
                                         });
         }
 
-        if (configChanged) EzConfig.Save();
+        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private void DrawARTable()

@@ -24,6 +24,7 @@ namespace Henchman.Features.OnABoat;
 
 internal class OnABoat
 {
+    private static Configuration? Configuration => GetFeatureConfig<OnABoatUI, Configuration>();
     public enum Bait
     {
         Ragworm = 29714,
@@ -119,7 +120,7 @@ internal class OnABoat
                        : right;
     }
 
-internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
+    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
     private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
 
     internal async Task Start(CancellationToken token = default)
@@ -176,7 +177,7 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
 
     internal async Task SelectCharacter(CancellationToken token = default)
     {
-        if (C.OCFishingHandleAR)
+        if (Configuration!.OCFishingHandleAR)
         {
             if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
             {
@@ -188,11 +189,11 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
                 StopAutoRetainer();
 
                 GetCurrentARCharacterData();
-                var lowestFisherCharacter = characters.Where(x => C.EnableCharacterForOCFishing.ContainsKey(x.CID) && C.EnableCharacterForOCFishing[x.CID])
+                var lowestFisherCharacter = characters.Where(x => Configuration!.EnableCharacterForOCFishing.ContainsKey(x.CID) && Configuration!.EnableCharacterForOCFishing[x.CID])
                                                       .OrderBy(x => x.ClassJobLevelArray[17])
                                                       .First();
 
-                if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && C.OCFishingStop100)
+                if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && Configuration!.OCFishingStop100)
                 {
                     AutoRetainer.ARAPI.FinishCharacterPostProcess();
                     AutoRetainer.SetMultiModeEnabled(true);
@@ -207,7 +208,7 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
                 FullError("Auto Retainer not enabled! Use On A Boat - Single Character mode or enabled Auto Retainer for this feature to work!");
         }
         else
-            await Lifestream.SwitchToChar(C.OceanChar, C.OceanWorld, token);
+            await Lifestream.SwitchToChar(Configuration!.OceanChar, Configuration!.OceanWorld, token);
     }
 
     internal async Task PrepareForVoyage(CancellationToken token = default)
@@ -255,7 +256,7 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
             }
         }
 
-        if (C.UseOnlyVersatile)
+        if (Configuration!.UseOnlyVersatile)
         {
             var versatileAmount = InventoryHelper.GetInventoryItemCount((int)Bait.VersatileLure);
             if (versatileAmount <= 3)
@@ -353,7 +354,7 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
         bool canFish;
         unsafe
         {
-            canFish = ((FishingEventHandler*)EventFramework.Instance()->GetEventHandlerById(150001))->CanFish;
+            canFish = EventFramework.Instance()->EventHandlerModule.FishingEventHandler->CanFish;
         }
         if (!canFish)
             await WalkToRailing(token);
@@ -398,7 +399,7 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
                         }
                     }
 
-                    if (C.UseOnlyVersatile)
+                    if (Configuration!.UseOnlyVersatile)
                         ChangeBait((int)Bait.VersatileLure);
                     else
                         ChangeBait((int)GetCurrentBait);
@@ -436,9 +437,9 @@ internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0         
 
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
 
-        if (C.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        if (Configuration!.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            if (C.DiscardAfterVoyage)
+            if (Configuration!.DiscardAfterVoyage)
             {
                 Chat.ExecuteCommand("/ays discard");
                 await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until discard finished", token);

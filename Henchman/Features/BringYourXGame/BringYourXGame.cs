@@ -9,6 +9,8 @@ namespace Henchman.Features.BringYourXGame;
 
 internal class BringYourXGame
 {
+    private static Configuration? Configuration => GetFeatureConfig<BringYourXGameUI, Configuration>();
+
     internal async Task StartA(CancellationToken token = default)
     {
         var aggregatedPositions = BRanks
@@ -18,7 +20,7 @@ internal class BringYourXGame
                                                 .ExVersion.Value.RowId <=
                                              2)
                                  .GroupBy(x => x.TerritoryId)
-                                 .Where(x => C.EnabledTerritoriesForARank.Contains(x.Key))
+                                 .Where(x => Configuration.EnabledTerritoriesForARank.Contains(x.Key))
                                  .ToDictionary(
                                                group => group.Key,
                                                group => group.SelectMany(h => h.Positions)
@@ -30,7 +32,7 @@ internal class BringYourXGame
 
     internal async Task StartB(CancellationToken token = default)
     {
-        if (C.BRankToFarm > 0 && BRanks.TryGetValue(C.BRankToFarm, out var huntMark))
+        if (Configuration.BRankToFarm > 0 && BRanks.TryGetValue(Configuration.BRankToFarm, out var huntMark))
             await FarmBRank(huntMark, token);
         else
             FullError("No valid B-Rank to farm picked!");

@@ -262,4 +262,23 @@ public static class Utils
                                                                        NumberHandling       = JsonNumberHandling.AllowReadingFromString
                                                                };
     }
+
+    public static string SanitizePath(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        return cleaned;
+    }
+
+
+    public static TConfig? GetFeatureConfig<TFeature, TConfig>()
+            where TFeature : FeatureUI<TConfig>
+            where TConfig : IConfig
+    {
+        if (TryGetFeature<TFeature>(out var feature))
+            return feature.Configuration;
+
+        FullError($"{typeof(TFeature).Name} not loaded. Can't get config!");
+        return default;
+    }
 }

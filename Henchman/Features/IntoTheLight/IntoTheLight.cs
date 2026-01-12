@@ -1,4 +1,3 @@
-using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
@@ -8,8 +7,10 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Data;
+using Henchman.Features.BumpOnALog;
 using Henchman.Helpers;
 using Lumina.Excel.Sheets;
+using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace Henchman.Features.IntoTheLight;
@@ -17,6 +18,8 @@ namespace Henchman.Features.IntoTheLight;
 internal class IntoTheLight
 {
     private int index;
+
+    private static Configuration? Configuration => GetFeatureConfig<IntoTheLightUI, Configuration>();
 
     public async Task Start(CancellationToken token = default)
     {
@@ -34,12 +37,12 @@ internal class IntoTheLight
         }
 
         await OpenDataCenter(token);
-        for (index = 0; index < C.LightCharacters.Count; index++)
+        for (index = 0; index < Configuration!.LightCharacters.Count; index++)
         {
             var differentDataCenter = false;
             unsafe
             {
-                if (AgentModule.Instance()->GetAgentLobby()->DataCenter != C.LightCharacters[index].DataCenterId)
+                if (AgentModule.Instance()->GetAgentLobby()->DataCenter != Configuration!.LightCharacters[index].DataCenterId)
                 {
                     if (TryGetAddonByName<AtkUnitBase>("_CharaSelectReturn", out var charaSelectReturn) && IsAddonReady(charaSelectReturn))
                     {
@@ -55,11 +58,11 @@ internal class IntoTheLight
             await WaitUntilAsync(() => SelectCreateCharacter(), "Select Create Character", token);
             if (validPresets > 0)
             {
-                await WaitUntilAsync(() => SelectIfUsePreset(C.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
-                if (C.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => AddonHelpers.SelectPreset(C.LightCharacters[index].PresetId), "Select Preset", token);
+                await WaitUntilAsync(() => SelectIfUsePreset(Configuration!.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
+                if (Configuration!.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => AddonHelpers.SelectPreset(Configuration!.LightCharacters[index].PresetId), "Select Preset", token);
             }
 
-            if (C.LightCharacters[index].PresetId == 255)
+            if (Configuration!.LightCharacters[index].PresetId == 255)
             {
                 int maxRace;
                 unsafe
@@ -83,13 +86,13 @@ internal class IntoTheLight
             await WaitUntilAsync(() => ChooseRandomNameDay(), "Choose Nameday", token);
             await WaitUntilAsync(() => ChooseRandomGuardian(), "Choose Guardian", token);
             // ClassJob Ids are -1 in Callbacks
-            await WaitUntilAsync(() => ChooseClass((uint)C.LightCharacters[index].ClassJob), "Choose Class", token);
+            await WaitUntilAsync(() => ChooseClass((uint)Configuration!.LightCharacters[index].ClassJob), "Choose Class", token);
             await WaitUntilAsync(() => UpdateServerList(), "Choose Server", token);
             await Task.Delay(500, token);
-            await WaitUntilAsync(() => SelectServer(C.LightCharacters[index].WorldId), "Select Server", token);
+            await WaitUntilAsync(() => SelectServer(Configuration!.LightCharacters[index].WorldId), "Select Server", token);
             while (true)
             {
-                await WaitUntilAsync(() => SelectName(C.LightCharacters[index].FirstName, C.LightCharacters[index].LastName), "Select Name", token);
+                await WaitUntilAsync(() => SelectName(Configuration!.LightCharacters[index].FirstName, Configuration!.LightCharacters[index].LastName), "Select Name", token);
 
                 using var namingTokenSrc  = new CancellationTokenSource();
                 using var linkedNamingCts = CancellationTokenSource.CreateLinkedTokenSource(token, namingTokenSrc.Token);
@@ -119,7 +122,7 @@ internal class IntoTheLight
             using var loginTokenSrc  = new CancellationTokenSource();
             using var linkedLoginCts = CancellationTokenSource.CreateLinkedTokenSource(token, loginTokenSrc.Token);
 
-            var loginQueue  = WaitUntilAsync(async () => !C.LightNoLoginSkip && await ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
+            var loginQueue  = WaitUntilAsync(async () => !Configuration!.LightNoLoginSkip && await ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
             var directLogin = WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Checking for first Cutscene", linkedLoginCts.Token);
 
             var completedLoginTask = await Task.WhenAny(loginQueue, directLogin);
@@ -165,7 +168,7 @@ internal class IntoTheLight
     private async Task OpenDataCenter(CancellationToken token = default)
     {
         await WaitUntilAsync(() => SelectDataCenterMenu(), "Select DataCenter Menu Entry", token);
-        await WaitUntilAsync(() => SelectDataCenter((int)C.LightCharacters[index].DataCenterId), "Select DataCenter", token);
+        await WaitUntilAsync(() => SelectDataCenter((int)Configuration!.LightCharacters[index].DataCenterId), "Select DataCenter", token);
     }
 
     private unsafe bool SelectDataCenterMenu()
