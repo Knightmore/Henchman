@@ -98,6 +98,19 @@ public static class Vnavmesh
 
     [EzIPC("DTR.SetShown")]
     public static Action<bool> DtrSetShown;
+#if PRIVATE
+    [EzIPC("OnDemand.Pathfind")]
+    public static Func<uint, Vector3, Vector3, bool, Task<List<Vector3>>> OnDemandPathfind;
+
+    [EzIPC("OnDemand.PathfindCancelable")]
+    public static Func<uint, Vector3, Vector3, bool, CancellationToken, Task<List<Vector3>>> OnDemandPathfindCancelable;
+
+    [EzIPC("OnDemand.Load")]
+    public static Func<uint, Task<bool>> Load;
+
+    [EzIPC("OnDemand.Clear")]
+    public static Action Clear;
+#endif
 
     //[Command]
     public static void StopCompletely()

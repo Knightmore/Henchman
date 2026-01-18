@@ -224,9 +224,6 @@ internal partial class TestyTrader
                     {
                         var serverDone = statusData.IsTradeDone;
                         Verbose($"TradeDict: {tradeDict.Count} | Server done: {serverDone!.Value}");
-                        /*IPlayerCharacter targetPlayer;
-                        if (Svc.Objects.OfType<IPlayerCharacter>()
-                               .TryGetFirst(x => x.EntityId == bossEID, out targetPlayer)) ;*/
                         switch (tradeDict.Count)
                         {
                             case 0 when serverDone!.Value:
@@ -346,25 +343,26 @@ internal partial class TestyTrader
         {
             if (!entry.Enabled)
                 continue;
+            var (isHq, baseId) = (entry.Id >= 1_000_000, entry.Id % 1_000_000);
             switch (entry.Mode)
             {
                 case TradeMode.Give:
                 {
-                    var possibleAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
+                    var possibleAmount = InventoryHelper.GetInventoryItemCount(baseId, isHq);
                     if (possibleAmount == 0 || entry.Amount == 0) continue;
                     tradeList.Add(entry.Id, (uint)Math.Min(possibleAmount, entry.Amount));
                     break;
                 }
                 case TradeMode.Keep:
                 {
-                    var possibleAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
+                    var possibleAmount = InventoryHelper.GetInventoryItemCount(baseId, isHq);
                     if (possibleAmount == 0) continue;
                     if (possibleAmount > entry.Amount) tradeList.Add(entry.Id, (uint)(possibleAmount - entry.Amount));
                     break;
                 }
                 case TradeMode.AskUntil:
                 {
-                    var currentAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
+                    var currentAmount = InventoryHelper.GetInventoryItemCount(baseId, isHq);
                     if (currentAmount >= entry.Amount || entry.Amount == 0) continue;
                     askList.Add(entry.Id, entry.Amount - (uint)currentAmount);
                     break;
@@ -376,7 +374,7 @@ internal partial class TestyTrader
                 }
                 case TradeMode.PARLevel:
                 {
-                    var currentAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
+                    var currentAmount = InventoryHelper.GetInventoryItemCount(baseId, isHq);
                     if (currentAmount == entry.Amount) continue;
                     if (currentAmount      > entry.Amount) tradeList.Add(entry.Id, (uint)currentAmount - entry.Amount);
                     else if (currentAmount < entry.Amount) askList.Add(entry.Id, entry.Amount          - (uint)currentAmount);

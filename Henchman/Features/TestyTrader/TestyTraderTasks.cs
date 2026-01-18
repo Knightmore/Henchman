@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using ECommons.Automation;
@@ -9,6 +6,10 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Helpers;
 using Henchman.TaskManager;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using static Dalamud.Interface.Utility.Raii.ImRaii;
 
 namespace Henchman.Features.TestyTrader;
 
@@ -142,16 +143,17 @@ internal static class TestyTraderTasks
         {
             List<uint> entriesToRemove = [];
             var        itemAmount      = 0;
-            Verbose($"Total Itemtypes to trade: {tradeDict.Count}");
+            Debug($"Total Itemtypes to trade: {tradeDict.Count}");
 
             foreach (var item in tradeDict)
             {
-                Verbose($"Item: {item.Key} | Amount: {tradeDict[item.Key]}");
+                Debug($"Item: {item.Key} | Amount: {tradeDict[item.Key]}");
                 if (item.Key == 1)
                     continue;
                 if (itemAmount == 5)
                     break;
                 var im = InventoryManager.Instance();
+                var (isHq, baseId) = (item.Key >= 1_000_000, item.Key % 1_000_000);
                 foreach (var type in InventoryHelper.MainInventory)
                 {
                     if (itemAmount == 5)
@@ -162,14 +164,16 @@ internal static class TestyTraderTasks
                         if (itemAmount == 5)
                             break;
                         var slot = *cont->GetInventorySlot(i);
-                        if (slot.ItemId == item.Key && tradeDict[item.Key] > 0)
+                        if (slot.ItemId == baseId && tradeDict[item.Key] > 0)
                         {
+                            if (isHq && !slot.IsHighQuality())
+                                continue;
                             var quantity = tradeDict[item.Key] < slot.Quantity
                                                    ? tradeDict[item.Key]
                                                    : (uint)slot.Quantity;
-                            Verbose($"Open trade amount: {tradeDict[item.Key]} | Quantity to pass: {quantity}");
+                            Debug($"Previous trade amount: {tradeDict[item.Key]} | Quantity to pass: {quantity}");
                             tradeDict[item.Key] -= quantity;
-                            Verbose($"Open trade amount: {tradeDict[item.Key]}");
+                            Debug($"Open trade amount: {tradeDict[item.Key]}");
                             if (tradeDict[item.Key] == 0)
                                 entriesToRemove.Add(item.Key);
                             tradeQueue.Add(new QueueEntry(type, i, quantity));
@@ -182,9 +186,8 @@ internal static class TestyTraderTasks
             foreach (var itemId in entriesToRemove)
                 tradeDict.Remove(itemId);
         }
-
-        Verbose($"Current tradeQueue amount: {tradeQueue.Count}");
-        Verbose($"Gil to trade: {gilToTrade}");
+        Debug($"Current tradeQueue amount: {tradeQueue.Count}");
+        Debug($"Gil to trade: {gilToTrade}");
 
         if (gilToTrade > 0) InventoryHelper.SetTradeGilAmount(gilToTrade);
         await Task.Delay(4 * GeneralDelayMs, token);

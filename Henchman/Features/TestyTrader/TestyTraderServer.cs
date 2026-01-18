@@ -19,13 +19,14 @@ internal partial class TestyTrader
     internal static int                   ServerSideGil;
     internal static Dictionary<uint, int> ServerSideTradingLog = [];
     internal static uint                  charsTraded;
-    internal        MultiboxServer        server;
 
     private readonly List<uint> accessibleTerritories = Svc.Data.GetExcelSheet<TerritoryType>()
-                                                             .Where(x => Svc.Data.GetExcelSheet<Aetheryte>()
-                                                                            .Any(y => y.Territory.RowId == x.RowId && y.Order > 0))
-                                                             .Select(x => x.RowId)
-                                                             .ToList();
+                                                           .Where(x => Svc.Data.GetExcelSheet<Aetheryte>()
+                                                                          .Any(y => y.Territory.RowId == x.RowId && y.Order > 0))
+                                                           .Select(x => x.RowId)
+                                                           .ToList();
+
+    internal MultiboxServer server;
 
     internal async Task Server(CancellationToken token = default)
     {
@@ -37,6 +38,7 @@ internal partial class TestyTrader
                 FullWarning("You can not start you boss in a territory that isn't accessible through an aetheryte!");
                 return;
             }
+
             await server.StartRoundRobinAsync();
         } finally
         {
@@ -131,11 +133,13 @@ internal partial class TestyTrader
                             break;
                         }
                         case TestyTraderMessageType.ClientFinished:
-                            if (Configuration!.UseARItemSell)
+#if PRIVATE
+                                if (Configuration!.UseARItemSell)
                             {
                                 Svc.Commands.ProcessCommand("/ays itemsell");
                                 await WaitWhileAsync(() => IPC.AutoRetainer.IsBusy(), "Waiting for selling all items", token);
                             }
+#endif
                             return;
                     }
 
@@ -209,13 +213,13 @@ internal partial class TestyTrader
 
         foreach (var kvp in askDict)
         {
-            var itemId          = kvp.Key;
+            var (isHq, baseId) = (kvp.Key >= 1_000_000, kvp.Key % 1_000_000);
             var requestedAmount = kvp.Value;
-            var currentAmount   = (uint)InventoryHelper.GetInventoryItemCount(itemId);
+            var currentAmount   = (uint)InventoryHelper.GetInventoryItemCount(baseId, isHq);
 
             if (currentAmount == 0)
-                keysToRemove.Add(itemId);
-            else if (currentAmount < requestedAmount) askDict[itemId] = currentAmount;
+                keysToRemove.Add(kvp.Key);
+            else if (currentAmount < requestedAmount) askDict[kvp.Key] = currentAmount;
             Verbose($"Current: {currentAmount} | Requested: {requestedAmount}");
         }
 

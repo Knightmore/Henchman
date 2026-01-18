@@ -248,7 +248,7 @@ internal static class MovementTasks
             }
 
             await WaitUntilAsync(() => Player.Territory.RowId == territory.RowId, $"Check for right territory {territory.RowId}", token);
-            await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !Player.IsBusy, "Wait for Transition", token);
+            await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !Player.IsBusy, "Wait for meshing/transition", token);
         }
     }
 
@@ -263,7 +263,11 @@ internal static class MovementTasks
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning(), "Wait for pathing to start", token);
 
         if (!Player.Mounted) UseSprint();
+
+        //await WaitUntilAsync(() => Vector3.Distance(Player.Position, zoneTransitionPosition) < 20, "Wait for player close to destination", token);
+        await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Wait for area change", token);
         await WaitUntilAsync(() => Player.Territory.RowId == nextTerritoryId, "Check for right territory", token);
+        Vnavmesh.StopCompletely();
     }
 
     internal static async Task<bool> RoamUntilTargetNearby(List<Vector3> pointList, uint targetNameId, bool gotKilledWhileDetour, bool detourForARanks, float distanceToSpot = 60f, CancellationToken token = default)

@@ -11,7 +11,8 @@ internal static class InventoryHelper
             InventoryType.Inventory1,
             InventoryType.Inventory2,
             InventoryType.Inventory3,
-            InventoryType.Inventory4
+            InventoryType.Inventory4,
+            InventoryType.Crystals
     ];
 
     internal static unsafe InventoryItem* GetItemInInventoryPtr(uint itemId)
@@ -97,7 +98,7 @@ internal static class InventoryHelper
         return amount;
     }
 
-    internal static unsafe int GetInventoryItemCount(uint itemId) => InventoryManager.Instance()->GetInventoryItemCount(itemId);
+    internal static unsafe int GetInventoryItemCount(uint itemId, bool isHq = false) => InventoryManager.Instance()->GetInventoryItemCount(itemId, isHq);
 
     internal static unsafe uint GetGCSealAmount() => Player.GrandCompany == 0
                                                              ? 0

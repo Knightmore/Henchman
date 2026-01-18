@@ -20,7 +20,7 @@ namespace Henchman.Features.TestyTrader;
 public class TestyTraderUI : FeatureUI<Configuration>
 {
     private static readonly Item[] TradableItems = Svc.Data.GetExcelSheet<Item>()
-                                                      .Where(x => x is { IsUntradable: false, RowId: 1 or > 100 } && !string.IsNullOrEmpty(x.Name.GetText()))
+                                                      .Where(x => x is { IsUntradable: false, RowId: (>0 and <20) or > 100 } && !string.IsNullOrEmpty(x.Name.GetText()))
                                                       .OrderBy(x => x.Name.GetText())
                                                       .ToArray();
 
@@ -199,42 +199,6 @@ public class TestyTraderUI : FeatureUI<Configuration>
 
     private void DrawARTable()
     {
-        /*var table = new Table<OfflineCharacterData>(
-                                                    "##ARTraderTable",
-                                                    new List<TableColumn<OfflineCharacterData>>
-                                                    {
-                                                            new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
-                                                                                                                                       {
-                                                                                                                                           if (!C.EnableCharacterForTrade.TryAdd(x.CID, false))
-                                                                                                                                           {
-                                                                                                                                               var isEnabled = C.EnableCharacterForTrade[x.CID];
-                                                                                                                                               if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
-
-                                                                                                                                               if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
-                                                                                                                                               {
-                                                                                                                                                   C.EnableCharacterForTrade[x.CID] = !isEnabled;
-                                                                                                                                                   configChanged                    = true;
-                                                                                                                                               }
-
-                                                                                                                                               if (isEnabled) ImGui.PopStyleColor();
-                                                                                                                                           }
-                                                                                                                                           else
-                                                                                                                                               configChanged = true;
-                                                                                                                                       }),
-                                                            new("Name", x => x.Name, 135, typeof(string), Alignment : ColumnAlignment.Center),
-                                                            new("World", x => x.World, 90, Alignment : ColumnAlignment.Center),
-                                                            new("DataCenter", x => Svc.Data.GetExcelSheet<World>()
-                                                                                      .FirstOrDefault(y => y.Name == x.World)
-                                                                                      .DataCenter.Value.Name.ExtractText(), 90, Alignment : ColumnAlignment.Center),
-                                                            new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment : ColumnAlignment.Center),
-                                                            new("AR active", x => x.WorkshopEnabled.ToString(), 75, Alignment : ColumnAlignment.Center),
-                                                            new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
-                                                    },
-                                                    () => feature.GetCurrentARCharacterData(),
-                                                    highlightPredicate: x => x.CID == Player.CID,
-                                                    size: new Vector2(570, 0)
-                                                   );*/
-
         ARTable.Draw();
     }
 
