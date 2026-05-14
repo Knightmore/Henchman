@@ -1,4 +1,4 @@
-namespace Henchman.Multibox.Command;
+namespace Henchman.Multiboxing.Command;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class CommandGroupAttribute(string name = null) : Attribute

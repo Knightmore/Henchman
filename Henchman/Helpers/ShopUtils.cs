@@ -11,8 +11,8 @@ internal static unsafe class ShopUtils
         var agent = AgentShop.Instance();
         if (agent == null || agent->EventReceiver == null)
             return false;
-        AtkValue res   = default, arg = default;
-        var      proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
+        AtkValue res = default, arg = default;
+        var proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
         proxy->Handler->CancelInteraction();
         arg.SetInt(-1);
         agent->ReceiveEvent(&res, &arg, 1, 0);
@@ -40,9 +40,9 @@ internal static unsafe class ShopUtils
             return false;
         }
 
-        if (eh->Value->Info.EventId.ContentId != EventHandlerContent.Shop)
+        if (eh->Value->Info.EventId.ContentId != EventHandlerContent.Shop && eh->Value->Info.EventId.ContentId != EventHandlerContent.SpecialShop)
         {
-            FullError($"{shopId:X} is not a shop");
+            FullError($"{shopId:X} is not a shop, but {eh->Value->Info.EventId.ContentId}");
             return false;
         }
 
@@ -70,11 +70,29 @@ internal static unsafe class ShopUtils
             var index = shop->VisibleItems[i];
             if (shop->Items[index].ItemId == itemId)
             {
-                Log($"Buying {count}x {itemId} from {shopId:X}");
+                TaskLog($"Buying {count}x {itemId} from {shopId:X}");
                 shop->BuyItemIndex = index;
                 shop->ExecuteBuy(count);
                 return true;
             }
+        }
+
+        FullError($"Did not find item {itemId} in shop {shopId:X}");
+        return false;
+    }
+
+    internal static bool BuyItemFromSpecialShop(uint shopId, uint itemId, int count)
+    {
+        if (!EventFramework.Instance()->EventHandlerModule.EventHandlerMap.TryGetValuePointer(shopId, out var eh) || eh == null || eh->Value == null)
+        {
+            FullError($"Event handler for shop {shopId:X} not found");
+            return false;
+        }
+
+        if (eh->Value->Info.EventId.ContentId != EventHandlerContent.SpecialShop)
+        {
+            FullError($"{shopId:X} is not a special shop");
+            return false;
         }
 
         FullError($"Did not find item {itemId} in shop {shopId:X}");

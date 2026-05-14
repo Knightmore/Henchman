@@ -46,7 +46,7 @@ internal static unsafe class EventUtils
         {
             if (selector->Options[i].Handler->Info.EventId.Id == handlerId)
             {
-                Log($"Selecting selector option {i} for handler {handlerId:X}");
+                TaskLog($"Selecting selector option {i} for handler {handlerId:X}");
                 EventFramework.Instance()->InteractWithHandlerFromSelector(i);
                 return true;
             }

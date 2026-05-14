@@ -7,16 +7,16 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using ECommons.ImGuiMethods;
-using Henchman.Windows.Layout;
+using Henchman.Abstractions;
 
-namespace Henchman.Helpers;
+namespace Henchman.Windows.Layout;
 
 internal static class ImGuiHelper
 {
-    internal static float GlobalFontScale => ImGui.GetIO()
-                                                 .FontGlobalScale;
-
     private static readonly Dictionary<string, float> CenteredWidths = new();
+
+    internal static float GlobalFontScale => ImGui.GetIO()
+                                                  .FontGlobalScale;
 
     private static string HeaderText => """
                                         For some optional plugins such as Auto Rotations, you can select your preferred option in the plugin settings.
@@ -119,13 +119,13 @@ internal static class ImGuiHelper
 
             ImGui.Separator();
             DrawCentered(feature.Name, () =>
-                                     {
-                                         ImGui.PushFont(UiBuilder.IconFont);
-                                         ImGui.TextUnformatted(feature.Icon.ToIconString());
-                                         ImGui.PopFont();
-                                         ImGui.SameLine();
-                                         ImGui.TextUnformatted(feature.Name);
-                                     });
+                                       {
+                                           ImGui.PushFont(UiBuilder.IconFont);
+                                           ImGui.TextUnformatted(feature.Icon.ToIconString());
+                                           ImGui.PopFont();
+                                           ImGui.SameLine();
+                                           ImGui.TextUnformatted(feature.Name);
+                                       });
             ImGui.NewLine();
 
             foreach (var req in feature.Requirements) DrawPluginRequirement(req.pluginName, req.mandatory, longestStringWidth, requirementWidth, spacing);
@@ -200,8 +200,7 @@ internal static class ImGuiHelper
         {
             ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
 
-            using var tooltip = ImRaii.Tooltip();
-            if (tooltip.Success)
+            using (ImRaii.Tooltip())
             {
                 ImGuiEx.Text(EzColor.White, title);
 
@@ -227,8 +226,9 @@ internal static class ImGuiHelper
     {
         if (CenteredWidths.TryGetValue(id, out var cachedWidth))
         {
-            var regionWidth = ImGui.GetContentRegionAvail().X;
-            var offset      = (regionWidth - cachedWidth) * 0.5f;
+            var regionWidth = ImGui.GetContentRegionAvail()
+                                   .X;
+            var offset = (regionWidth - cachedWidth) * 0.5f;
             if (offset > 0)
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (float)Math.Floor(offset));
         }
@@ -237,57 +237,81 @@ internal static class ImGuiHelper
         draw();
         ImGui.EndGroup();
 
-        var measuredWidth = ImGui.GetItemRectSize().X;
+        var measuredWidth = ImGui.GetItemRectSize()
+                                 .X;
         CenteredWidths[id] = (float)Math.Round(measuredWidth);
     }
 
+    public static bool StartButton()                 => ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale));
+    public static bool AdditionalButton(string text) => ImGui.Button(text, new Vector2(70    * GlobalFontScale, 30 * GlobalFontScale));
 
-    /*public static void DrawCentered(string id, Action draw)
+    public static void DrawSection(string title, Action drawContent)
     {
-        if (CenteredWidths.TryGetValue(id, out var cachedWidth))
-        {
-            var regionWidth = ImGui.GetContentRegionAvail().X;
-            var offset      = (regionWidth - cachedWidth) * 0.5f;
-            if (offset > 0)
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
-        }
+        ImGui.Spacing();
 
-        ImGui.BeginGroup();
-        draw();
-        ImGui.EndGroup();
+        using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary))
+            ImGui.TextUnformatted(title.ToUpperInvariant());
 
-        var rectMin       = ImGui.GetItemRectMin().X;
-        var rectMax       = ImGui.GetItemRectMax().X;
-        var measuredWidth = rectMax - rectMin;
+        ImGui.Separator();
 
-        CenteredWidths[id] = measuredWidth;
-    }*/
+        ImGui.Spacing();
 
+        drawContent();
 
-    /*public static void DrawCentered(string id, Action draw)
+        ImGui.Spacing();
+    }
+
+    public static void DrawCollapsibleSection(string title, Action drawContent, bool defaultOpen = false)
     {
-        if (CenteredWidths.TryGetValue(id, out var cachedWidth))
+        var flags = defaultOpen
+                            ? ImGuiTreeNodeFlags.DefaultOpen
+                            : ImGuiTreeNodeFlags.None;
+
+        if (ImGui.CollapsingHeader(title, flags))
         {
-            var regionWidth = ImGui.GetContentRegionAvail()
-                                   .X;
-            var offset = (regionWidth - cachedWidth) * 0.5f;
-            if (offset > 0)
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+            ImGui.Spacing();
+            drawContent();
+            ImGui.Spacing();
+        }
+    }
+
+    public static bool DrawConfirmation(
+            ref bool confirmed,
+            ref bool accepted,
+            string   text,
+            string   buttonText = "Confirm")
+    {
+        if (confirmed)
+            return true;
+
+        var available = ImGui.GetContentRegionAvail();
+        var checkboxWidth = ImGui.CalcTextSize(text)
+                                 .X +
+                            ImGui.GetFrameHeightWithSpacing();
+        var buttonSize = new Vector2(120, 28);
+
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + Math.Max(0, available.Y * 0.35f));
+
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, (available.X - checkboxWidth) * 0.5f));
+
+        ImGui.Checkbox("##Accepted", ref accepted);
+
+        ImGui.SameLine();
+
+        using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed)) ImGui.TextUnformatted(text);
+
+        ImGui.Spacing();
+
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, (available.X - buttonSize.X) * 0.5f));
+
+        using (ImRaii.Disabled(!accepted))
+        {
+            if (ImGui.Button(buttonText, buttonSize))
+                confirmed = true;
         }
 
-        ImGui.BeginGroup();
-        draw();
-        ImGui.EndGroup();
-
-        if (!CenteredWidths.ContainsKey(id))
-        {
-            var measuredWidth = ImGui.GetItemRectSize()
-                                     .X;
-            CenteredWidths[id] = measuredWidth;
-        }
-    }*/
-
-    public static bool StartButton() => ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale));
+        return confirmed;
+    }
 
     public class ColumnScope : IDisposable
     {

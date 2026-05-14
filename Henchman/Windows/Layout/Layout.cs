@@ -3,6 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ImGuiMethods;
+using Henchman.Abstractions;
 
 namespace Henchman.Windows.Layout;
 
@@ -133,7 +134,7 @@ public class Layout(ImTextureID logoTextureHandle = default)
         ImGui.Spacing();
     }
 
-    internal static void DrawInfoBox(Action startButton, Action? additionalText = null)
+    internal static void DrawInfoBox(Action startButton, Action? additionalText = null, Action? additionalButton = null)
     {
         using (ImRaii.PushColor(ImGuiCol.ChildBg, Theme.BackgroundCard))
         {
@@ -152,10 +153,22 @@ public class Layout(ImTextureID logoTextureHandle = default)
 
                 additionalText?.Invoke();
 
-                var buttonX = ImGui.GetCursorPosX() +
+                float buttonX;
+                if (additionalButton != null)
+                {
+                    buttonX = ImGui.GetCursorPosX() +
                               ImGui.GetContentRegionAvail()
                                    .X -
-                              (70 * GlobalFontScale);
+                              (160 * GlobalFontScale);
+                    ImGui.SetCursorPos(new Vector2(buttonX, buttonY));
+
+                    DrawButton(additionalButton);
+                }
+
+                buttonX = ImGui.GetCursorPosX() +
+                          ImGui.GetContentRegionAvail()
+                               .X -
+                          (70 * GlobalFontScale);
                 ImGui.SetCursorPos(new Vector2(buttonX, buttonY));
 
                 DrawButton(startButton);
@@ -195,13 +208,13 @@ public class Layout(ImTextureID logoTextureHandle = default)
         {
             if (!copyrightArea.Success) return;
             ImGui.Text("Plugin by");
-            ImGui.SameLine();
+            ImGui.SameLine(0, 2);
             DrawLink("Knightmore", "GitHub", "https://github.com/Knightmore/Henchman");
             ImGui.SameLine();
             ImGui.Text("•");
             ImGui.SameLine();
             ImGui.Text("Theme/Design by");
-            ImGui.SameLine();
+            ImGui.SameLine(0, 2);
             DrawLink("Wah", "GitHub", "https://github.com/Brappp");
         }
     }

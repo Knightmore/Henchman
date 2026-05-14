@@ -1,7 +1,9 @@
 using ECommons.EzIpcManager;
+using Henchman.Multiboxing.Command;
 
 namespace Henchman.IPC;
 
+[CommandGroup]
 [IPC(IPCNames.AutoDuty)]
 public static class AutoDuty
 {
@@ -20,13 +22,14 @@ public static class AutoDuty
     [EzIPC]
     public static Action<string, object> SetConfig;
 
-    public static void RunDutySupport(uint territoryType, int loops = 0, bool bareMode = false)
+    public static void RunDutySupport(uint territoryType, int loops = 0, bool bareMode = true)
     {
         SetConfig("dutyModeEnum", "Support");
         Run(territoryType, loops, bareMode);
     }
 
-    public static void RunDutyUsync(uint territoryType, int loops = 0, bool bareMode = false)
+    [Command]
+    public static void RunDutyUsync(uint territoryType, int loops = 0, bool bareMode = true)
     {
         SetConfig("dutyModeEnum", "Regular");
         SetConfig("Unsynced", "true");

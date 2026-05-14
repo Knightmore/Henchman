@@ -1,6 +1,5 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Henchman.Helpers;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
 
@@ -190,7 +189,7 @@ internal static class HuntDatabase
     {
         try
         {
-            var marks = Utils.ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
+            var marks = ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
 
             if (marks != null)
             {

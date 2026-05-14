@@ -8,12 +8,12 @@ internal sealed class TaskDescriptionScope : IDisposable
     {
         this.description = description;
         TaskDescription.Add(description);
-        PluginLog.Debug($"[{TaskName}] Entering Task: {description}");
+        PluginLog.Verbose($"[{TaskName}] Entering Task: {description}");
     }
 
     public void Dispose()
     {
-        PluginLog.Debug($"[{TaskName}] Exiting Task: {description}");
+        PluginLog.Verbose($"[{TaskName}] Exiting Task: {description}");
         TaskDescription.Remove(description);
     }
 }

@@ -5,7 +5,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.GameHelpers;
-using Henchman.Helpers;
+using Henchman.Abstractions;
 using Henchman.Models;
 
 namespace Henchman.Features.General;
@@ -14,7 +14,7 @@ namespace Henchman.Features.General;
 internal class MarkDatabaseUI : FeatureUI
 {
     public override string          Name        => "Mark Database";
-    public override string          Category    => Henchman.Category.System;
+    public override Category        Category    => Category.System;
     public override FontAwesomeIcon Icon        => FontAwesomeIcon.Database;
     public override Action?         Help        { get; }
     public override bool            LoginNeeded => true;
@@ -42,7 +42,7 @@ internal class MarkDatabaseUI : FeatureUI
         var flatList = HuntMarks.Values.Where(x => x.TerritoryId == Player.Territory.RowId)
                                 .SelectMany(x => x.Positions
                                                   .Where(y => Player.DistanceTo(y) <= 70 && currentTarget is IBattleNpc battleNpc && battleNpc.NameId == x.BNpcNameRowId)
-                                                  .Select(pos => (Id: x.BNpcNameRowId, Name: Utils.ToTitleCaseExtended(x.BNpcNameSheet.Singular, Svc.ClientState.ClientLanguage), Position: pos)))
+                                                  .Select(pos => (Id: x.BNpcNameRowId, Name: ToTitleCaseExtended(x.BNpcNameSheet.Singular, Svc.ClientState.ClientLanguage), Position: pos)))
                                 .ToList();
 
         if (ImGui.Button("Copy new area marker (current position)"))
@@ -95,7 +95,7 @@ internal class MarkDatabaseUI : FeatureUI
                     ImGui.TableNextColumn();
                     ImGui.Text(mark.BNpcNameRowId.ToString());
                     ImGui.TableNextColumn();
-                    ImGui.Text(Utils.ToTitleCaseExtended(mark.BNpcNameSheet.Singular, Svc.ClientState.ClientLanguage));
+                    ImGui.Text(ToTitleCaseExtended(mark.BNpcNameSheet.Singular, Svc.ClientState.ClientLanguage));
                     ImGui.TableNextColumn();
                     ImGui.Text(position.ToString());
                 }

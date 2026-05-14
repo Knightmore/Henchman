@@ -2,7 +2,6 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Henchman.Helpers;
 
 namespace Henchman.Tweaks;
 
@@ -10,7 +9,7 @@ internal static unsafe class SkipTalk
 {
     private static bool WasChanged;
 
-    private static bool IsBusy => Utils.IsPluginBusy;
+    private static bool IsBusy => IsPluginBusy;
 
     internal static void Tick()
     {

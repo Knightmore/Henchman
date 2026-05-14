@@ -1,20 +1,18 @@
-using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using ECommons.Automation;
-using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using Henchman.TaskManager;
+using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.IntoTheLight;
 
 [Feature]
-public class IntoTheLightUI : FeatureUI<Configuration>
+public class IntoTheLightUI : FeatureUI<IntoTheLight, Configuration>
 {
     public enum ClassJob
     {
@@ -28,26 +26,23 @@ public class IntoTheLightUI : FeatureUI<Configuration>
         Arcanist
     }
 
-    public sealed override required Configuration Configuration { get; init; }
-
     private readonly IntoTheLight feature = new();
 
     private readonly IEnumerable<int> values = Enumerable.Range(1, 40);
-    private          LightCharacter?  charToDelete;
-    
-    private LightCharacter  newCharacter = new();
-    public override  string          Name     => "Into The Light";
-    public override  string          Category => Henchman.Category.Exploration;
-    public override  FontAwesomeIcon Icon     => FontAwesomeIcon.PersonRays;
+    private LightCharacter? charToDelete;
+
+    private LightCharacter newCharacter = new();
+
+    public IntoTheLightUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+    public sealed override required Configuration Configuration { get; init; }
+    public override string Name => "Into The Light";
+    public override Category Category => Category.Exploration;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.PersonRays;
 
     public override Action? Help => () => { ImGui.Text("Configure your wanted character data, go to Titlemenu and hit Start."); };
 
     public override bool LoginNeeded => false;
-
-    public IntoTheLightUI()
-    {
-        Configuration = LoadConfig<Configuration>() ?? new Configuration();
-    }
 
     public override unsafe void Draw()
     {
@@ -56,12 +51,12 @@ public class IntoTheLightUI : FeatureUI<Configuration>
                                      {
                                          Layout.DrawButton(() =>
                                                            {
-                                                               if (ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale)) && !IsTaskEnqueued(Name)) EnqueueTask(new TaskRecord(feature.Start, "Into The Light", () => feature.Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
+                                                               if (ImGui.Button("Start", new Vector2(70 * GlobalFontScale, 30 * GlobalFontScale)) && !IsTaskEnqueued(Name)) Feature.RunTask();
                                                            });
                                      });
         DrawCentered("##LightNoLoginSkip", () =>
                                            {
-                                               ImGui.Checkbox("No login skip", ref Configuration.LightNoLoginSkip); 
+                                               ImGui.Checkbox("No login skip", ref Configuration.LightNoLoginSkip);
                                                HelpMarker(() => ImGui.Text("Let each new character login. Useful for character registration in AutoRetainer."), sameLine: true);
                                            });
 
@@ -71,25 +66,23 @@ public class IntoTheLightUI : FeatureUI<Configuration>
                                        new("", Width: 30, DrawCustom: (x, index) =>
                                                                       {
                                                                           if (ImGuiComponents.IconButton($"##Light{x.GetHashCode()}Remove", FontAwesomeIcon.Trash)) charToDelete = x;
-                                                                          ImGui.SameLine();
-                                                                          if (ImGuiComponents.IconButton($"##Light{x.GetHashCode()}Copy", FontAwesomeIcon.Copy)) ;
                                                                       }),
                                        new("First Name", x => string.IsNullOrEmpty(x.FirstName)
                                                                       ? "Random"
-                                                                      : x.FirstName, 110, Alignment : ColumnAlignment.Center),
+                                                                      : x.FirstName, 110, Alignment: ColumnAlignment.Center),
                                        new("Last Name", x => string.IsNullOrEmpty(x.LastName)
                                                                      ? "Random"
-                                                                     : x.LastName, 110, Alignment : ColumnAlignment.Center),
+                                                                     : x.LastName, 110, Alignment: ColumnAlignment.Center),
                                        new("Data Center", x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
                                                                   .GetRow(x.DataCenterId)
-                                                                  .Name.ExtractText(), 100, Alignment : ColumnAlignment.Center),
+                                                                  .Name.ExtractText(), 100, Alignment: ColumnAlignment.Center),
                                        new("World", x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
-                                                            .Name.ExtractText(), 100, Alignment : ColumnAlignment.Center),
-                                       new("ClassJob", x => x.ClassJob.ToString(), 100, Alignment : ColumnAlignment.Center),
-                                       new("Preset", x => x.PresetId == 255
+                                                            .Name.ExtractText(), 100, Alignment: ColumnAlignment.Center),
+                                       new("ClassJob", x => x.ClassJob.ToString(), 100, Alignment: ColumnAlignment.Center),
+                                       new("Preset", x => x.PresetId.RealIndex == 255
                                                                   ? "None"
-                                                                  : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId].LabelString}", 130, Alignment: ColumnAlignment.Center)
+                                                                  : $"{Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId.RealIndex].SlotIndex} - {Framework.Instance()->CharamakeAvatarSaveData->Release.Slots[x.PresetId.RealIndex].LabelString}", 130, Alignment: ColumnAlignment.Center)
                                };
 
         var table = new Table<LightCharacter>(
@@ -103,16 +96,16 @@ public class IntoTheLightUI : FeatureUI<Configuration>
                                                                 using var row = new ColumnScope(characterColumns.Count);
                                                                 row.TableNextColumn();
                                                                 var randomFirstName = string.IsNullOrEmpty(newCharacter.FirstName);
-                                                                var randomLastName  = string.IsNullOrEmpty(newCharacter.LastName);
+                                                                var randomLastName = string.IsNullOrEmpty(newCharacter.LastName);
 
                                                                 if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus) && !Configuration.LightCharacters.Any(x => !randomFirstName && x.FirstName == newCharacter.FirstName && !randomLastName && x.LastName == newCharacter.LastName && x.WorldId == newCharacter.WorldId))
                                                                 {
                                                                     Configuration.LightCharacters.Add(newCharacter);
                                                                     var tempCharacter = new LightCharacter(newCharacter);
                                                                     tempCharacter.FirstName = "";
-                                                                    tempCharacter.LastName  = "";
-                                                                    newCharacter            = tempCharacter;
-                                                                    configChanged           = true;
+                                                                    tempCharacter.LastName = "";
+                                                                    newCharacter = tempCharacter;
+                                                                    configChanged = true;
                                                                 }
 
                                                                 row.TableNextColumn();
@@ -149,27 +142,53 @@ public class IntoTheLightUI : FeatureUI<Configuration>
                                                                 ImGuiEx.EnumCombo("##newclassJob", ref newCharacter.ClassJob);
 
                                                                 row.TableNextColumn();
+
                                                                 var presetId = newCharacter.PresetId;
 
-                                                                var presets = Framework.Instance()->CharamakeAvatarSaveData->Release.Slots
-                                                                                                                                    .ToArray()
+                                                                var presets = Framework.Instance()->CharamakeAvatarSaveData->Release.Slots.ToArray()
                                                                                                                                     .Where(x => x.Timestamp > 0)
+                                                                                                                                    .OrderBy(x => x.SlotIndex)
                                                                                                                                     .ToArray();
 
-                                                                var presetIds = new[] { (byte)255 }
-                                                                       .Concat(presets.Select(x => x.SlotIndex));
+                                                                var realIndices = presets.Select(p => p.SlotIndex)
+                                                                                         .ToArray();
 
-                                                                var names = presets.ToDictionary(
-                                                                                                 y => y.SlotIndex,
-                                                                                                 y => $"{y.SlotIndex} - {y.LabelString}"
-                                                                                                );
+                                                                var denseIds = Enumerable.Range(0, realIndices.Length)
+                                                                                         .Select(i => (byte)i)
+                                                                                         .ToList();
+
+                                                                denseIds.Insert(0, 255);
+
+                                                                var denseToReal = new Dictionary<byte, byte>();
+                                                                denseToReal[255] = 255;
+                                                                for (byte i = 0; i < realIndices.Length; i++)
+                                                                    denseToReal[i] = realIndices[i];
+
+                                                                var names = new Dictionary<byte, string>();
                                                                 names[255] = "None";
+                                                                for (byte i = 0; i < realIndices.Length; i++)
+                                                                {
+                                                                    var real = realIndices[i];
+                                                                    var label = presets.First(p => p.SlotIndex == real)
+                                                                                       .LabelString;
+                                                                    names[i] = $"{real} - {label}";
+                                                                }
+
+                                                                var denseSelected =
+                                                                        presetId.RealIndex == 255
+                                                                                ? (byte)255
+                                                                                : denseToReal.First(x => x.Value == presetId.RealIndex)
+                                                                                             .Key;
 
                                                                 ImGui.SetNextItemWidth(130f);
-                                                                if (ImGuiEx.Combo("##newpreset", ref presetId, presetIds, names: names))
+                                                                if (ImGuiEx.Combo("##newpreset", ref denseSelected, denseIds, names: names))
                                                                 {
-                                                                    newCharacter.PresetId = presetId;
-                                                                    configChanged         = true;
+                                                                    newCharacter.PresetId = denseSelected == 255
+                                                                                                    ? ((byte)255, (byte)255)
+                                                                                                    : (denseSelected, denseToReal[denseSelected]);
+
+
+                                                                    configChanged = true;
                                                                 }
                                                             });
 
@@ -178,7 +197,7 @@ public class IntoTheLightUI : FeatureUI<Configuration>
         if (charToDelete != null)
         {
             Configuration.LightCharacters.Remove(charToDelete);
-            charToDelete  = null;
+            charToDelete = null;
             configChanged = true;
         }
 

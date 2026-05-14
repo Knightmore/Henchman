@@ -1,4 +1,5 @@
 using System.Linq;
+using Henchman.Abstractions;
 using Henchman.Data;
 using Henchman.Features.IntoTheLight;
 
@@ -16,7 +17,6 @@ public class Configuration : IConfig
     public NpcDatabase.StarterCity             RetainerCity  = NpcDatabase.StarterCity.LimsaLominsa;
     public uint                                RetainerClass = 18;
     public RetainerDetails.RetainerGender      RetainerGender;
-    public string[]                            RetainerName        = new string[10];
     public RetainerDetails.RetainerPersonality RetainerPersonality = RetainerDetails.RetainerPersonality.Polite;
     public RetainerDetails.RetainerRace        RetainerRace;
     public bool                                SendOnFirstExploration = false;

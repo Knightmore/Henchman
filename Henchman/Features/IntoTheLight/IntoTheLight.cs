@@ -1,3 +1,4 @@
+using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
@@ -6,20 +7,22 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Henchman.Abstractions;
 using Henchman.Data;
-using Henchman.Features.BumpOnALog;
 using Henchman.Helpers;
+using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
-using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace Henchman.Features.IntoTheLight;
 
-internal class IntoTheLight
+public class IntoTheLight : Feature
 {
     private int index;
 
     private static Configuration? Configuration => GetFeatureConfig<IntoTheLightUI, Configuration>();
+
+    public override void RunTask() => EnqueueTask(new TaskRecord(Start, "Into The Light", () => Stop(), () => AutoCutsceneSkipper.Disable(), () => AutoCutsceneSkipper.Disable()));
 
     public async Task Start(CancellationToken token = default)
     {
@@ -58,11 +61,11 @@ internal class IntoTheLight
             await WaitUntilAsync(() => SelectCreateCharacter(), "Select Create Character", token);
             if (validPresets > 0)
             {
-                await WaitUntilAsync(() => SelectIfUsePreset(Configuration!.LightCharacters[index].PresetId != 255), "Select if to use Preset", token);
-                if (Configuration!.LightCharacters[index].PresetId != 255) await WaitUntilAsync(() => AddonHelpers.SelectPreset(Configuration!.LightCharacters[index].PresetId), "Select Preset", token);
+                await WaitUntilAsync(() => SelectIfUsePreset(Configuration!.LightCharacters[index].PresetId.DenseIndex != 255), "Select if to use Preset", token);
+                if (Configuration!.LightCharacters[index].PresetId.DenseIndex != 255) await WaitUntilAsync(() => AddonHelpers.SelectPreset(Configuration!.LightCharacters[index].PresetId.DenseIndex), "Select Preset", token);
             }
 
-            if (Configuration!.LightCharacters[index].PresetId == 255)
+            if (Configuration!.LightCharacters[index].PresetId.DenseIndex == 255)
             {
                 int maxRace;
                 unsafe
@@ -131,7 +134,7 @@ internal class IntoTheLight
 
             if (completedLoginTask == directLogin)
             {
-                Verbose("Progressing without queue!");
+                Debug("Progressing without queue!");
                 await WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Wait for cutscene", token);
 
                 await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringSkipCutscene.ToRegex()), "Skip cutscene", token);
@@ -154,7 +157,7 @@ internal class IntoTheLight
             }
             else
                 await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesnoLeaveQueue), "Confirm leave queue", token);
-            
+
             await Task.Delay(4 * GeneralDelayMs, token);
         }
     }

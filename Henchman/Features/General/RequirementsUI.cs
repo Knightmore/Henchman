@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Henchman.Abstractions;
 
 namespace Henchman.Features.General;
 
@@ -6,7 +7,7 @@ namespace Henchman.Features.General;
 internal class RequirementsUI : FeatureUI
 {
     public override string          Name        => "Requirements";
-    public override string          Category    => Henchman.Category.System;
+    public override Category        Category    => Category.System;
     public override FontAwesomeIcon Icon        => FontAwesomeIcon.ExclamationTriangle;
     public override Action?         Help        { get; }
     public override bool            LoginNeeded => false;

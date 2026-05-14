@@ -1,4 +1,5 @@
 using System.Linq;
+using Henchman.Abstractions;
 using Lumina.Excel.Sheets;
 
 namespace Henchman.Features.BringYourXGame;
@@ -6,6 +7,7 @@ namespace Henchman.Features.BringYourXGame;
 public class Configuration : IConfig
 {
     public uint BRankToFarm;
+
     public SortedSet<uint> EnabledTerritoriesForARank = new(BRanks
                                                            .Values
                                                            .Where(x => Svc.Data.GetExcelSheet<TerritoryType>()

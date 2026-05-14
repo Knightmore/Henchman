@@ -12,11 +12,13 @@ public static class Theme
     public static Vector4 Border     { get; } = new(0.25f, 0.25f, 0.25f, 1f);
     public static Vector4 BorderDark { get; } = new(0.20f, 0.20f, 0.20f, 1f);
 
-    public static Vector4 TextPrimary   { get; } = new(0.88f, 0.88f, 0.88f, 1f);
+    public static Vector4 TextPrimary { get; } = new(0.88f, 0.88f, 0.88f, 1f);
+
     public static Vector4 TextSecondary { get; } = new(0.69f, 0.69f, 0.69f, 1f);
+
     //Original with lower contrast
     //public static Vector4 TextSecondary { get; } = new(0.53f, 0.53f, 0.53f, 1f);
-    public static Vector4 TextDisabled  { get; } = new(0.40f, 0.40f, 0.40f, 1f);
+    public static Vector4 TextDisabled { get; } = new(0.40f, 0.40f, 0.40f, 1f);
 
     public static Vector4 AccentPink    { get; } = new(1f, 0.42f, 0.62f, 1f);
     public static Vector4 AccentPinkDim { get; } = new(1f, 0.42f, 0.62f, 0.1f);

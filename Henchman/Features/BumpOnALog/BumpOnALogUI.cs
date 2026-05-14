@@ -6,7 +6,7 @@ using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Helpers;
+using Henchman.Abstractions;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
@@ -18,27 +18,37 @@ using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 namespace Henchman.Features.BumpOnALog;
 
 [Feature]
-public class BumpOnALogUI : FeatureUI<Configuration>
+public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
 {
-    internal readonly BumpOnALog          Feature = new();
-    private           int                 classMonsterNoteId;
-    private           MonsterNoteRankInfo classMonsterNoteRankInfo;
-    private           int                 currentClassLogRank;
-    private           int                 currentGcLogRank;
-    private           int                 gcMonsterNoteId;
-    private           MonsterNoteRankInfo gcMonsterNoteRankInfo;
-    public override   string              Name     => "Bump On A Log";
-    public override   string              Category => Henchman.Category.Combat;
-    public override   FontAwesomeIcon     Icon     => FontAwesomeIcon.List;
+    internal readonly BumpOnALog Feature = new();
+    private int classMonsterNoteId;
+    private MonsterNoteRankInfo classMonsterNoteRankInfo;
+    private int currentClassLogRank;
+    private int currentGcLogRank;
+    private int gcMonsterNoteId;
+    private MonsterNoteRankInfo gcMonsterNoteRankInfo;
 
-    
+    public BumpOnALogUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+    public override string Name => "Bump On A Log";
+    public override Category Category => Category.Combat;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.List;
+
 
     public override Action Help => () =>
                                    {
                                        ImGui.Text(
                                                   """
                                                   Click the "Start" button for your wanted Hunt Log.
-                                                  BumpOnALog will complete all (only non-Duty for now) current mob entries for your rank. 
+                                                  BumpOnALog will complete all current mob entries for your rank. 
+
+                                                  If your character has enough GrandCompany seals and the appropriate level,
+                                                  'Bump On A Log' will progress through your GrankCompany ranks up until 2nd Lieutenant.
+
+                                                  Change your settings if you want it to stop earlier.
+
+                                                  If you want to use multiboxing (high level carry) for GC logs,
+                                                  please check and adjust your general Multiboxing settings.
                                                   """);
 
                                        DrawRequirements(Requirements);
@@ -58,11 +68,6 @@ public class BumpOnALogUI : FeatureUI<Configuration>
     public override bool LoginNeeded => true;
 
     public sealed override required Configuration Configuration { get; init; }
-
-    public BumpOnALogUI()
-    {
-        Configuration = LoadConfig<Configuration>() ?? new Configuration();
-    }
 
     public override void Draw()
     {
@@ -104,7 +109,7 @@ public class BumpOnALogUI : FeatureUI<Configuration>
         }
 
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
-        currentClassLogRank      = classMonsterNoteRankInfo.Rank;
+        currentClassLogRank = classMonsterNoteRankInfo.Rank;
 
         Layout.DrawInfoBox(() =>
                            {
@@ -152,7 +157,7 @@ public class BumpOnALogUI : FeatureUI<Configuration>
                        .GetRow(PlayerState.Instance()->GrandCompany);
 
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
-        currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
+        currentGcLogRank = gcMonsterNoteRankInfo.Rank;
 
         Layout.DrawInfoBox(() =>
                            {
@@ -175,7 +180,7 @@ public class BumpOnALogUI : FeatureUI<Configuration>
                                   ImGui.Text(gcRow.Name.ExtractText());
                                   ImGui.SameLine();
 
-                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {GetGCRankTitle()} - Difficulty: {currentGcLogRank}");
+                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {GetGrandCompanyRank()} {GetGCRankTitle()} - Difficulty: {currentGcLogRank}");
                               });
 
         ImGui.Spacing();
@@ -217,17 +222,17 @@ public class BumpOnALogUI : FeatureUI<Configuration>
                                         "##HuntTable",
                                         new List<TableColumn<HuntMark>>
                                         {
-                                                new("Name", h => Utils.ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
-                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment : ColumnAlignment.Center),
+                                                new("Name", h => ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
+                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
                                                 new("Finished", h => h.GetOpenMonsterNoteKills == 0
                                                                              ? FontAwesomeIcon.Check.ToIconString()
                                                                              : FontAwesomeIcon.Times.ToIconString(), 100, Alignment: ColumnAlignment.Center,
-                                                    GetTextColor:h => h.GetOpenMonsterNoteKills == 0
-                                                                 ? Theme.SuccessGreen
-                                                                 : Theme.ErrorRed)
+                                                    GetTextColor: h => h.GetOpenMonsterNoteKills == 0
+                                                                               ? Theme.SuccessGreen
+                                                                               : Theme.ErrorRed)
                                         },
                                         () => marks,
-                                        highlightPredicate: h => h.IsCurrentTarget
+                                        h => h.IsCurrentTarget
                                        );
 
         table.Draw();
@@ -237,29 +242,24 @@ public class BumpOnALogUI : FeatureUI<Configuration>
     {
         var configChanged = false;
 
-        // Preparation once Dzemael and Aurum gets Duty support (in 7.4)
-        /*
+        DrawCentered(() => { });
         ImGui.Text("Stop after Job Log Rank");
         ImGui.SameLine(200);
         ImGui.SetNextItemWidth(120f);
-        configChanged |= ImGui.Combo("##jobRank", ref C.StopAfterJobRank, Enumerable.Range(1, 5)
-                                                                                         .Select(x => x.ToString())
-                                                                                         .ToArray(), 5);
+        configChanged |= ImGui.Combo("##jobRank", ref Configuration.StopAfterJobRank, Enumerable.Range(1, 5)
+                                                                                                .Select(x => x.ToString())
+                                                                                                .ToArray(), 5);
 
-        ImGui.Text("Stop after GC Log Rank");
+        ImGui.Text("Stop after GC Rank");
         ImGui.SameLine(200);
         ImGui.SetNextItemWidth(120f);
-        configChanged |= ImGui.Combo("##gcRank", ref C.StopAfterGCRank, Enumerable.Range(1, 3)
-                                                                                 .Select(x => x.ToString())
-                                                                                 .ToArray(), 3);
+        configChanged |= ImGui.Combo("##gcRank", ref Configuration.StopAfterGCRank, Enumerable.Range(1, 9)
+                                                                                              .Select(x => x.ToString())
+                                                                                              .ToArray(), 9);
 
-        ImGui.Text("Progress GC Ranks");
+        ImGui.Text("Order Mobs by Territory");
         ImGui.SameLine(200);
-        configChanged |= ImGui.Checkbox("##progressGCRanks", ref C.ProgressGCRanks);
-        ImGui.SameLine();
-        ImGuiEx.HelpMarker("""If your character has enough GrandCompany seals and the appropriate level,
-        'Bump On A Log' will progress through your GrankCompany ranks up until 2nd Lieutenant""");
-        */
+        configChanged |= ImGui.Checkbox("##orderByTerritory", ref Configuration.OrderByTerritory);
 
         ImGui.Text("Skip Duty Marks");
         ImGui.SameLine(200);
@@ -268,6 +268,10 @@ public class BumpOnALogUI : FeatureUI<Configuration>
         ImGui.Text("Solo Unsync Duty");
         ImGui.SameLine(200);
         configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
+
+        ImGui.Text("Rank Up GC");
+        ImGui.SameLine(200);
+        configChanged |= ImGui.Checkbox("##autoGCRankUp", ref Configuration.AutoGCRankUp);
 
 
         if (configChanged)
@@ -280,36 +284,45 @@ public class BumpOnALogUI : FeatureUI<Configuration>
     public unsafe string GetGCRankTitle()
     {
         var playerState = PlayerState.Instance();
-        var playerSex   = playerState->Sex;
-        var playerGC    = playerState->GrandCompany;
+        var playerSex = playerState->Sex;
+        var playerGC = playerState->GrandCompany;
         switch (playerGC)
-            {
-                case 1:
-                    if (playerSex == 0)
-                        return Svc.Data.GetExcelSheet<GCRankLimsaMaleText>()
-                           .GetRow(playerState->GCRankMaelstrom)
-                           .Singular.ExtractText();
-                    return Svc.Data.GetExcelSheet<GCRankLimsaFemaleText>()
-                              .GetRow(playerState->GCRankMaelstrom)
+        {
+            case 1:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankLimsaMaleText>()
+                              .GetRow(playerState->GCRanks[0])
                               .Singular.ExtractText();
-                case 2:
-                    if (playerSex == 0)
-                        return Svc.Data.GetExcelSheet<GCRankGridaniaMaleText>()
-                                  .GetRow(playerState->GCRankTwinAdders)
-                                  .Singular.ExtractText();
-                    return Svc.Data.GetExcelSheet<GCRankGridaniaFemaleText>()
-                              .GetRow(playerState->GCRankTwinAdders)
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankLimsaFemaleText>()
+                          .GetRow(playerState->GCRanks[0])
+                          .Singular.ExtractText();
+            case 2:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankGridaniaMaleText>()
+                              .GetRow(playerState->GCRanks[1])
                               .Singular.ExtractText();
-                case 3:
-                    if (playerSex == 0)
-                        return Svc.Data.GetExcelSheet<GCRankUldahMaleText>()
-                                  .GetRow(playerState->GCRankImmortalFlames)
-                                  .Singular.ExtractText();
-                    return Svc.Data.GetExcelSheet<GCRankUldahFemaleText>()
-                              .GetRow(playerState->GCRankImmortalFlames)
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankGridaniaFemaleText>()
+                          .GetRow(playerState->GCRanks[1])
+                          .Singular.ExtractText();
+            case 3:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankUldahMaleText>()
+                              .GetRow(playerState->GCRanks[2])
                               .Singular.ExtractText();
-                default:
-                    return "None";
-            }
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankUldahFemaleText>()
+                          .GetRow(playerState->GCRanks[2])
+                          .Singular.ExtractText();
+            default:
+                return "None";
+        }
     }
 }

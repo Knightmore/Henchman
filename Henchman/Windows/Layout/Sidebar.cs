@@ -1,9 +1,8 @@
-using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using ECommons.ImGuiMethods;
+using System.Linq;
 
 namespace Henchman.Windows.Layout;
 
@@ -17,14 +16,14 @@ public record NavItem(string Name, FontAwesomeIcon Icon, Action OnClick);
 public class Sidebar(ImTextureID logoTextureHandle = default)
 {
     private readonly List<KeyValuePair<string, NavCategory>> categories = [];
-    public           string?                                 ActiveItemName;
+    public string? ActiveItemName;
 
     public static float GlobalFontScale => ImGui.GetIO()
                                                 .FontGlobalScale;
 
-    private float expandedWidth  => 200f * GlobalFontScale;
-    private float collapsedWidth => 50f  * GlobalFontScale;
-    public  bool  IsCollapsed    { get; set; }
+    private float expandedWidth => 200f * GlobalFontScale;
+    private float collapsedWidth => 50f * GlobalFontScale;
+    public bool IsCollapsed { get; set; }
 
     public KeyValuePair<string, NavCategory> AddCategory(string name, FontAwesomeIcon icon)
     {
@@ -63,9 +62,9 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
             DrawCategories();
 
             var oldCursorPos = ImGui.GetCursorPos();
-            var buttonSize   = new Vector2(24 * GlobalFontScale, 40 * GlobalFontScale);
+            var buttonSize = new Vector2(24 * GlobalFontScale, 40 * GlobalFontScale);
             var windowHeight = ImGui.GetWindowHeight();
-            var buttonY      = (windowHeight / 2) - (buttonSize.Y / 2);
+            var buttonY = (windowHeight / 2) - (buttonSize.Y / 2);
             var posX = oldCursorPos.X +
                        ImGui.GetContentRegionAvail()
                             .X +
@@ -119,7 +118,7 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                     {
                         using (ImRaii.PushColor(ImGuiCol.Border, Theme.AccentPink))
                         {
-                            var style     = ImGui.GetStyle();
+                            var style = ImGui.GetStyle();
                             var oldBorder = style.FrameBorderSize;
                             style.FrameBorderSize = 2f;
 
@@ -187,25 +186,28 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
 
     private void DrawExpandedCategory(string categoryName, NavCategory category)
     {
-        var headerHeight    = 30f * GlobalFontScale;
-        var headerWidth     = ImGui.GetContentRegionAvail().X;
+        var headerHeight = 30f * GlobalFontScale;
+        var headerWidth = ImGui.GetContentRegionAvail()
+                               .X;
         var cursorPosition = ImGui.GetCursorScreenPos();
 
-        var isHovered       = ImGui.IsMouseHoveringRect(cursorPosition, new Vector2(cursorPosition.X + headerWidth, cursorPosition.Y + headerHeight));
-        var isClicked       = isHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+        var isHovered = ImGui.IsMouseHoveringRect(cursorPosition, new Vector2(cursorPosition.X + headerWidth, cursorPosition.Y + headerHeight));
+        var isClicked = isHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
         if (isClicked)
             category.Collapsed = !category.Collapsed;
-        
-        using (ImRaii.PushColor(ImGuiCol.ChildBg, !isHovered ? Theme.BackgroundCard : Theme.ButtonHovered))
+
+        using (ImRaii.PushColor(ImGuiCol.ChildBg, !isHovered
+                                                          ? Theme.BackgroundCard
+                                                          : Theme.ButtonHovered))
         {
             using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary))
             {
                 using (var headerChild = ImRaii.Child($"##CategoryHeader_{categoryName}", new Vector2(0, 30 * GlobalFontScale), true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     if (!headerChild.Success) return;
-                    var  textHeight      = ImGui.GetTextLineHeight();
-                    var  verticalPadding = (headerHeight - textHeight) / 2f;
+                    var textHeight = ImGui.GetTextLineHeight();
+                    var verticalPadding = (headerHeight - textHeight) / 2f;
 
                     ImGui.SetCursorPosY(verticalPadding);
 
@@ -222,7 +224,7 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                                        ? FontAwesomeIcon.ChevronRight
                                        : FontAwesomeIcon.ChevronDown;
                     var collapableIconString = icon.ToIconString();
-                    var iconSize             = ImGui.CalcTextSize(collapableIconString);
+                    var iconSize = ImGui.CalcTextSize(collapableIconString);
 
                     ImGui.SetCursorPos(new Vector2(
                                                    headerWidth - iconSize.X - (10f * GlobalFontScale),
@@ -237,8 +239,10 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
         }
 
         if (!category.Collapsed)
+        {
             foreach (var item in category.Items)
                 DrawExpandedNavItem(item);
+        }
 
         ImGui.Spacing();
     }

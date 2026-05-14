@@ -3,7 +3,7 @@ using Dalamud.Interface;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Helpers;
+using Henchman.Abstractions;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
@@ -27,7 +27,7 @@ internal class SettingsUI : FeatureUI
     ];
 
     public override string          Name     => "Settings";
-    public override string          Category => Henchman.Category.System;
+    public override Category        Category => Category.System;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.Cog;
 
     public override Action Help => () => { ImGui.Text("General Setting used through all implemented features."); };
@@ -43,9 +43,9 @@ internal class SettingsUI : FeatureUI
         ImGui.SameLine(240);
         ImGui.SetNextItemWidth(150f);
         if (ImGuiEx.ExcelSheetCombo<Mount>("##mount", out var selectedMount, s => s.GetRowOrDefault(C.MountId) is { } row
-                                                                                          ? Utils.ToTitleCaseExtended(row
-                                                                                                                     .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                          : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => PlayerState.Instance()->IsMountUnlocked(x.RowId)))
+                                                                                          ? ToTitleCaseExtended(row
+                                                                                                               .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
+                                                                                          : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => PlayerState.Instance()->IsMountUnlocked(x.RowId)))
         {
             C.MountId     = selectedMount.RowId;
             configChanged = true;

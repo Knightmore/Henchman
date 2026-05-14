@@ -6,14 +6,15 @@ using ECommons.GameHelpers;
 using Henchman.Data;
 using Henchman.Generated;
 using Henchman.Helpers;
-using Henchman.Multibox;
-using Henchman.Multibox.Command;
+using Henchman.Multiboxing.Command;
+using Henchman.Multiboxing.Server;
+using Henchman.Multiboxing.Transport;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
 
 namespace Henchman.Features.TestyTrader;
 
-internal partial class TestyTrader
+public partial class TestyTrader
 {
     internal static Dictionary<uint, int> ServerSideInventory = [];
     internal static int                   ServerSideGil;
@@ -30,15 +31,22 @@ internal partial class TestyTrader
 
     internal async Task Server(CancellationToken token = default)
     {
-        server = new MultiboxServer("TestyTrader", 8, (clientSession, _) => ServerSessionHandler(clientSession, token), token);
+        if (!accessibleTerritories.Contains(Player.Territory.RowId))
+        {
+            FullWarning("You can not start you boss in a territory that isn't accessible through an aetheryte!");
+            return;
+        }
+
+        var listener = TransportFactory.CreateServerListener("TestyTrader", 8);
+
+        server = new MultiboxServer(
+                                    "TestyTrader",
+                                    8,
+                                    (clientSession, _) => ServerSessionHandler(clientSession, token),
+                                    listener,
+                                    token);
         try
         {
-            if (!accessibleTerritories.Contains(Player.Territory.RowId))
-            {
-                FullWarning("You can not start you boss in a territory that isn't accessible through an aetheryte!");
-                return;
-            }
-
             await server.StartRoundRobinAsync();
         } finally
         {
@@ -49,7 +57,6 @@ internal partial class TestyTrader
             charsTraded          = 0;
 
             Info(result);
-            //server.Disconnect();
             server.Dispose();
         }
     }
@@ -106,12 +113,12 @@ internal partial class TestyTrader
                                 await Dismount(token);
                             }
 
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPCs_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
+                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPC_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
                             break;
                         }
                         case TestyTraderMessageType.Arrived:
                         {
-                            var  clientEntityId = responseData.EID;
+                            var  clientEntityId = responseData.EntityID;
                             uint entityId;
                             unsafe
                             {
@@ -120,8 +127,8 @@ internal partial class TestyTrader
 
                             var readyMessage = new TestyTraderMessage
                                                {
-                                                       Type = TestyTraderMessageType.ReadyForTrade,
-                                                       EID  = entityId
+                                                       Type     = TestyTraderMessageType.ReadyForTrade,
+                                                       EntityID = entityId
                                                };
                             await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, readyMessage.ToJson(), token);
 
@@ -133,13 +140,12 @@ internal partial class TestyTrader
                             break;
                         }
                         case TestyTraderMessageType.ClientFinished:
-#if PRIVATE
-                                if (Configuration!.UseARItemSell)
+                            if (Configuration!.UseARItemSell)
                             {
                                 Svc.Commands.ProcessCommand("/ays itemsell");
-                                await WaitWhileAsync(() => IPC.AutoRetainer.IsBusy(), "Waiting for selling all items", token);
+                                await WaitWhileAsync(() => AutoRetainer.IsBusy(), "Waiting for selling all items", token);
                             }
-#endif
+
                             return;
                     }
 
@@ -203,7 +209,7 @@ internal partial class TestyTrader
         }
         catch (Exception e)
         {
-            InternalError(e.ToString());
+            InternalTaskError(e.ToString());
         }
     }
 

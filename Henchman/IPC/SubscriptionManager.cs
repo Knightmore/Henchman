@@ -7,10 +7,10 @@ namespace Henchman.IPC;
 
 internal static class SubscriptionManager
 {
-    private static readonly HashSet<string> InitializedIPCs = new();
+    private static readonly Dictionary<string, EzIPCDisposalToken[]> InitializedIPCs = new();
 
 
-    internal static bool IsInitialized(string plugin) => InitializedIPCs.Contains(plugin) && IsLoaded(plugin);
+    internal static bool IsInitialized(string plugin) => InitializedIPCs.ContainsKey(plugin) && IsLoaded(plugin);
 
     internal static bool IsLoaded(string pluginName)
     {
@@ -21,7 +21,6 @@ internal static class SubscriptionManager
     {
         try
         {
-            EzIPC.Init(typeof(IPCProvider), "Henchman");
             foreach (var type in Assembly.GetExecutingAssembly()
                                          .GetTypes()
                                          .Where(type => type.GetCustomAttribute<IPCAttribute>() != null))
@@ -32,11 +31,21 @@ internal static class SubscriptionManager
                     if (IsLoaded(attr.Name))
                     {
                         // Why has RSR a different IPC prefix than its internal name!? (╯°□°)╯︵ ┻━┻
-                        EzIPC.Init(type, attr.Name == "RotationSolver"
-                                                 ? "RotationSolverReborn"
-                                                 : attr.Name);
-                        InitializedIPCs.Add(attr.Name);
+                        var disposals = EzIPC.Init(type, attr.Name == "RotationSolver"
+                                                                 ? "RotationSolverReborn"
+                                                                 : attr.Name);
+                        Debug($"{attr.Name}: {type} {disposals.Length}");
+                        InitializedIPCs.Add(attr.Name, disposals);
                         Debug($"{attr.Name} IPC registered.");
+                    }
+                }
+                else
+                {
+                    if (!IsLoaded(attr.Name))
+                    {
+                        foreach (var token in InitializedIPCs[attr.Name]) token.Dispose();
+                        Debug($"{attr.Name} IPC unregistered");
+                        InitializedIPCs.Remove(attr.Name);
                     }
                 }
             }

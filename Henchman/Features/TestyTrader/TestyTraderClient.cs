@@ -1,29 +1,29 @@
-using AutoRetainerAPI.Configuration;
-using Dalamud.Game.ClientState.Objects.SubKinds;
-using ECommons.GameHelpers;
-using ECommons.Throttlers;
-using Henchman.Data;
-using Henchman.Generated;
-using Henchman.Helpers;
-using Henchman.Models;
-using Henchman.Multibox;
-using Henchman.Multibox.Command;
-using Henchman.TaskManager;
-using Lumina.Excel.Sheets;
-using System.IO.Pipes;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using AutoRetainerAPI.Configuration;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using ECommons.GameHelpers;
+using ECommons.Throttlers;
+using Henchman.Abstractions;
+using Henchman.Data;
+using Henchman.Generated;
+using Henchman.Helpers;
+using Henchman.Models;
+using Henchman.Multiboxing.Client;
+using Henchman.Multiboxing.Command;
+using Henchman.Multiboxing.Transport;
+using Henchman.TaskManager;
+using Lumina.Excel.Sheets;
 
 namespace Henchman.Features.TestyTrader;
 
-internal partial class TestyTrader
+public partial class TestyTrader : Feature
 {
-    private static Configuration? Configuration => GetFeatureConfig<TestyTraderUI, Configuration>();
     public enum TestyTraderMessageType : ushort
     {
-        WorldCheck,
         Arrived,
         ReadyForTrade,
         AskList,
@@ -34,7 +34,10 @@ internal partial class TestyTrader
         ServerFinished
     }
 
-    internal MultiboxClient client;
+    private readonly List<OfflineCharacterData> characters = [];
+
+    internal       MultiboxClient client;
+    private static Configuration? Configuration => GetFeatureConfig<TestyTraderUI, Configuration>();
 
     internal async Task Client(CancellationToken token = default)
     {
@@ -56,11 +59,15 @@ internal partial class TestyTrader
                                        .ToList();
         }
 
-        client = new MultiboxClient("TestyTrader", (pipe, incomingMessageQueue, _) => ClientSessionHandler(pipe, incomingMessageQueue, token), characters, token);
+        var connection = TransportFactory.CreateClientConnection("TestyTrader");
+
+        client = new MultiboxClient(connection, (stream, incomingMessageQueue, _) => ClientSessionHandler(stream, incomingMessageQueue, token), characters, token);
+
+
         await client.StartAsync();
     }
 
-    internal async Task ClientSessionHandler(PipeStream serverSession, Channel<(CommandType type, string data)> incomingChannel, CancellationToken token = default)
+    internal async Task ClientSessionHandler(Stream serverSession, Channel<(CommandType type, string data)> incomingChannel, CancellationToken token = default)
     {
         using var              scope     = new TaskDescriptionScope("Henchman Trade Session");
         var                    pipe      = serverSession;
@@ -83,7 +90,7 @@ internal partial class TestyTrader
                             // TODO: FIX THIS! This is a quick hack because I designed this crap without thinking about cases like when you use AskUntil for gil and then teleport at the end... also AskFor has no tracking so it would loop endlessly
                             if (done)
                             {
-                                Verbose("Trades done");
+                                Debug("Trades done");
                                 var finishedMessage = new TestyTraderMessage
                                                       {
                                                               Type = TestyTraderMessageType.ClientFinished
@@ -102,9 +109,9 @@ internal partial class TestyTrader
                                 Verbose("Trades open");
                                 var askListMessage = new TestyTraderMessage
                                                      {
-                                                             Type        = TestyTraderMessageType.AskList,
-                                                             TradeList   = askDict,
-                                                             IsTradeDone = tradeDone,
+                                                             Type         = TestyTraderMessageType.AskList,
+                                                             TradeList    = askDict,
+                                                             IsTradeDone  = tradeDone,
                                                              TradingWorld = Player.CurrentWorldName
                                                      };
 
@@ -113,7 +120,7 @@ internal partial class TestyTrader
                             }
                             else
                             {
-                                Verbose("Trades done");
+                                Debug("Trades done");
                                 var finishedMessage = new TestyTraderMessage
                                                       {
                                                               Type = TestyTraderMessageType.ClientFinished
@@ -128,7 +135,7 @@ internal partial class TestyTrader
 
                         if (responseData.Type == TestyTraderMessageType.ReadyForTrade)
                         {
-                            var bossEID = responseData.EID;
+                            var bossEID = responseData.EntityID;
                             await ProcessClientTrade(pipe, incomingChannel, bossEID, tradeDict, askDict, token);
                             done = true;
                             break;
@@ -145,7 +152,7 @@ internal partial class TestyTrader
                                                           Type = TestyTraderMessageType.ClientFinished
                                                   };
                             await MessageHandler.WriteMessageAsync(pipe, CommandType.Feature, finishedMessage.ToJson(), token);
-                            Verbose("No items to trade!");
+                            Debug("No items to trade!");
                             return;
                         }
 
@@ -153,7 +160,7 @@ internal partial class TestyTrader
                         if (result.returnValue is false) return;
 
                         var rpcKey = Enum.Parse<CommandKey>(result.env.Key);
-                        if (rpcKey == CommandKey.MovementRPCs_GoToPlayer)
+                        if (rpcKey == CommandKey.MovementRPC_GoToPlayer)
                         {
                             uint entityId;
                             unsafe
@@ -163,8 +170,8 @@ internal partial class TestyTrader
 
                             var arrivedMessage = new TestyTraderMessage
                                                  {
-                                                         Type = TestyTraderMessageType.Arrived,
-                                                         EID  = entityId
+                                                         Type     = TestyTraderMessageType.Arrived,
+                                                         EntityID = entityId
                                                  };
                             await MessageHandler.WriteMessageAsync(pipe, CommandType.Feature, arrivedMessage.ToJson(), token);
                         }
@@ -176,21 +183,19 @@ internal partial class TestyTrader
             }
             catch (Exception e)
             {
-                InternalError(e.ToString());
+                InternalTaskError(e.ToString());
                 return;
             }
         }
     }
 
-    internal static async Task ProcessClientTrade(PipeStream pipe, Channel<(CommandType type, string data)> incomingChannel, uint bossEID, Dictionary<uint, uint> tradeDict, Dictionary<uint, uint> askDict, CancellationToken token = default)
+    internal static async Task ProcessClientTrade(Stream pipe, Channel<(CommandType type, string data)> incomingChannel, uint bossEID, Dictionary<uint, uint> tradeDict, Dictionary<uint, uint> askDict, CancellationToken token = default)
     {
         using var scope = new TaskDescriptionScope("Processing Henchman Trade");
 
         Verbose($"Cached BossEID: {bossEID}");
-        bool bossFound;
-        bossFound =
-                Svc.Objects.OfType<IPlayerCharacter>()
-                   .TryGetFirst(x => x.EntityId == bossEID, out _);
+        var bossFound = Svc.Objects.OfType<IPlayerCharacter>()
+                           .TryGetFirst(x => x.EntityId == bossEID, out _);
 
         if (!bossFound)
         {
@@ -223,7 +228,7 @@ internal partial class TestyTrader
                     case TestyTraderMessageType.ServerStatusCheck:
                     {
                         var serverDone = statusData.IsTradeDone;
-                        Verbose($"TradeDict: {tradeDict.Count} | Server done: {serverDone!.Value}");
+                        Verbose($"TradeDict: {tradeDict.Count} | Server done: {(serverDone.HasValue ? serverDone.Value : "No Value")}");
                         switch (tradeDict.Count)
                         {
                             case 0 when serverDone!.Value:
@@ -270,65 +275,6 @@ internal partial class TestyTrader
                                                                                                   IsTradeDone = tradeDict.Count == 0
                                                                                           }.ToJson(), token);
                         break;
-                }
-            }
-        }
-    }
-
-    private static void GetTradingLists(out List<TradeEntry> tradeList, out List<TradeEntry> askList)
-    {
-        tradeList = [];
-        askList   = [];
-
-        foreach (var entry in Configuration!.TradeEntries)
-        {
-            switch (entry.Mode)
-            {
-                case TradeMode.Give:
-                {
-                    var possibleAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
-                    if (possibleAmount == 0) break;
-                    tradeList.Add(new TradeEntry
-                                  {
-                                          Amount = (uint)Math.Min(possibleAmount, entry.Amount),
-                                          Id     = entry.Id
-                                  });
-                    break;
-                }
-                case TradeMode.Keep:
-                {
-                    var possibleAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
-                    if (possibleAmount == 0) break;
-                    if (possibleAmount > entry.Amount)
-                    {
-                        tradeList.Add(new TradeEntry
-                                      {
-                                              Amount = (uint)(possibleAmount - entry.Amount),
-                                              Id     = entry.Id
-                                      });
-                    }
-
-                    break;
-                }
-                case TradeMode.AskUntil:
-                {
-                    var currentAmount = InventoryHelper.GetInventoryItemCount(entry.Id);
-                    if (currentAmount >= entry.Amount) break;
-                    askList.Add(new TradeEntry
-                                {
-                                        Amount = entry.Amount - (uint)currentAmount,
-                                        Id     = entry.Id
-                                });
-                    break;
-                }
-                case TradeMode.AskFor:
-                {
-                    askList.Add(new TradeEntry
-                                {
-                                        Amount = entry.Amount,
-                                        Id     = entry.Id
-                                });
-                    break;
                 }
             }
         }
@@ -384,15 +330,13 @@ internal partial class TestyTrader
         }
     }
 
-    private readonly List<OfflineCharacterData> characters = [];
-
     internal List<OfflineCharacterData> GetCurrentARCharacterData()
     {
         if (EzThrottler.Throttle("TestyTradersARCharacters"))
         {
             characters.Clear();
-            var cids = IPC.AutoRetainer.GetRegisteredCIDs();
-            foreach (var cid in cids) characters.Add(IPC.AutoRetainer.GetOfflineCharacterData(cid));
+            var cids = AutoRetainer.GetRegisteredCIDs();
+            foreach (var cid in cids) characters.Add(AutoRetainer.GetOfflineCharacterData(cid));
         }
 
         return characters;
@@ -400,8 +344,7 @@ internal partial class TestyTrader
 
     public record TestyTraderMessage
     {
-        public bool?                  AllCharsDone { get; init; }
-        public uint                   EID          { get; init; }
+        public uint                   EntityID     { get; init; }
         public bool?                  IsTradeDone  { get; init; }
         public Dictionary<uint, uint> TradeList    { get; init; }
         public TestyTraderMessageType Type         { get; init; }

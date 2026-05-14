@@ -6,7 +6,7 @@ internal static class YesAlreadyManager
 {
     private static  bool WasChanged;
     internal static bool TemporarilyNeeded;
-    private static  bool IsBusy => Utils.IsPluginBusy;
+    private static  bool IsBusy => IsPluginBusy;
 
     internal static void Tick()
     {

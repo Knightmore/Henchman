@@ -1,21 +1,29 @@
+using ECommons.GameHelpers;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Henchman.Abstractions;
+using Henchman.Data;
+using Henchman.Models;
+using Henchman.TaskManager;
+using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ECommons.GameHelpers;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Data;
-using Henchman.Models;
-using Lumina.Excel.Sheets;
 using GrandCompany = ECommons.ExcelServices.GrandCompany;
 
 namespace Henchman.Features.OnYourMark;
 
-internal class OnYourMark
+public class OnYourMark : Feature
 {
     private static Configuration? Configuration => GetFeatureConfig<OnYourMarkUI, Configuration>();
 
     internal async Task Start(CancellationToken token = default)
     {
+        if (!IsCombat(Player.ClassJob.RowId))
+        {
+            FullError("You do not have equipped a combat class!");
+            return;
+        }
+
         var mobHuntOrderType = GetCorrectedMobHuntOrderTypes()
                .ToList();
 
@@ -101,8 +109,8 @@ internal class OnYourMark
                         Verbose($"Mob: {mob.Target.Value.Name.Value.RowId} {mob.Target.Value.Name.Value.Singular.ExtractText()}");
                         if (HuntMarks.TryGetValue(mob.Target.Value.Name.Value.RowId, out var tempMark))
                         {
-                            tempMark.NeededKills     = mob.NeededKills;
-                            tempMark.MobHuntRowId    = (byte)currentMobHuntType.RowId;
+                            tempMark.NeededKills = mob.NeededKills;
+                            tempMark.MobHuntRowId = (byte)currentMobHuntType.RowId;
                             tempMark.MobHuntSubRowId = (byte)mob.SubrowId;
                             Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
                             if (tempMark.GetOpenMobHuntKills == 0) continue;
@@ -129,6 +137,7 @@ internal class OnYourMark
 
     private async Task GetNewBills(List<MobHuntOrderType>.Enumerator mobHuntOrderTypeEnumerator, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         mobHuntOrderTypeEnumerator.MoveNext();
         byte[] mobHuntOrderTypeOffset;
         unsafe
@@ -153,18 +162,18 @@ internal class OnYourMark
                     continue;
                 }
 
-                var  currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
+                var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
                 bool isMarkBillUnlocked;
                 bool isMarkBillObtained;
-                int  availableMarkId;
-                int  obtainedMarkId;
+                int availableMarkId;
+                int obtainedMarkId;
 
                 unsafe
                 {
                     isMarkBillUnlocked = MobHunt.Instance()->IsMarkBillUnlocked((byte)currentMobHuntType.RowId);
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
-                    availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
-                    obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    availableMarkId = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    obtainedMarkId = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
                 }
 
                 if (!isMarkBillUnlocked)
@@ -219,7 +228,6 @@ internal class OnYourMark
             }
             else
             {
-                Verbose($"Teleport to: {location.Position} - ({location.TerritoryId}): {location.TerritoryType.Name.ExtractText()}");
                 TeleportInfo? huntboardTerritory;
                 unsafe
                 {
@@ -230,7 +238,6 @@ internal class OnYourMark
                 ErrorThrowIf(huntboardTerritory == null, "No aetheryte for huntboard found!");
 
                 var aetheryteId = huntboardTerritory!.Value.AetheryteId;
-                Verbose($"AetheryteId: {aetheryteId}");
                 await TeleportTo(aetheryteId, token);
                 if (AethernetIdCloseToHuntboard.TryGetValue(expansion, out var aethernetId))
                 {
@@ -244,11 +251,11 @@ internal class OnYourMark
         if (expansion == "A Realm Reborn")
         {
             huntBoardId = Player.GrandCompany switch
-                          {
-                                  GrandCompany.Maelstrom      => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
-                                  GrandCompany.TwinAdder      => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
-                                  GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
-                          };
+            {
+                GrandCompany.Maelstrom => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
+                GrandCompany.TwinAdder => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
+                GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
+            };
         }
         else
             huntBoardId = HuntBoardIds[expansion];
@@ -257,7 +264,6 @@ internal class OnYourMark
                             .First(x => x.Name.GetText() == expansion)
                             .RowId +
                          1;
-        Verbose($"Go To: {location.Position} - ({location.TerritoryId}): BaseId: {huntBoardId}");
         await MoveToStationaryObject(location.Position, huntBoardId, token: token);
         foreach (var bill in billsSelectString)
         {
@@ -278,4 +284,11 @@ internal class OnYourMark
         await Task.Delay(GeneralDelayMs * 4, token)
                   .ConfigureAwait(true);
     }
+
+    public override void RunTask() => EnqueueTask(new TaskRecord(Start, "On Your Mark", onDone: () =>
+                                                                                                {
+                                                                                                    Bossmod.DisableAI();
+                                                                                                    AutoRotation.Disable();
+                                                                                                    ResetCurrentTarget();
+                                                                                                }));
 }

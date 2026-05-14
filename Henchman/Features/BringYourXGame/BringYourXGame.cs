@@ -2,14 +2,38 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ECommons.GameHelpers;
+using Henchman.Abstractions;
 using Henchman.Models;
+using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
 
 namespace Henchman.Features.BringYourXGame;
 
-internal class BringYourXGame
+public class BringYourXGame : Feature
 {
     private static Configuration? Configuration => GetFeatureConfig<BringYourXGameUI, Configuration>();
+
+    public void RunTask(bool runA)
+    {
+        if (runA)
+        {
+            EnqueueTask(new TaskRecord(StartA, "Bring Your A/B Game", onDone: () =>
+                                                                              {
+                                                                                  Bossmod.DisableAI();
+                                                                                  AutoRotation.Disable();
+                                                                                  ResetCurrentTarget();
+                                                                              }));
+        }
+        else
+        {
+            EnqueueTask(new TaskRecord(StartB, "Bring Your A/B Game", onDone: () =>
+                                                                              {
+                                                                                  Bossmod.DisableAI();
+                                                                                  AutoRotation.Disable();
+                                                                                  ResetCurrentTarget();
+                                                                              }));
+        }
+    }
 
     internal async Task StartA(CancellationToken token = default)
     {
@@ -43,7 +67,7 @@ internal class BringYourXGame
         token.ThrowIfCancellationRequested();
         foreach (var territory in ARankPositions)
         {
-            Verbose($"Look for A-Rank in: {territory.Key} - {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory.Key).PlaceName.Value.Name.ExtractText()}");
+            Verbose($"Looking for A-Rank in: {territory.Key} - {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory.Key).PlaceName.Value.Name.ExtractText()}");
             if (Player.Territory.RowId != territory.Key)
             {
                 var closestAetheryte = GetAetheryte(territory.Key, territory.Value[0]);
@@ -75,7 +99,7 @@ internal class BringYourXGame
             token.ThrowIfCancellationRequested();
             ErrorThrowIf(retries == 3, "Emergency Stop. Player already died three times");
 
-            Verbose($"Try: {retries}");
+            Debug($"Try: {retries}");
             if (Player.Territory.RowId != huntMark.TerritoryId)
             {
                 if (!huntMark.Positions.TryGetFirst(out var markPosition))

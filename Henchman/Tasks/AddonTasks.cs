@@ -1,13 +1,11 @@
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Henchman.Features.RetainerVocate;
-using Henchman.Helpers;
 using Lumina.Text.ReadOnly;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
@@ -78,12 +76,12 @@ internal class AddonTasks
                 if (accept)
                 {
                     addon.Yes();
-                    Verbose($"Select Yes for {text.ExtractText()}");
+                    Debug($"Select Yes for {text.ExtractText()}");
                 }
                 else
                 {
                     addon.No();
-                    Verbose($"Select No for {text.ExtractText()}");
+                    Debug($"Select No for {text.ExtractText()}");
                 }
 
                 return true;
@@ -96,7 +94,8 @@ internal class AddonTasks
 
     internal static Task<bool> TrySelectSpecificEntry(Regex regex) => TrySelectSpecificEntry(x => regex.IsMatch(x.NormalizeWhitespaces()));
 
-    internal static Task<bool> TrySelectSpecificEntry(ReadOnlySeString seString) => TrySelectSpecificEntry(x => seString.ToRegex().IsMatch(x.NormalizeWhitespaces()));
+    internal static Task<bool> TrySelectSpecificEntry(ReadOnlySeString seString) => TrySelectSpecificEntry(x => seString.ToRegex()
+                                                                                                                        .IsMatch(x.NormalizeWhitespaces()));
 
     internal static Task<bool> TrySelectSpecificEntry(string text)
     {
@@ -117,7 +116,7 @@ internal class AddonTasks
                 if (new AddonMaster.SelectString(addon).Entries.TryGetFirst(x => inputTextTest(x.Text.NormalizeWhitespaces()), out var entry))
                 {
                     entry.Select();
-                    Log($"TrySelectSpecificEntry: selecting {entry}");
+                    TaskLog($"TrySelectSpecificEntry: selecting {entry}");
                     return true;
                 }
             }
@@ -136,7 +135,7 @@ internal class AddonTasks
                 var selectString = new AddonMaster.SelectString(addon);
                 selectString.Entries[entryNumber]
                             .Select();
-                Log($"TrySelectEntryNumber: selecting {entryNumber}");
+                TaskLog($"TrySelectEntryNumber: selecting {entryNumber}");
                 return true;
             }
         }
@@ -152,7 +151,7 @@ internal class AddonTasks
         {
             if (TryGetAddonByName<AtkUnitBase>("RetainerTaskList", out var addon) && IsAddonReady(addon))
             {
-                if (RetainerVocate.IsCombat(retainerClassId))
+                if (IsCombat(retainerClassId))
                 {
                     Callback.Fire(addon, true, 11, 343);
                     return true;
@@ -218,7 +217,10 @@ internal class AddonTasks
         {
             if (text.ToRegex()
                     .IsMatch(addon.Text.NormalizeWhitespaces()))
+            {
+                addon.Ok();
                 return true;
+            }
         }
 
         await Task.Delay(100);
@@ -233,6 +235,21 @@ internal class AddonTasks
                     .IsMatch(addon.Text.NormalizeWhitespaces()))
             {
                 addon.Ok();
+                return true;
+            }
+        }
+
+        await Task.Delay(100);
+        return false;
+    }
+
+    internal static async Task<bool> FireCallbackOnAddon(string addonName, bool updateState = true, params object[] values)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>(addonName, out var addon) && addon->IsReady && addon->IsVisible)
+            {
+                Callback.Fire(addon, updateState, values);
                 return true;
             }
         }

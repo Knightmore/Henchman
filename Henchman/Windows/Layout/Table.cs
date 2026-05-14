@@ -13,13 +13,13 @@ public enum ColumnAlignment
 }
 
 public record TableColumn<T>(
-        string              Name,
-        Func<T, string>?    GetValue     = null,
-        float               Width        = 0,
-        FilterType? FilterType   = null,
-        ColumnAlignment     Alignment    = ColumnAlignment.Left,
-        Func<T, Vector4>?   GetTextColor = null,
-        Action<T, int>?     DrawCustom   = null
+        string            Name,
+        Func<T, string>?  GetValue     = null,
+        float             Width        = 0,
+        FilterType?       FilterType   = null,
+        ColumnAlignment   Alignment    = ColumnAlignment.Left,
+        Func<T, Vector4>? GetTextColor = null,
+        Action<T, int>?   DrawCustom   = null
 )
 {
     public string          FilterText     { get; set; } = string.Empty;
@@ -28,19 +28,9 @@ public record TableColumn<T>(
 
 public class Table<T>
 {
-    private string               TableId            { get; }
-    private List<TableColumn<T>> Columns            { get; }
-    private Func<IEnumerable<T>> GetItems           { get; }
-    private Func<T, bool>?       HighlightPredicate { get; }
-    private Vector2              Size               { get; }
-    private Action?              DrawExtraRow       { get; }
-    private int?                 ItemAmountShown    { get; }
-
-    internal List<T> FilteredItems { get; private set; } = [];
-
     public Table(
             string               tableId,
-            List<TableColumn<T>> columns, 
+            List<TableColumn<T>> columns,
             Func<IEnumerable<T>> getItems,
             Func<T, bool>?       highlightPredicate = null,
             Vector2              size               = default,
@@ -53,6 +43,7 @@ public class Table<T>
         Size               = size;
         DrawExtraRow       = drawExtraRow;
     }
+
     public Table(
             string               tableId,
             List<TableColumn<T>> columns,
@@ -69,6 +60,16 @@ public class Table<T>
         Size               = size;
     }
 
+    private string               TableId            { get; }
+    private List<TableColumn<T>> Columns            { get; }
+    private Func<IEnumerable<T>> GetItems           { get; }
+    private Func<T, bool>?       HighlightPredicate { get; }
+    private Vector2              Size               { get; }
+    private Action?              DrawExtraRow       { get; }
+    private int?                 ItemAmountShown    { get; }
+
+    internal List<T> FilteredItems { get; private set; } = [];
+
     private float GlobalFontScale => ImGui.GetIO()
                                           .FontGlobalScale;
 
@@ -83,66 +84,67 @@ public class Table<T>
         ImGui.TableSetupScrollFreeze(0, 1);
         SetupColumns();
         ImGui.TableHeadersRow();
-            for (var i = 0; i < Columns.Count; i++)
+        for (var i = 0; i < Columns.Count; i++)
+        {
+            ImGui.TableSetColumnIndex(i);
+
+            var col    = Columns[i];
+            var filter = col.FilterText;
+            if (col.FilterType == FilterType.String)
             {
-                ImGui.TableSetColumnIndex(i);
-                
-                var              col    = Columns[i];
-                var filter = col.FilterText;
-                if(col.FilterType == FilterType.String)
+                if (string.IsNullOrEmpty(filter))
                 {
-                    if (string.IsNullOrEmpty(filter))
-                    {
-                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f));
-                        ImGui.SetNextItemWidth(col.Width);
-                        if(ImGui.InputTextWithHint($"##Filter_{col.Name}", col.Name, ref filter, 256))
-                            col.FilterText = filter;
-                        ImGui.PopStyleColor();
-                    }
-                    else
-                    {
-                        ImGui.SetNextItemWidth(col.Width);
-                        if (ImGui.InputText($"##Filter_{col.Name}", ref filter, 256))
-                            col.FilterText = filter;
-                    }
-                } else if (col.FilterType == FilterType.MultiSelect)
-                {
-                    var distinctValues = GetItems()
-                                        .Select(item => col.GetValue?.Invoke(item) ?? "")
-                                        .Distinct()
-                                        .OrderBy(v => v)
-                                        .ToList();
-
-                    
-                    var label = col.SelectedValues.Count == 0 ? "All" : $"{col.SelectedValues.Count} selected";
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f));
                     ImGui.SetNextItemWidth(col.Width);
-                    if (ImGui.BeginCombo($"##Filter_{col.Name}", label, ImGuiComboFlags.NoArrowButton))
+                    if (ImGui.InputTextWithHint($"##Filter_{col.Name}", col.Name, ref filter, 256))
+                        col.FilterText = filter;
+                    ImGui.PopStyleColor();
+                }
+                else
+                {
+                    ImGui.SetNextItemWidth(col.Width);
+                    if (ImGui.InputText($"##Filter_{col.Name}", ref filter, 256))
+                        col.FilterText = filter;
+                }
+            }
+            else if (col.FilterType == FilterType.MultiSelect)
+            {
+                var distinctValues = GetItems()
+                                    .Select(item => col.GetValue?.Invoke(item) ?? "")
+                                    .Distinct()
+                                    .OrderBy(v => v)
+                                    .ToList();
+
+
+                var label = col.SelectedValues.Count == 0
+                                    ? "All"
+                                    : $"{col.SelectedValues.Count} selected";
+                ImGui.SetNextItemWidth(col.Width);
+                if (ImGui.BeginCombo($"##Filter_{col.Name}", label, ImGuiComboFlags.NoArrowButton))
+                {
+                    var all = col.SelectedValues.Count == 0;
+                    if (ImGui.Checkbox("All", ref all)) col.SelectedValues.Clear();
+
+                    ImGui.Indent();
+                    foreach (var val in distinctValues)
                     {
-                        var all = col.SelectedValues.Count == 0;
-                        if (ImGui.Checkbox("All", ref all))
+                        var selected = col.SelectedValues.Contains(val);
+                        if (ImGui.Checkbox(val, ref selected))
                         {
-                            col.SelectedValues.Clear();
+                            if (selected)
+                                col.SelectedValues.Add(val);
+                            else
+                                col.SelectedValues.Remove(val);
                         }
-
-                        ImGui.Indent();
-                        foreach (var val in distinctValues)
-                        {
-                            var selected = col.SelectedValues.Contains(val);
-                            if (ImGui.Checkbox(val, ref selected))
-                            {
-                                if (selected)
-                                    col.SelectedValues.Add(val);
-                                else
-                                    col.SelectedValues.Remove(val);
-                            }
-                        }
-                        ImGui.Unindent();
-
-                        ImGui.EndCombo();
                     }
-}
+
+                    ImGui.Unindent();
+
+                    ImGui.EndCombo();
+                }
+            }
         }
-        
+
         DrawRows();
     }
 
@@ -159,7 +161,7 @@ public class Table<T>
 
     private void DrawRows()
     {
-        var            rowIndex = 0;
+        var rowIndex = 0;
         FilteredItems = [];
         foreach (var item in GetItems())
         {
@@ -169,28 +171,28 @@ public class Table<T>
             var matches = true;
             foreach (var column in Columns)
             {
-                    var value = column.GetValue?.Invoke(item);
+                var value = column.GetValue?.Invoke(item);
 
-                    if (column.FilterType == FilterType.String && !string.IsNullOrEmpty(column.FilterText))
+                if (column.FilterType == FilterType.String && !string.IsNullOrEmpty(column.FilterText))
+                {
+                    if (value == null || !value.Contains(column.FilterText, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (value == null || !value.Contains(column.FilterText, StringComparison.OrdinalIgnoreCase))
-                        {
-                            matches = false;
-                            break;
-                        }
+                        matches = false;
+                        break;
                     }
-                    else if (column is { FilterType: FilterType.MultiSelect, SelectedValues.Count: > 0 })
+                }
+                else if (column is { FilterType: FilterType.MultiSelect, SelectedValues.Count: > 0 })
+                {
+                    if (!column.SelectedValues.Contains(value))
                     {
-                        if (!column.SelectedValues.Contains(value))
-                        {
-                            matches = false;
-                            break;
-                        }
+                        matches = false;
+                        break;
                     }
+                }
             }
 
             if (!matches)
-                continue; 
+                continue;
 
             FilteredItems.Add(item);
             ImGui.TableNextRow();

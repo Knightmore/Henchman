@@ -1,3 +1,6 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using ECommons.Automation;
@@ -6,10 +9,6 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Helpers;
 using Henchman.TaskManager;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using static Dalamud.Interface.Utility.Raii.ImRaii;
 
 namespace Henchman.Features.TestyTrader;
 
@@ -186,6 +185,7 @@ internal static class TestyTraderTasks
             foreach (var itemId in entriesToRemove)
                 tradeDict.Remove(itemId);
         }
+
         Debug($"Current tradeQueue amount: {tradeQueue.Count}");
         Debug($"Gil to trade: {gilToTrade}");
 

@@ -49,6 +49,14 @@ public static class Vnavmesh
     [EzIPC("Query.Mesh.PointOnFloor")]
     public static Func<Vector3, bool, float, Vector3?> QueryMeshPointOnFloor;
 
+
+    [EzIPC("Query.Mesh.PointIsReachable")]
+    public static Func<Vector3, float, float, bool> QueryMeshPointIsReachable;
+
+    [EzIPC("Query.Mesh.BothPointsReachable")]
+    public static Func<Vector3, Vector3, float, float, bool> QueryMeshBothPointsReachable;
+
+
     [EzIPC("Path.MoveTo")]
     public static Action<List<Vector3>, bool> PathMoveTo;
 
@@ -98,19 +106,6 @@ public static class Vnavmesh
 
     [EzIPC("DTR.SetShown")]
     public static Action<bool> DtrSetShown;
-#if PRIVATE
-    [EzIPC("OnDemand.Pathfind")]
-    public static Func<uint, Vector3, Vector3, bool, Task<List<Vector3>>> OnDemandPathfind;
-
-    [EzIPC("OnDemand.PathfindCancelable")]
-    public static Func<uint, Vector3, Vector3, bool, CancellationToken, Task<List<Vector3>>> OnDemandPathfindCancelable;
-
-    [EzIPC("OnDemand.Load")]
-    public static Func<uint, Task<bool>> Load;
-
-    [EzIPC("OnDemand.Clear")]
-    public static Action Clear;
-#endif
 
     //[Command]
     public static void StopCompletely()

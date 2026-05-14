@@ -6,7 +6,7 @@ internal static class TextAdvanceManager
 {
     private static bool WasChanged;
     private static bool TemporarilyNeeded;
-    private static bool IsBusy => Utils.IsPluginBusy;
+    private static bool IsBusy => IsPluginBusy;
 
     internal static void Tick()
     {

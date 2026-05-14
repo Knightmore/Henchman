@@ -1,4 +1,4 @@
-namespace Henchman.Multibox.Command;
+namespace Henchman.Multiboxing.Command;
 
 public enum CommandType : ushort
 {
@@ -18,5 +18,8 @@ public enum RoundRobinResponse : ushort
 
 public enum ServerRequest : ushort
 {
-    Turn
+    ServerFull,
+    Turn,          // for RoundRobin
+    StartParallel, // for Parallel
+    Disconnect
 }

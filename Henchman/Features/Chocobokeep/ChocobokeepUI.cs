@@ -4,7 +4,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.TaskManager;
+using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -16,9 +16,9 @@ internal class ChocobokeepUI : FeatureUI
 {
     private readonly Chocobokeep feature = new();
 
-    private         bool            HideUnlocked;
+    private         bool            hideUnlocked;
     public override string          Name     => "Chocobokeep";
-    public override string          Category => Henchman.Category.Exploration;
+    public override Category        Category => Category.Exploration;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.Feather;
 
     public override Action Help => () =>
@@ -46,15 +46,15 @@ internal class ChocobokeepUI : FeatureUI
         DrawCentered("##StartRetainers", () => Layout.DrawButton(() =>
                                                                  {
                                                                      if (StartButton() && !IsTaskEnqueued(Name))
-                                                                         EnqueueTask(new TaskRecord(feature.Start, Name));
+                                                                         feature.RunTask();
                                                                  }));
-        ImGuiEx.LineCentered("###HideUnlocked", () => { ImGui.Checkbox("Hide Unlocked", ref HideUnlocked); });
+        ImGuiEx.LineCentered("###HideUnlocked", () => { ImGui.Checkbox("Hide Unlocked", ref hideUnlocked); });
         DrawCentered("##ChocoboKeepTable", () => { DrawChocoboTable(); });
     }
 
     private unsafe void DrawChocoboTable()
     {
-        var keeps = HideUnlocked
+        var keeps = hideUnlocked
                             ? feature.keeps.Where(x => !UIState.Instance()->IsChocoboTaxiStandUnlocked(x.ChocoboTaxiStandId))
                             : feature.keeps;
         var table = new Table<ChocobokeepData>(
@@ -64,19 +64,19 @@ internal class ChocobokeepUI : FeatureUI
                                                        new("KeepId", h => h.ChocoboTaxiStandId.ToString()),
                                                        new("Territory", h => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                                 .GetRow(h.TerritoryId)
-                                                                                .PlaceName.Value.Name.ExtractText(), 200, Alignment : ColumnAlignment.Center),
+                                                                                .PlaceName.Value.Name.ExtractText(), 200, Alignment: ColumnAlignment.Center),
                                                        new("Place Name", h => Svc.Data.GetExcelSheet<ChocoboTaxiStand>()
                                                                                  .GetRow(h.ChocoboTaxiStandId)
-                                                                                 .PlaceName.ExtractText(), 200, Alignment : ColumnAlignment.Center),
+                                                                                 .PlaceName.ExtractText(), 200, Alignment: ColumnAlignment.Center),
                                                        new("Unlocked", h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
                                                                                     ? FontAwesomeIcon.Check.ToIconString()
                                                                                     : FontAwesomeIcon.Times.ToIconString(), 50, Alignment: ColumnAlignment.Center,
                                                            GetTextColor: h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
-                                                                        ? Theme.SuccessGreen
-                                                                        : Theme.ErrorRed)
+                                                                                      ? Theme.SuccessGreen
+                                                                                      : Theme.ErrorRed)
                                                },
                                                () => keeps,
-                                               size: new Vector2(550,0)
+                                               size: new Vector2(550, 0)
                                               );
 
         table.Draw();

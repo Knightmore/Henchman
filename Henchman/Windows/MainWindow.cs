@@ -5,6 +5,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.ImGuiMethods;
+using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 
 namespace Henchman.Windows;
@@ -57,18 +58,18 @@ public class MainWindow : Window, IDisposable
                 if (logoTextureWrap != null)
                 {
                     logoHandle = logoTextureWrap.Handle;
-                    Svc.Log.Information($"Loaded icon: {logoHandle}, size: {logoTextureWrap.Width}x{logoTextureWrap.Height}");
+                    Log($"Loaded icon: {logoHandle}, size: {logoTextureWrap.Width}x{logoTextureWrap.Height}");
                 }
                 else
-                    Svc.Log.Warning("RentAsync returned null");
+                    InternalWarning("RentAsync returned null");
             }
             catch (Exception ex)
             {
-                Svc.Log.Error($"Failed to load texture: {ex.Message}");
+                InternalError($"Failed to load texture: {ex.Message}");
             }
         }
         else
-            Svc.Log.Warning($"Icon file not found: {iconPath}");
+            InternalWarning($"Icon file not found: {iconPath}");
 
         layout = new Layout.Layout(logoHandle);
 
@@ -86,11 +87,11 @@ public class MainWindow : Window, IDisposable
         {
             if (!P!.categories.TryGetValue(feature.Category, out var foundCategory))
             {
-                Svc.Log.Error($"Category {feature.Category} was not defined!");
+                InternalError($"Category {feature.Category} was not defined!");
                 continue;
             }
 
-            var category = layout.Sidebar.AddCategory(feature.Category, foundCategory);
+            var category = layout.Sidebar.AddCategory(feature.Category.ToString(), foundCategory);
             category.Value.Items.Add(new NavItem(feature.Name, feature.Icon, () => selectedFeatureName = selectedFeatureName != feature.Name
                                                                                                                  ? feature.Name
                                                                                                                  : string.Empty));

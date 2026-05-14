@@ -1,24 +1,18 @@
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ECommons.Automation;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
-namespace Henchman.Helpers
+namespace Henchman.Helpers;
+
+internal static class AddonHelpers
 {
-    internal static class AddonHelpers
+    internal static unsafe bool SelectPreset(byte presetPosition)
     {
-        internal static unsafe bool SelectPreset(byte presetPosition)
+        if (TryGetAddonByName<AtkUnitBase>("CharaMakeDataImport", out var charaMakeDataImportAddon) && charaMakeDataImportAddon->IsFullyLoaded())
         {
-            if (TryGetAddonByName<AtkUnitBase>("CharaMakeDataImport", out var charaMakeDataImportAddon) && charaMakeDataImportAddon->IsFullyLoaded())
-            {
-                Callback.Fire(charaMakeDataImportAddon, true, 102, (int)presetPosition, false);
-                return true;
-            }
-
-            return false;
+            Callback.Fire(charaMakeDataImportAddon, true, 102, (int)presetPosition, false);
+            return true;
         }
+
+        return false;
     }
 }

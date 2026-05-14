@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.Automation;
@@ -9,12 +6,17 @@ using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Data;
+using Henchman.Extensions;
 using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Tasks;
 
@@ -22,22 +24,22 @@ internal static class CombatTasks
 {
     public static async Task ProcessHuntMarks(List<HuntMark> huntMarks, bool huntLog = false, int currentRank = 0, bool gcLog = false, CancellationToken token = default)
     {
-        Verbose("Process Hunt Marks");
+        Debug("Process Hunt Marks");
         foreach (var mark in huntMarks)
         {
             token.ThrowIfCancellationRequested();
 
             if (mark.IsDuty) continue;
             if (C.SkipFateMarks && mark.FateId > 0) continue;
-            Verbose($"Needed Kills: {(huntLog ? mark.GetOpenMonsterNoteKills : mark.GetOpenMobHuntKills)}");
+            Debug($"Needed Kills: {(huntLog ? mark.GetOpenMonsterNoteKills : mark.GetOpenMobHuntKills)}");
 
-            var         retries              = 0;
-            KillResult? killResult           = KillResult.Default;
-            var         gotKilledWhileDetour = false;
+            var retries = 0;
+            KillResult? killResult = KillResult.Default;
+            var gotKilledWhileDetour = false;
             mark.IsCurrentTarget = true;
             while (retries < 3)
             {
-                Verbose($"Try: {retries}");
+                Debug($"Try: {retries}");
                 if (Player.Territory.RowId != mark.TerritoryId)
                 {
                     if (!mark.Positions.TryGetFirst(out var markPosition))
@@ -47,118 +49,7 @@ internal static class CombatTasks
                     }
 
                     var closestAetheryte = GetAetheryte(mark.TerritoryId, markPosition);
-                    // TODO: Switch to MappingTheRealm once/if ever released.
-                    if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && mark.TerritoryId is 139 or 152 or 154 or 155 or 180)
-                    {
-                        switch (mark.TerritoryId)
-                        {
-                            // Reroute through Western La Noscea if target is on the left side of Upper La Noscea
-                            case 139:
-                            {
-                                ErrorThrowIf(!IsAetheryteUnlocked(14), $"You aren't attuned to Western La Noscea Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                                await TeleportTo(14, token);
-                                if (markPosition.ToVector2()
-                                                .IsWithinRadius(new Vector2(-460f, 150f), 150f))
-                                    await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
-                                else
-                                {
-                                    await MoveToNextZone(new Vector3(812f, 50f, 400f), 134, token);
-                                    await MoveToNextZone(new Vector3(-162f, 36f, -740f), 137, token);
-
-                                    if (!IsAetheryteUnlocked(12))
-                                    {
-                                        await MoveTo(new Vector3(-15f, 70.6f, 7f), true, token);
-                                        await InteractWithByBaseId(12, token);
-                                        await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                                    }
-
-                                    if (!IsAetheryteUnlocked(15))
-                                    {
-                                        await MoveToNextZone(new Vector3(82f, 80f, -125f), 139, token);
-                                        await MoveTo(new Vector3(427f, 4.11f, 92f), true, token);
-                                        await InteractWithByBaseId(15, token);
-                                        await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                                    }
-                                }
-
-                                break;
-                            }
-                            case 152:
-                            {
-                                ErrorThrowIf(!IsAetheryteUnlocked(3), $"You aren't attuned to Central Shroud Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                                await TeleportTo(3, token);
-                                await MoveToNextZone(new Vector3(390f, -3.3f, -186f), 152, token);
-                                await MoveTo(new Vector3(-191f, 4.44f, 297f), true, token);
-                                await InteractWithByBaseId(4, token);
-                                break;
-                            }
-                            case 154:
-                            {
-                                ErrorThrowIf(!IsAetheryteUnlocked(2), $"You aren't attuned to New Gridania Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                                await TeleportTo(2, token);
-                                await MoveToNextZone(new Vector3(-106f, 1.1f, 8f), 133, token);
-                                await MoveToNextZone(new Vector3(-208f, 10.4f, -95f), 154, token);
-
-                                await MoveTo(new Vector3(-34f, -40.45f, 232f), true, token);
-                                await InteractWithByBaseId(7, token);
-                                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                                break;
-                            }
-                            case 155:
-                            {
-                                if (IsAetheryteUnlocked(7))
-                                {
-                                    await TeleportTo(7, token);
-                                    await MoveToNextZone(new Vector3(-369f, -7f, 185f), 155, token);
-                                }
-                                else
-                                {
-                                    ErrorThrowIf(!IsAetheryteUnlocked(2), $"You aren't attuned to New Gridania Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                                    await TeleportTo(2, token);
-                                    await MoveToNextZone(new Vector3(-106f, 1.1f, 8f), 133, token);
-                                    await MoveToNextZone(new Vector3(-208f, 10.4f, -95f), 154, token);
-                                    await MoveToNextZone(new Vector3(-369f, -7f, 185f), 155, token);
-                                }
-
-                                await MoveTo(new Vector3(229f, 312f, -238f), true, token);
-                                await InteractWithByBaseId(23, token);
-                                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                                break;
-                            }
-                            case 180:
-                            {
-                                ErrorThrowIf(!IsAetheryteUnlocked(14), $"You aren't attuned to Western La Noscea Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                                await TeleportTo(14, token);
-                                await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
-                                await MoveToNextZone(new Vector3(-339f, 48.60f, -19f), 180, token);
-                                await MoveTo(new Vector3(-114f, 64.65f, -216f), true, token);
-                                await InteractWithByBaseId(16, token);
-                                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
-                                break;
-                            }
-                        }
-                    }
-                    else if (closestAetheryte > 0)
-                    {
-                        if (mark.TerritoryId == 139 &&
-                            markPosition.ToVector2()
-                                        .IsWithinRadius(new Vector2(-460f, 150f), 150f) &&
-                            IsAetheryteUnlocked(14))
-                        {
-                            await TeleportTo(14, token);
-                            await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
-                        }
-                        else
-                            await TeleportTo(closestAetheryte, token);
-                    }
-                    else
-                    {
-                        ErrorThrowIf(closestAetheryte == 0 || !IsAetheryteUnlocked(closestAetheryte),
-                                     $"You aren't attuned to any Aetheryte for the Hunt Marks territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(mark.TerritoryId).PlaceName.Value.Name.ExtractText()} ({mark.TerritoryId})");
-                    }
-
-                    // TODO: Switch to MappingTheRealm once/if ever released.
-                    if (Player.Territory.RowId == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
+                    await HandleTeleportDetour(closestAetheryte, mark.TerritoryId, markPosition, token);
                 }
 
                 await CheckChocobo(token);
@@ -170,12 +61,12 @@ internal static class CombatTasks
                     {
                         if (mark.Positions.Count > 0)
                         {
-                            var distanceOrderedPositions = Utils.SortListByDistance([.. mark.Positions]);
+                            var distanceOrderedPositions = SortListByDistance([.. mark.Positions]);
 
-                            for (var i = 0;;)
+                            for (var i = 0; ;)
                             {
                                 var markPosition = distanceOrderedPositions[i];
-                                Verbose($"Trying position {i + 1}/{distanceOrderedPositions.Count} for {mark.Name}");
+                                Debug($"Trying position {i + 1}/{distanceOrderedPositions.Count} for {mark.Name}");
 
                                 // TODO: Remove once MappingTheRealm is done. This is a reroute to properly get inside the underwater dome.
                                 if (Player.Territory.RowId == 613)
@@ -195,7 +86,6 @@ internal static class CombatTasks
                                             await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for area change", token);
                                         }
                                     }
-                                    
                                 }
                                 else if (Player.Territory.RowId == 138 && !Player.CanFly)
                                 {
@@ -208,9 +98,9 @@ internal static class CombatTasks
                                 }
                                 else if (Player.Territory.RowId == 137 && !Player.CanFly)
                                 {
-                                    if ((markPosition.X < 200f || markPosition.Z < 57f))
+                                    if (markPosition.X < 200f || markPosition.Z < 57f)
                                     {
-                                        if (!IsAetheryteUnlocked(12) && (Player.Position.ToVector2() is { X : > 200f, Y: > 57f }))
+                                        if (!IsAetheryteUnlocked(12) && Player.Position.ToVector2() is { X: > 200f, Y: > 57f })
                                         {
                                             await MoveTo(new Vector3(346f, 33f, 93f), true, token);
                                             await UseFerry(1003588, null, Lang.SelectYesnoPassageToRaincatcherGully, "Raincatcher Gully", token);
@@ -299,9 +189,9 @@ internal static class CombatTasks
         }
     }
 
-    public static async Task ProcessDutyMarks(List<HuntMark?> huntMarks, CancellationToken token = default)
+    public static async Task ProcessDutyMarks(List<HuntMark> huntMarks, CancellationToken token = default)
     {
-        Verbose("Process Duty Marks");
+        Debug("Process Duty Marks");
         token.ThrowIfCancellationRequested();
         var duties = huntMarks.Select(h => h!.TerritoryId)
                               .Distinct()
@@ -309,11 +199,11 @@ internal static class CombatTasks
         foreach (var duty in duties)
         {
             var ADPathAvailable = AutoDuty.ContentHasPath(duty);
-            var dutyUnlocked    = UIState.IsInstanceContentUnlocked(duty);
+            var dutyUnlocked = UIState.IsInstanceContentUnlocked(duty);
 
             if (dutyUnlocked && ADPathAvailable)
             {
-                if(C.SoloUnsyncLogDuty)
+                if (C.SoloUnsyncLogDuty)
                     AutoDuty.RunDutyUsync(duty);
                 else
                     AutoDuty.RunDutySupport(duty);
@@ -321,35 +211,57 @@ internal static class CombatTasks
             }
             else if (!dutyUnlocked && ADPathAvailable)
             {
-                if (!SubscriptionManager.IsInitialized(IPCNames.Questionable)) FullWarning("Questionable not enabled! Skipping duty!");
-                switch (duty)
-                {
-                    case 1245:  // Halatali
-                        await Questionable.CompleteQuest("697", 66233, token);
-                        break;
-                    case 1267: // Qarn
-                        await Questionable.CompleteQuest("764", 66300, token);
-                        break;
-                    case 1303: // Cutter's Cry
-                        await Questionable.CompleteQuest("921", 66457, token);
-                        break;
-                    case 1330: // Dzemael
-                        await Questionable.CompleteQuest("979", 66515, token);
-                        break;
-                    case 1331: // Aurum Vale
-                        await Questionable.CompleteQuest("1014", 66457, token);
-                        break;
-                }
-                if (C.SoloUnsyncLogDuty)
-                    AutoDuty.RunDutyUsync(duty);
+                if (!SubscriptionManager.IsInitialized(IPCNames.Questionable)) FullError($"Questionable not enabled, can't do unlock quest! Skipping duty {duty}!");
                 else
-                    AutoDuty.RunDutySupport(duty);
-                await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                {
+                    await UnlockDuty(duty, token);
+
+                    if (C.SoloUnsyncLogDuty)
+                        AutoDuty.RunDutyUsync(duty);
+                    else
+                        AutoDuty.RunDutySupport(duty);
+                    await WaitUntilAsync(AutoDuty.IsStopped, "Waiting for Duty to finish", token);
+                }
+
                 huntMarks.ForEach(x => x.IsCurrentTarget = false);
             }
             else
                 FullWarning($"There is no AutoDuty Path for Duty {Svc.Data.Excel.GetSheet<TerritoryType>().GetRow(duty).PlaceName.Value.Name.ExtractText()}");
         }
+    }
+
+    private static async Task<bool> UnlockDuty(uint dutyId, CancellationToken token = default)
+    {
+        if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
+        {
+            FullError("Questionable not enabled, can't do unlock quest!");
+            return false;
+        }
+
+        switch (dutyId)
+        {
+            case 1245 when !IsDutyUnlocked(1245): // Halatali
+                await Questionable.CompleteQuest(66233, token);
+                break;
+            case 1267 when !IsDutyUnlocked(1267): // Qarn
+                await Questionable.CompleteQuest(66300, token);
+                break;
+            case 1303 when !IsDutyUnlocked(1303): // Cutter's Cry
+                await Questionable.CompleteQuest(66457, token);
+                break;
+            case 1330 when !IsDutyUnlocked(1330): // Dzemael
+                if (IsQuestAccepted(66515))
+                    AbandonQuest(66515);
+                await Questionable.CompleteQuest(66515, token);
+                break;
+            case 1331 when !IsDutyUnlocked(1331): // Aurum Vale
+                if (IsQuestAccepted(66550))
+                    AbandonQuest(66550);
+                await Questionable.CompleteQuest(66457, token);
+                break;
+        }
+
+        return true;
     }
 
     internal static async Task<KillResult> KillHuntMark(HuntMark huntMark, CancellationToken token = default)
@@ -400,7 +312,7 @@ internal static class CombatTasks
 
         while (huntLog
                        ? huntMark.GetOpenMonsterNoteKills > 0
-                       : huntMark.GetOpenMobHuntKills     > 0)
+                       : huntMark.GetOpenMobHuntKills > 0)
         {
             var openKills = huntLog
                                     ? huntMark.GetOpenMonsterNoteKills
@@ -419,7 +331,7 @@ internal static class CombatTasks
             if (!await KillTargetInternal(huntMark, targetedMark, true, huntLog, openKills, token: token))
                 return KillResult.Died;
 
-            Verbose($"Mobs to kill left: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
+            Debug($"Mobs to kill left: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
             await Task.Delay(GeneralDelayMs * 4, token);
             await HandleHaters(token);
             await Task.Delay(GeneralDelayMs * 2, token);
@@ -442,24 +354,24 @@ internal static class CombatTasks
     internal static Task<bool> KillTarget(IGameObject mob, CancellationToken token = default) => KillTargetInternal(null, mob, false, false, 0, token: token);
 
     private static async Task<bool> KillTargetInternal(
-            HuntMark?         huntMark,
-            IGameObject       mob,
-            bool              isCountedHuntMark,
-            bool              isHuntLog,
-            int               openKills,
-            bool              logKill = false,
-            CancellationToken token   = default)
+            HuntMark? huntMark,
+            IGameObject mob,
+            bool isCountedHuntMark,
+            bool isHuntLog,
+            int openKills,
+            bool logKill = false,
+            CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        var       mobName = mob.Name.GetText();
-        using var scope   = new TaskDescriptionScope($"Killing Mob: {mobName}");
+        var mobName = mob.Name.GetText();
+        using var scope = new TaskDescriptionScope($"Killing Mob: {mobName}");
 
         if (Player.DistanceTo(mob.Position) >= C.MinMountDistance)
             await Mount(token);
         await MoveToMovingObject(mob, recheckPosition: true, token: token);
         await Dismount(token);
         Svc.Targets.Target = mob;
-        Verbose($"Targeted Hunt Mark: {mobName} ({mob.Position})");
+        Debug($"Targeted Hunt Mark: {mobName} ({mob.Position})");
 
         unsafe
         {
@@ -497,9 +409,41 @@ internal static class CombatTasks
 
     internal static async Task HandleHaters(CancellationToken token = default)
     {
+        bool isGrouped;
+        unsafe
+        {
+            isGrouped = GroupManager.Instance()->MainGroup.MemberCount > 1;
+        }
+
+        if (isGrouped)
+        {
+            PartyMember[] validMembers;
+            unsafe
+            {
+                validMembers = GroupManager.Instance()->MainGroup.PartyMembers.ToArray()
+                                                                 .Where(x => x.TerritoryType != 0)
+                                                                 .ToArray();
+            }
+
+            foreach (var member in validMembers)
+            {
+                var memberHaters = Svc.Objects.Where(x => x.TargetObject != null && x.TargetObject!.GetContentId() == member.ContentId)
+                                      .ToList();
+                foreach (var hater in memberHaters)
+                {
+                    if (hater.IsDead) continue;
+                    Svc.Targets.Target = hater;
+                    await MoveToMovingObject(hater, recheckPosition: true, token: token);
+                    await IsTargetDead(hater, token);
+                }
+            }
+        }
+
         while (GetHaterCount() > 0)
         {
-            var hater = Svc.Objects.First(x => x.EntityId == GetHaters()[0].EntityId && !x.IsDead);
+            var hater = Svc.Objects.FirstOrDefault(x => x.EntityId == GetHaters()[0].EntityId && !x.IsDead);
+
+            if (hater == null) break;
 
             using var scope = new TaskDescriptionScope($"Killing Hater: {hater.Name}");
             if (hater.IsDead) continue;

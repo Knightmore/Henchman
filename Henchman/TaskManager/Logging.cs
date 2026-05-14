@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 
@@ -6,23 +5,31 @@ namespace Henchman.TaskManager;
 
 internal static class Logging
 {
-    internal static void Log(string message) => PluginLog.Log($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+    private static  string Prefix                  => $"[{TaskName}] {(TaskDescription.Count > 0 ? "[" + string.Join(" -> ", TaskDescription) + "]" : "")}";
+    internal static void   TaskLog(string message) => PluginLog.Log($"{Prefix} {message}");
+
+    internal static void Log(string message) => PluginLog.Log($"{message}");
 
     internal static void Info(string message)
     {
-        PluginLog.Log($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+        PluginLog.Log($"{Prefix} {message}");
         ChatPrintInfo(message);
     }
 
     internal static void FullWarning(string message)
     {
-        ChatPrintWarning($"[{TaskName}] [{(TaskDescription.Count  == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
-        PluginLog.Warning($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+        ChatPrintWarning($"{message}");
+        PluginLog.Warning($"{Prefix}  {message}");
+    }
+
+    internal static void InternalTaskWarning(string message)
+    {
+        PluginLog.Warning($"{Prefix} {message}");
     }
 
     internal static void InternalWarning(string message)
     {
-        PluginLog.Warning($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+        PluginLog.Warning($"{message}");
     }
 
     internal static bool WarningIf(bool condition, string message)
@@ -38,8 +45,8 @@ internal static class Logging
 
     internal static void ErrorThrow(string message)
     {
-        Svc.Chat.PrintError($"[Henchman] [{TaskName} - {(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] Plugin stopped! Check the error log!");
-        throw new PluginErrorException($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] {message}");
+        Svc.Chat.PrintError($"[Henchman] [{TaskName}] Plugin stopped! Check the error log!");
+        throw new PluginErrorException($"{Prefix} {message}");
     }
 
     internal static void ErrorThrowIf(bool condition, string message)
@@ -51,15 +58,20 @@ internal static class Logging
         }
     }
 
+    internal static void InternalTaskError(string message)
+    {
+        PluginLog.Error($"{Prefix} Error: \n {message}");
+    }
+
     internal static void InternalError(string message)
     {
-        PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
+        PluginLog.Error($"{message}");
     }
 
     internal static void FullError(string message)
     {
-        Svc.Chat.PrintError($"[Henchman] [{TaskName} - {(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}] Error - Check the logs!");
-        PluginLog.Error($"[{TaskName}] [{(TaskDescription.Count                == 0 ? "No Description" : TaskDescription.Last())}] Error: \n {message}");
+        Svc.Chat.PrintError("[Henchman] Error - Check the logs!");
+        PluginLog.Error($"{Prefix} Error: \n {message}");
     }
 
     internal static void ErrorIf(bool condition, string message)
@@ -67,11 +79,11 @@ internal static class Logging
         if (condition) FullError(message);
     }
 
-    internal static void Verbose(string message) => PluginLog.Verbose($"[{TaskName}]  {(TaskDescription.Count > 0 ? "[" + TaskDescription.Last() + "]" : "")} {message}");
+    internal static void Verbose(string message) => PluginLog.Verbose($"{Prefix} {message}");
 
     internal static void VerboseSpecific(string sender, string message) => PluginLog.Verbose($"[{sender}] {message}");
 
-    internal static void Debug(string message) => PluginLog.Debug($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}");
+    internal static void Debug(string message) => PluginLog.Debug($"{Prefix} {message}");
 
     internal static void ChatPrintRegular(string message) => Svc.Chat.Print($"[Henchman] {message}");
 
@@ -80,7 +92,7 @@ internal static class Logging
         var chatEntry = new XivChatEntry
                         {
                                 Type = XivChatType.Echo,
-                                Message = new SeStringBuilder().AddUiForeground($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}", 561)
+                                Message = new SeStringBuilder().AddUiForeground($"[Henchman] {message}", 561)
                                                                .AddUiForegroundOff()
                                                                .Build()
                         };
@@ -92,7 +104,7 @@ internal static class Logging
         var chatEntry = new XivChatEntry
                         {
                                 Type = XivChatType.Echo,
-                                Message = new SeStringBuilder().AddUiForeground($"[{TaskName}] [{(TaskDescription.Count == 0 ? "No Description" : TaskDescription.Last())}]  {message}", 544)
+                                Message = new SeStringBuilder().AddUiForeground($"[Henchman] {message}", 544)
                                                                .AddUiForegroundOff()
                                                                .Build()
                         };

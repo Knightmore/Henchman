@@ -4,15 +4,14 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Henchman.Generated;
-using Henchman.Helpers;
 
-namespace Henchman.Multibox.Command;
+namespace Henchman.Multiboxing.Command;
 
 public static class CommandProcessor
 {
     public static async Task<(object? returnValue, CommandEnvelope env)> HandleRPCAsync(string json, CancellationToken token = default)
     {
-        var env = JsonSerializer.Deserialize<CommandEnvelope>(json, Utils.JsonDefaults.Options) ?? throw new ArgumentException("Invalid message.");
+        var env = JsonSerializer.Deserialize<CommandEnvelope>(json, JsonDefaults.Options) ?? throw new ArgumentException("Invalid message.");
 
         if (!Enum.TryParse<CommandKey>(env.Key, out var key)) throw new InvalidOperationException("Invalid Command Key.");
         Verbose($"RPC: {env.Key}");
@@ -132,7 +131,7 @@ public static class CommandProcessor
             }
         }
 
-        return JsonSerializer.Deserialize(el.GetRawText(), actualType, Utils.JsonDefaults.Options) ?? throw new InvalidOperationException($"Failed to deserialize type {targetType.FullName}.");
+        return JsonSerializer.Deserialize(el.GetRawText(), actualType, JsonDefaults.Options) ?? throw new InvalidOperationException($"Failed to deserialize type {targetType.FullName}.");
     }
 
     private static Vector3 ReadVector3(JsonElement el)

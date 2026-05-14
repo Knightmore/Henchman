@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Henchman.Abstractions;
 using Henchman.Models;
+using Henchman.Multiboxing;
 
-namespace Henchman.Features.TestyTrader
+namespace Henchman.Features.TestyTrader;
+
+public class Configuration : IConfig
 {
-    public class Configuration : IConfig
-    {
-        public TradeSession                                 TradeSession                  = TradeSession.Boss;
-        public bool                                         TestyTraderARSupport          = false;
-        public Dictionary<ulong, bool>                      EnableCharacterForTrade       = [];
-        public List<TestyTraderUI.TestyTraderCharacterData> TestyTraderImportedCharacters = [];
-        public List<TradeEntry>                             TradeEntries                  = [];
-        public bool                                         UseARItemSell                 = true;
-        public bool                                         MoveBossToHenchman            = false;
-    }
+    public Dictionary<ulong, bool>                      EnableCharacterForTrade       = [];
+    public bool                                         MoveBossToHenchman            = false;
+    public bool                                         TestyTraderARSupport          = false;
+    public List<TestyTraderUI.TestyTraderCharacterData> TestyTraderImportedCharacters = [];
+    public List<TradeEntry>                             TradeEntries                  = [];
+    public SessionType                                  TradeSession                  = SessionType.Boss;
+    public bool                                         UseARItemSell                 = true;
 }

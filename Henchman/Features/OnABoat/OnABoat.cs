@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.DutyState;
 using ECommons.Automation;
 using ECommons.GameHelpers;
 using ECommons.Throttlers;
@@ -12,19 +13,19 @@ using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Henchman.Abstractions;
 using Henchman.Data;
 using Henchman.Helpers;
+using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
-using EventHandler = FFXIVClientStructs.FFXIV.Client.Game.Event.EventHandler;
 #if PRIVATE
 using Henchman.Features.Private;
 #endif
 
 namespace Henchman.Features.OnABoat;
 
-internal class OnABoat
+internal class OnABoat : Feature
 {
-    private static Configuration? Configuration => GetFeatureConfig<OnABoatUI, Configuration>();
     public enum Bait
     {
         Ragworm = 29714,
@@ -45,6 +46,7 @@ internal class OnABoat
     private readonly        Vector2 dryskthotaB = new(-407.5f, 72f);
     internal                bool    AskARforAccess;
 
+    // TODO: Add BaitData for new route
     public Dictionary<uint, BaitData> BaitMap = new()
                                                 {
                                                         { 237, new BaitData(Bait.Krill, Bait.Ragworm, Bait.PlumpWorm, Bait.Krill) },
@@ -85,7 +87,8 @@ internal class OnABoat
     internal uint RepairId = 720915;
     internal uint ShopId   = 263015;
 
-    private bool spectralActiveCache;
+    private        bool           spectralActiveCache;
+    private static Configuration? Configuration => GetFeatureConfig<OnABoatUI, Configuration>();
 
     public unsafe IKDRoute CurrentRoute => Svc.Data.GetExcelSheet<IKDRoute>()
                                               .GetRow(EventFramework.Instance()->GetInstanceContentOceanFishing()->CurrentRoute);
@@ -96,7 +99,7 @@ internal class OnABoat
 
     public byte CurrentTimeOfDay => Svc.Data.GetExcelSheet<IKDRoute>()
                                       ?.GetRow(CurrentRoute.RowId)
-                                       .Time[CurrentZone].Value.Unknown0 ??
+                                       .Time[CurrentZone].Value.TimeOfDay ??
                                     0;
 
     public BaitData GetBaits => BaitMap[CurrentSpot];
@@ -109,6 +112,11 @@ internal class OnABoat
 
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
+    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
+    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
+
+    public override void RunTask() => EnqueueTask(new TaskRecord(Start, "On A Boat", onDone: () => UnsubscribeEvents(), onAbort: UnsubscribeEvents, onError: OnError));
+
     internal Vector3 GetFishingPosition()
     {
         Vector3 left = new((float)(7 + (Rng.NextDouble() * 0.25)), 6.711f, Rng.Next(2) == 0
@@ -119,9 +127,6 @@ internal class OnABoat
                        ? left
                        : right;
     }
-
-    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
-    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
 
     internal async Task Start(CancellationToken token = default)
     {
@@ -213,7 +218,9 @@ internal class OnABoat
 
     internal async Task PrepareForVoyage(CancellationToken token = default)
     {
+#if PRIVATE
         Chat.ExecuteCommand("/nastatus off");
+#endif
 
         await Task.Delay(8 * GeneralDelayMs, token);
 
@@ -228,7 +235,7 @@ internal class OnABoat
             {
                 ErrorThrowIf(!Lifestream.Teleport(8, 0), "Could not teleport to Limsa Lominsa");
                 await WaitUntilAsync(() => Player.Territory.RowId == 129 && !Player.IsBusy, "Waiting for Teleport to Limsa Lominsa", token);
-                await Questionable.CompleteQuest("3843", 69379, token);
+                await Questionable.CompleteQuest(69379, token);
             }
             else
                 ErrorThrow($"{Player.NameWithWorld} has not unlocked ocean fishing!");
@@ -356,6 +363,7 @@ internal class OnABoat
         {
             canFish = EventFramework.Instance()->EventHandlerModule.FishingEventHandler->CanFish;
         }
+
         if (!canFish)
             await WalkToRailing(token);
         await Task.Delay(4 * GeneralDelayMs, token);
@@ -437,7 +445,7 @@ internal class OnABoat
 
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
 
-        if (Configuration!.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
             if (Configuration!.DiscardAfterVoyage)
             {
@@ -445,10 +453,19 @@ internal class OnABoat
                 await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until discard finished", token);
             }
 
-            if (InPostProcess || CachedMultiMode)
-                AutoRetainer.SetMultiModeEnabled(true);
-            
-            InPostProcess = false;
+            if (Configuration!.OCFishingHandleAR)
+            {
+                if (Configuration!.SellAfterVoyage)
+                {
+                    Chat.ExecuteCommand("/ays itemsell");
+                    await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until selling finished", token);
+                }
+
+                if (InPostProcess || CachedMultiMode)
+                    AutoRetainer.SetMultiModeEnabled(true);
+
+                InPostProcess = false;
+            }
         }
     }
 
@@ -456,11 +473,13 @@ internal class OnABoat
     {
 #if PRIVATE
         var positionalData = ReleaseUtils.GetRandomFishingPositionWithRotation();
-        var position       = positionalData.position;
-        var rotation       = positionalData.rotation;
+        var position = positionalData.position;
+        var rotation = positionalData.rotation;
 #else
         var position = GetFishingPosition();
-        var rotation = position.X > 0 ? 1.5f : -1.5F;
+        var rotation = position.X > 0
+                               ? 1.5f
+                               : -1.5F;
 #endif
         await MoveTo(position, token: token);
         unsafe
@@ -474,7 +493,7 @@ internal class OnABoat
         if (AskARforAccess)
         {
             AutoRetainer.ARAPI.RequestCharacterPostprocess();
-            Log("Requesting AR post process");
+            TaskLog("Requesting AR post process");
         }
         else
             Verbose("Outside of Voyage window. Skipping post process request.");
@@ -522,8 +541,8 @@ internal class OnABoat
         EventsSubscribed = false;
     }
 
-    private void DutyStarted(object?   sender, ushort e) => dutyStarted = true;
-    private void DutyCompleted(object? sender, ushort e) => dutyStarted = false;
+    private void DutyStarted(IDutyStateEventArgs   args) => dutyStarted = true;
+    private void DutyCompleted(IDutyStateEventArgs args) => dutyStarted = false;
 
     internal async Task OnError()
     {

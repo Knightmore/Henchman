@@ -99,10 +99,11 @@ public static class Lifestream
         {
             unsafe
             {
-                if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out _))
+                if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out var yesNo) && yesNo->IsReady && yesNo->IsVisible)
                     break;
             }
 
+            await WaitUntilAsync(() => IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
             Chat.SendMessage("/logout");
             await Task.Delay(1000, token);
         }

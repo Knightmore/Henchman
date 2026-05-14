@@ -20,6 +20,16 @@ internal static class WorldTasks
         }
     }
 
+    internal static async Task InteractWithByEntityId(uint entityId, CancellationToken token = default)
+    {
+        await WaitUntilAsync(() => TargetByEntityId(entityId, token), $"Target {entityId}", token);
+        await Task.Delay(GeneralDelayMs * 2, token);
+        unsafe
+        {
+            TargetSystem.Instance()->InteractWithObject(TargetSystem.Instance()->Target, false);
+        }
+    }
+
     internal static async Task<IGameObject> GetNearestGameObjectByBaseId(uint baseId, CancellationToken token = default)
     {
         IGameObject? gameObject = null;

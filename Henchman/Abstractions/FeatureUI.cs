@@ -3,17 +3,19 @@ using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Newtonsoft.Json;
 
-namespace Henchman;
+namespace Henchman.Abstractions;
 
-public abstract class FeatureUI
+public abstract class FeatureUI : Feature
 {
     public abstract string                                    Name         { get; }
-    public abstract string                                    Category     { get; }
+    public abstract Category                                  Category     { get; }
     public abstract FontAwesomeIcon                           Icon         { get; }
     public abstract Action?                                   Help         { get; }
     public abstract bool                                      LoginNeeded  { get; }
     public virtual  List<(string pluginName, bool mandatory)> Requirements { get; } = new();
     public abstract void                                      Draw();
+
+    public virtual void Dispose() { }
 
     protected T? LoadConfig<T>(bool isAccount = true) where T : IConfig? => LoadConfig<T>(Name, isAccount);
 
@@ -77,7 +79,10 @@ public abstract class FeatureUI
     }
 }
 
-public abstract class FeatureUI<TConfig> : FeatureUI where TConfig : IConfig
+public abstract class FeatureUI<TFeature, TConfig> : FeatureUI
+        where TFeature : Feature, new()
+        where TConfig : IConfig
 {
-    public abstract TConfig Configuration { get; init; }
+    public          TFeature Feature = new();
+    public abstract TConfig  Configuration { get; init; }
 }

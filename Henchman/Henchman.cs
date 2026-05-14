@@ -1,19 +1,22 @@
 #if PRIVATE
-using Henchman.Features.Private.MappingTheRealm;
-using Henchman.Features.Private;
+using Henchman.Features.Private.Hooking;
+#endif
+#if LOCAL_CS
 using FFXIVClientStructs.Interop.Generated;
 using InteropGenerator.Runtime;
 #endif
-using System.IO;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using ECommons.Automation;
 using ECommons.Configuration;
+using ECommons.EzIpcManager;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using Henchman.Abstractions;
 using Henchman.Data;
 using Henchman.Features.BumpOnALog;
+using Henchman.Features.OnABoat;
 using Henchman.Features.OnYourMark;
 using Henchman.Features.RetainerVocate;
 using Henchman.Helpers;
@@ -23,32 +26,38 @@ using Henchman.Windows;
 using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Reflection;
-using Dalamud.Plugin.Services;
-using ECommons.EzHookManager;
-using Henchman.Features.OnABoat;
 using Module = ECommons.Module;
 
 namespace Henchman;
 
 public class Henchman : IDalamudPlugin
 {
+    public enum Category
+    {
+        Combat,
+        Exploration,
+        Economy,
+        Tweaks,
+        System
+    }
+
     internal static Henchman? P;
 
     public static readonly HashSet<FeatureUI> FeatureSet = [];
 
-    public readonly Dictionary<string, FontAwesomeIcon> categories = new()
-                                                                     {
-                                                                             { Category.Combat, FontAwesomeIcon.Khanda },
-                                                                             { Category.Exploration, FontAwesomeIcon.Map },
-                                                                             { Category.Economy, FontAwesomeIcon.Coins },
-                                                                             { Category.System, FontAwesomeIcon.Cog }
-                                                                     };
+    public readonly Dictionary<Category, FontAwesomeIcon> categories = new()
+                                                                       {
+                                                                               { Category.Combat, FontAwesomeIcon.Khanda },
+                                                                               { Category.Exploration, FontAwesomeIcon.Map },
+                                                                               { Category.Economy, FontAwesomeIcon.Coins },
+                                                                               { Category.Tweaks, FontAwesomeIcon.SlidersH },
+                                                                               { Category.System, FontAwesomeIcon.Cog }
+                                                                       };
 
-    public readonly WindowSystem  WindowSystem = new("Henchman");
-    public          Configuration Config;
-    internal         MainWindow    MainWindow;
-    internal        StatusWindow  StatusWindow;
-
+    public readonly WindowSystem WindowSystem = new("Henchman");
+    public Configuration Config;
+    internal MainWindow MainWindow;
+    internal StatusWindow StatusWindow;
 
     public Henchman(IDalamudPluginInterface pluginInterface, ISigScanner sigScanner)
     {
@@ -64,8 +73,8 @@ public class Henchman : IDalamudPlugin
         Initialize();
     }
 
-    public          string        Name => "Henchman";
-    internal static Configuration C    => P.Config;
+    public string Name => "Henchman";
+    internal static Configuration C => P.Config;
 
     public void Dispose()
     {
@@ -74,16 +83,29 @@ public class Henchman : IDalamudPlugin
         MainWindow.Dispose();
         StatusWindow.Dispose();
 
+
         CancelAllTasks();
         Wrath.DisableWrath();
+
+        foreach (var feature in FeatureSet)
+        {
+            try
+            {
+                feature.Dispose();
+            }
+            catch (Exception ex)
+            {
+                InternalError($"Failed to dispose feature {feature.Name} | {ex}");
+            }
+        }
 
 #if PRIVATE
         Hooks.UnloadHooks();
 #endif
-        Svc.Framework.Update                     -= TaskManagerTick;
-        Svc.Framework.Update                     -= SubscriptionManager.Subscribe;
-        Svc.Framework.Update                     -= Tick;
-        Svc.PluginInterface.UiBuilder.Draw       -= DrawUi;
+        Svc.Framework.Update -= TaskManagerTick;
+        Svc.Framework.Update -= SubscriptionManager.Subscribe;
+        Svc.Framework.Update -= Tick;
+        Svc.PluginInterface.UiBuilder.Draw -= DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         ECommonsMain.Dispose();
     }
@@ -94,13 +116,13 @@ public class Henchman : IDalamudPlugin
         AutoCutsceneSkipper.Init(null);
         AutoCutsceneSkipper.Disable();
         EzConfig.Migrate<Configuration>();
-        Config               =  EzConfig.Init<Configuration>();
+        Config = EzConfig.Init<Configuration>();
         Svc.Framework.Update += TaskManagerTick;
 
+        EzIPC.Init(typeof(IPCProvider), "Henchman");
         Svc.Framework.Update += SubscriptionManager.Subscribe;
 
 #if PRIVATE
-        MappingTheRealm.Initialize();
         EzSignatureHelper.Initialize(typeof(Hooks));
 #endif
 
@@ -117,20 +139,22 @@ public class Henchman : IDalamudPlugin
                                           /henchman BumpOnALog <Class|GC> [RunDuties] → Run current huntlog rank for Class/GC
                                           /henchman OnYourMark → Runs with currently selected HuntBills
                                           /henchman RetainerVocate <1-10> <RetainerClassAbbr> <QuestClassAbbr> <FirstExploration> → Run retainer creation with selected parameters and random names
-                                          /henchman SetupRetainer <Name> <PresetId> → Runs Retainer Setup for Retainer Fantasia. Keep PresetId and/or Name empty to randomize them.
+                                          /henchman SetupRetainer <Name> <PresetId> → Runs retainer setup for retainer fantasia. Keep presetId and/or name empty to randomize them.
                                           /henchman OnABoat → Run On A Boat (also works when you are already on a voyage)
+                                          /henchman ToggleRender [On|Off] → De-/activate 3D rendering (safes A LOT of GPU load).
                                           /henchman Stop
                                           """);
         EzCmd.Add("/knightman", OnCommand);
         EzCmd.Add("/henchmore", OnCommand);
 
-        MainWindow   = new MainWindow();
+        MainWindow = new MainWindow();
         StatusWindow = new StatusWindow();
+
 
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(StatusWindow);
 
-        Svc.PluginInterface.UiBuilder.Draw       += DrawUi;
+        Svc.PluginInterface.UiBuilder.Draw += DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
 
         Svc.Framework.Update += Tick;
@@ -154,8 +178,10 @@ public class Henchman : IDalamudPlugin
                        .EqualsIgnoreCase("GC"))
             {
                 if (bool.TryParse(parameters[2], out var runDutyMarks))
+                {
                     if (TryGetFeature<BumpOnALogUI>(out var bumpOnALog) && !IsTaskEnqueued(bumpOnALog.Name))
                         EnqueueTask(new TaskRecord(token => bumpOnALog.Feature.StartGCRank(token, runDutyMarks), "Bump On A Log - GC Log"));
+                }
             }
             else if (parameters.Length == 2 &&
                      parameters[1]
@@ -167,7 +193,7 @@ public class Henchman : IDalamudPlugin
         }
         else if (args.StartsWith("OnYourMark", StringComparison.InvariantCultureIgnoreCase))
         {
-            if (TryGetFeature<OnYourMarkUI>(out var onYourMark) && !IsTaskEnqueued(onYourMark.Name)) EnqueueTask(new TaskRecord(onYourMark.feature.Start, "On Your Mark"));
+            if (TryGetFeature<OnYourMarkUI>(out var onYourMark) && !IsTaskEnqueued(onYourMark.Name)) EnqueueTask(new TaskRecord(onYourMark.Feature.Start, "On Your Mark"));
         }
         else if (args.StartsWith("RetainerVocate", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -194,56 +220,59 @@ public class Henchman : IDalamudPlugin
         }
         else if (args.StartsWith("SetupRetainer", StringComparison.InvariantCultureIgnoreCase))
         {
-            var  parameters   = args.Split(" ");
+            var parameters = args.Split(" ");
             uint validPresets;
             unsafe
             {
                 validPresets = Framework.Instance()->CharamakeAvatarSaveData->Release.GetValidSlotCount();
             }
+
             if (!Svc.Condition[ConditionFlag.CreatingCharacter]) return;
 
             switch (parameters.Length)
             {
                 case 2 when byte.TryParse(parameters[1], out var presetId):
-                {
-                    if (validPresets < presetId)
-                    {
-                        ChatPrintWarning("Your Preset ID is invalid!");
-                        return;
-                    }
-                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, token: token), "Setup Retainer"));
-                    break;
-                }
-                case 2:
-                {
-                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, name: parameters[1], token: token), $"Setup {parameters[1]}"));
-                    break;
-                }
-                case 3:
-                {
-                    var name = parameters[1];
-
-                    if (byte.TryParse(parameters[2], out var presetId))
                     {
                         if (validPresets < presetId)
                         {
                             ChatPrintWarning("Your Preset ID is invalid!");
                             return;
                         }
-                        if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                            EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, name, token: token), $"Setup {name}"));
-                    }
 
-                    break;
-                }
+                        if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                            EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, token: token), "Setup Retainer"));
+                        break;
+                    }
+                case 2:
+                    {
+                        if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                            EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, name: parameters[1], token: token), $"Setup {parameters[1]}"));
+                        break;
+                    }
+                case 3:
+                    {
+                        var name = parameters[1];
+
+                        if (byte.TryParse(parameters[2], out var presetId))
+                        {
+                            if (validPresets < presetId)
+                            {
+                                ChatPrintWarning("Your Preset ID is invalid!");
+                                return;
+                            }
+
+                            if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                                EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, presetId, name, token: token), $"Setup {name}"));
+                        }
+
+                        break;
+                    }
                 default:
-                {
-                    if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
-                        EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, token: token), "Setup Retainer"));
-                    break;
-                }
+                    {
+                        if (TryGetFeature<RetainerVocateUI>(out var retainerVocate) && !IsTaskEnqueued(retainerVocate.Name))
+                            EnqueueTask(new TaskRecord(token => retainerVocate.Feature.SetupRetainer(false, token: token), "Setup Retainer"));
+                        break;
+                    }
             }
         }
         else if (args.EqualsIgnoreCase("OnABoat"))
@@ -267,18 +296,10 @@ public class Henchman : IDalamudPlugin
         MainWindow.Toggle();
     }
 
-    public static bool TryGetFeature<T>(out T result) where T : FeatureUI
+    public static bool TryGetFeature<T>(out T? result) where T : FeatureUI
     {
         result = FeatureSet.OfType<T>()
                            .FirstOrDefault();
         return result != null;
-    }
-
-    public class Category
-    {
-        public const string Combat      = "Combat";
-        public const string Exploration = "Exploration";
-        public const string Economy     = "Economy";
-        public const string System      = "System";
     }
 }

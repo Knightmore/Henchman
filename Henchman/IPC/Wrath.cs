@@ -71,7 +71,7 @@ public static class Wrath
                                                    null
                                                   );
             if (Lease is null)
-                InternalWarning("Failed to register for lease.");
+                InternalTaskWarning("Failed to register for lease.");
             return Lease;
         }
     }
@@ -87,10 +87,10 @@ public static class Wrath
         }
         catch (Exception e)
         {
-            InternalError("Unknown Wrath IPC error,"                +
-                          "probably inability to register a lease." +
-                          "\n"                                      +
-                          e.Message);
+            InternalTaskError("Unknown Wrath IPC error,"                +
+                              "probably inability to register a lease." +
+                              "\n"                                      +
+                              e.Message);
         }
     }
 
@@ -107,14 +107,14 @@ public static class Wrath
             SetAutoRotationConfigState(lease, AutoRotationConfigOption.DPSRotationMode, 0);
 
             if (setJobReady == SetResult.Okay || setJobReady == SetResult.OkayWorking)
-                Log("Job has been made ready for Auto-Rotation.");
+                TaskLog("Job has been made ready for Auto-Rotation.");
         }
         catch (Exception e)
         {
-            InternalError("Unknown Wrath IPC error,"                +
-                          "probably inability to register a lease." +
-                          "\n"                                      +
-                          e.Message);
+            InternalTaskError("Unknown Wrath IPC error,"                +
+                              "probably inability to register a lease." +
+                              "\n"                                      +
+                              e.Message);
         }
     }
 
@@ -130,10 +130,10 @@ public static class Wrath
         }
         catch (Exception e)
         {
-            InternalError("Unknown Wrath IPC error,"                +
-                          "probably inability to register a lease." +
-                          "\n"                                      +
-                          e.Message);
+            InternalTaskError("Unknown Wrath IPC error,"                +
+                              "probably inability to register a lease." +
+                              "\n"                                      +
+                              e.Message);
         }
     }
 }

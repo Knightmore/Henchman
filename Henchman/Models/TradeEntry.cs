@@ -1,11 +1,5 @@
 namespace Henchman.Models;
 
-public enum TradeSession
-{
-    Boss,
-    Henchman
-}
-
 public class TradeEntry
 {
     public uint      Amount;

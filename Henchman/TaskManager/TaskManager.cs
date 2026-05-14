@@ -75,27 +75,31 @@ public static class TaskManager
                               }
                               catch (Exception e)
                               {
-                                  if (e is PluginErrorException)
+                                  if (e is not OperationCanceledException)
                                   {
-                                      FullError(e.Message);
+                                      FullError($"{e.GetType()} - {e.Message}");
+                                      InternalError($"""
+                                                     StackTrace:
+                                                     {e.StackTrace}
+                                                     """);
                                       if (CurrentTaskRecord is { OnErrorTask: { } })
                                           await CurrentTaskRecord.OnErrorTask.Invoke();
                                   }
-                                  /*else if (e is not OperationCanceledException)
+                                  else
                                   {
-                                      FullError($"Unexpected error in task execution: {e}");
-                                      InternalError($"""
+                                      Verbose($"Task was cancelled: {e}");
+                                      /*InternalError($"""
                                                     StackTrace:
                                                     {e.StackTrace}
-                                                    """);
-                                  }*/
+                                                    """);*/
 
+                                      CancelAllTasks();
+                                  }
+                              } finally
+                              {
                                   if (CurrentTaskRecord is { OnDone: { } })
                                       CurrentTaskRecord.OnDone.Invoke();
 
-                                  CancelAllTasks();
-                              } finally
-                              {
                                   CurrentTaskRecord = null;
                                   currentTask       = null;
                                   TaskDescription.Clear();

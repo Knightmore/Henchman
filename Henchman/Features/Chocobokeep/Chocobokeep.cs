@@ -2,15 +2,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Helpers;
+using Henchman.Abstractions;
+using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
 using static Henchman.Features.Chocobokeep.ChocobokeepUI;
 
 namespace Henchman.Features.Chocobokeep;
 
-internal class Chocobokeep
+internal class Chocobokeep : Feature
 {
-    internal List<ChocobokeepData>? keeps = Utils.ReadLocalJsonFile<List<ChocobokeepData>>("ChocoboTaxiStands.json");
+    internal List<ChocobokeepData>? keeps = ReadLocalJsonFile<List<ChocobokeepData>>("ChocoboTaxiStands.json");
+
+    public override void RunTask() => EnqueueTask(new TaskRecord(Start, "Chocobokeep"));
 
     internal async Task Start(CancellationToken token = default)
     {

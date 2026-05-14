@@ -3,6 +3,7 @@ using Dalamud.Game;
 using Dalamud.Interface.Utility;
 using Dalamud.Utility;
 using ECommons.GameHelpers;
+using Henchman.Abstractions;
 using Lumina.Text.Payloads;
 using Lumina.Text.ReadOnly;
 using System.IO;
@@ -17,9 +18,9 @@ namespace Henchman.Helpers;
 public static class Utils
 {
     public static readonly JsonSerializerOptions EnumAsStringOptions = new()
-                                                                       {
-                                                                               Converters = { new JsonStringEnumConverter() }
-                                                                       };
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     internal static bool IsPluginBusy => Running;
 
@@ -33,7 +34,7 @@ public static class Utils
             return (dx * dx) + (dy * dy) + (dz * dz);
         }
 
-        var path   = new List<Vector3> { Player.Position };
+        var path = new List<Vector3> { Player.Position };
         var points = pointList.ToList();
 
         while (points.Count > 0)
@@ -70,7 +71,7 @@ public static class Utils
         return LoadEmbeddedResource(resourceName, stream =>
                                                   {
                                                       using var reader = new StreamReader(stream);
-                                                      var       json   = reader.ReadToEnd();
+                                                      var json = reader.ReadToEnd();
                                                       return JsonSerializer.Deserialize<T>(json,
                                                                                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                                                   });
@@ -87,7 +88,7 @@ public static class Utils
 
         using var stream = File.OpenRead(filePath);
         using var reader = new StreamReader(stream);
-        var       json   = reader.ReadToEnd();
+        var json = reader.ReadToEnd();
 
         return JsonSerializer.Deserialize<T>(json,
                                              new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -100,9 +101,6 @@ public static class Utils
     public static string ToTitleCaseExtended(in ReadOnlySeString s, ClientLanguage language) => string.Intern(s.ExtractTextExtended()
                                                                                                                .ToUpper(true, true, false, language));
 
-    /*public static Regex ToRegex(this ReadOnlySeString seString) => new(string.Join("", seString.Select(payload => payload.Type == ReadOnlySePayloadType.Text
-                                                                                                                          ? Regex.Escape(payload.ToString())
-                                                                                                                          : "(.*?)\\s*")));*/
     public static Regex ToRegex(this ReadOnlySeString seString)
     {
         var parts = new List<string>();
@@ -119,7 +117,8 @@ public static class Utils
                                   .Replace('\r', ' ')
                                   .Replace('\n', ' ');
 
-                parts.Add(Regex.Escape(text).Replace(" ", @"s+"));
+                parts.Add(Regex.Escape(text)
+                               .Replace(" ", @"s+"));
                 //parts.Add(Regex.Escape(text));
                 continue;
             }
@@ -237,7 +236,6 @@ public static class Utils
     }
 
 
-
     public static void DrawIcon(uint iconId, float scale = 1)
     {
         var iconSize = new Vector2(40, 40) * ImGuiHelpers.GlobalScale * scale;
@@ -246,39 +244,70 @@ public static class Utils
         ImGui.Image(texture.Handle, iconSize);
     }
 
-    public static string ToJson<TEnum>(this       TEnum  value) where TEnum : struct, Enum                                       => JsonSerializer.Serialize(value, EnumAsStringOptions);
-    public static TEnum  FromJsonEnum<TEnum>(this string json, JsonSerializerOptions? options = null) where TEnum : struct, Enum => JsonSerializer.Deserialize<TEnum>(json, options ?? EnumAsStringOptions);
+    public static string ToJson<TEnum>(this TEnum value) where TEnum : struct, Enum => JsonSerializer.Serialize(value, EnumAsStringOptions);
+    public static TEnum FromJsonEnum<TEnum>(this string json, JsonSerializerOptions? options = null) where TEnum : struct, Enum => JsonSerializer.Deserialize<TEnum>(json, options ?? EnumAsStringOptions);
 
     public static string ToJson<T>(this T value, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Serialize(value, options ?? JsonDefaults.Options);
 
     public static T FromJson<T>(this string json, JsonSerializerOptions? options = null) where T : class => JsonSerializer.Deserialize<T>(json, options ?? JsonDefaults.Options)!;
 
-    public static class JsonDefaults
-    {
-        public static readonly JsonSerializerOptions Options = new()
-                                                               {
-                                                                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                                                                       WriteIndented        = false,
-                                                                       NumberHandling       = JsonNumberHandling.AllowReadingFromString
-                                                               };
-    }
-
     public static string SanitizePath(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();
-        var cleaned = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        var cleaned = new string(name.Select(c => invalid.Contains(c)
+                                                          ? '_'
+                                                          : c)
+                                     .ToArray());
         return cleaned;
     }
 
-
-    public static TConfig? GetFeatureConfig<TFeature, TConfig>()
-            where TFeature : FeatureUI<TConfig>
+    public static TConfig? GetFeatureConfig<TUI, TConfig>()
+            where TUI : FeatureUI
             where TConfig : IConfig
     {
-        if (TryGetFeature<TFeature>(out var feature))
-            return feature.Configuration;
+        var cfg = GetFeatureConfig<TUI>();
+        return (TConfig?)cfg;
+    }
 
-        FullError($"{typeof(TFeature).Name} not loaded. Can't get config!");
-        return default;
+
+    public static IConfig? GetFeatureConfig<TUI>()
+            where TUI : FeatureUI
+    {
+        if (!TryGetFeature<TUI>(out var ui))
+        {
+            FullError($"{typeof(TUI).Name} not loaded. Can't get config!");
+            return default;
+        }
+
+        // Extract the TConfig type from FeatureUI<TFeature, TConfig>
+        var uiType = ui.GetType();
+        var baseType = uiType.BaseType;
+
+        if (baseType == null || !baseType.IsGenericType)
+            return default;
+
+        var args = baseType.GetGenericArguments();
+        var config = uiType.GetProperty("Configuration")
+                          ?.GetValue(ui);
+
+        return (IConfig?)config;
+    }
+    public static string ToText(this Category c) => c switch
+    {
+        Category.Combat => "Combat",
+        Category.Exploration => "Exploration",
+        Category.Economy => "Economy",
+        Category.System => "System",
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
+    public static class JsonDefaults
+    {
+        public static readonly JsonSerializerOptions Options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
     }
 }

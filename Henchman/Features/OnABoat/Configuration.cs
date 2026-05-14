@@ -1,17 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Henchman.Abstractions;
 
-namespace Henchman.Features.OnABoat
+namespace Henchman.Features.OnABoat;
+
+public class Configuration : IConfig
 {
-    public class Configuration : IConfig
-    {
-        public bool                    OCFishingHandleAR           = false;
-        public Dictionary<ulong, bool> EnableCharacterForOCFishing = [];
-        public bool                    UseOnlyVersatile            = true;
-        public string                  OceanChar                   = string.Empty;
-        public string                  OceanWorld                  = string.Empty;
-        public bool                    DiscardAfterVoyage          = false;
-        public bool                    OCFishingStop100            = false;
-    }
+    public bool                    DiscardAfterVoyage          = false;
+    public Dictionary<ulong, bool> EnableCharacterForOCFishing = [];
+    public string                  OceanChar                   = string.Empty;
+    public string                  OceanWorld                  = string.Empty;
+    public bool                    OCFishingHandleAR           = false;
+    public bool                    OCFishingStop100            = false;
+    public bool                    SellAfterVoyage             = false;
+    public bool                    UseOnlyVersatile            = true;
 }

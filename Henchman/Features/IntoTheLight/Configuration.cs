@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Henchman.Abstractions;
 
-namespace Henchman.Features.IntoTheLight
+namespace Henchman.Features.IntoTheLight;
+
+public class Configuration : IConfig
 {
-    public class Configuration : IConfig
-    {
-        public List<LightCharacter> LightCharacters  = [];
-        public bool                 LightNoLoginSkip = false;
-    }
+    public List<LightCharacter> LightCharacters  = [];
+    public bool                 LightNoLoginSkip = false;
 }

@@ -71,7 +71,10 @@ public static class Bossmod
     public static void EnableAI()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.BossMod) && GetActive() != "VBM Default")
+        {
             SetActive("VBM AI");
+            return;
+        }
 
         // Putting this here as the internal name and the IPC prefix of BMR are messed up
         if (SubscriptionManager.IsLoaded("BossModReborn"))
@@ -81,7 +84,10 @@ public static class Bossmod
     public static void DisableAI()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
+        {
             ClearActive();
+            return;
+        }
 
         // Putting this here as the internal name and the IPC prefix of BMR are messed up
         if (SubscriptionManager.IsLoaded("BossModReborn"))

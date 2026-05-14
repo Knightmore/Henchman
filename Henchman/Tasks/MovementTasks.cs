@@ -1,3 +1,6 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -6,15 +9,9 @@ using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Henchman.Data;
 using Henchman.Features.BringYourXGame;
-using Henchman.Helpers;
-using Henchman.Multibox.Command;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Lumina.Text.ReadOnly;
 
 namespace Henchman.Tasks;
@@ -29,11 +26,10 @@ internal static class MovementTasks
         await WaitUntilAsync(() => !Player.IsBusy, "Waiting for Player Status not busy!", token);
         if (!Player.CanMount)
         {
-            Verbose("Can not mount in current territory.");
+            Debug("Can not mount in current territory.");
             return false;
         }
 
-        Verbose("Using Mount");
         await CheckIfPlayerIsStunned(token);
         unsafe
         {
@@ -54,6 +50,39 @@ internal static class MovementTasks
         return true;
     }
 
+    internal static async Task<bool> Mount(uint mountId, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        unsafe
+        {
+            if (Player.Mounted && Player.BattleChara->Mount.MountId == mountId) return true;
+        }
+
+        using var scope = new TaskDescriptionScope("Mounting");
+        await WaitUntilAsync(() => !Player.IsBusy, "Waiting for Player Status not busy!", token);
+        if (!Player.CanMount)
+        {
+            Debug("Can not mount in current territory.");
+            return false;
+        }
+
+        await CheckIfPlayerIsStunned(token);
+        unsafe
+        {
+            var actionManager = ActionManager.Instance();
+            if (PlayerState.Instance()->IsMountUnlocked(mountId))
+            {
+                if (actionManager->GetActionStatus(ActionType.Mount, mountId) != 0) return false;
+                actionManager->UseAction(ActionType.Mount, mountId);
+            }
+            else
+                return false;
+        }
+
+        await WaitUntilAsync(() => Player.Mounted, "Waiting for Mount", token);
+        return true;
+    }
+
     internal static async Task Dismount(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
@@ -61,7 +90,7 @@ internal static class MovementTasks
 
         if (!Player.Mounted) return;
 
-        Verbose("Dismounting");
+        Debug("Dismounting");
         do
         {
             token.ThrowIfCancellationRequested();
@@ -238,11 +267,22 @@ internal static class MovementTasks
 
         if (Player.Territory.RowId != territory.RowId)
         {
-            using var scope = new TaskDescriptionScope($"Teleport to aetheryte {aetheryteId}");
+            var destinationName = Svc.Data.Excel.GetSheet<Aetheryte>()
+                                     .GetRow(aetheryteId)
+                                     .PlaceName.Value.Name.ExtractText();
+            using var scope = new TaskDescriptionScope($"Teleport to aetheryte {destinationName} ({aetheryteId})");
             await CheckIfPlayerIsStunned(token);
             await WaitWhileAsync(() => Player.IsBusy, "Wait while Player is busy", token);
             while (!Svc.Condition[ConditionFlag.Casting])
             {
+                unsafe
+                {
+                    var teleport = Telepo.Instance()->TeleportList.FirstOrNull(x => x.AetheryteId == aetheryteId);
+                    ErrorThrowIf(!teleport.HasValue, $"Aetheryte {destinationName} ({aetheryteId}) not unlocked!");
+                    var teleportCost = teleport.Value.GilCost;
+                    ErrorThrowIf(InventoryManager.Instance()->GetGil() < teleportCost, $"Not enough gil to teleport to aetheryte {destinationName} ({aetheryteId})");
+                }
+
                 ErrorThrowIf(!Lifestream.Teleport(aetheryteId, 0), $"Teleport to Aetheryte {aetheryteId} in {territory.PlaceName.Value.Name.ExtractText()} ({territory.RowId}) failed.");
                 await Task.Delay(GeneralDelayMs * 8, token);
             }
@@ -274,7 +314,7 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         using var scope        = new TaskDescriptionScope("Roam until Target nearby");
-        var       path         = Utils.SortListByDistance(pointList);
+        var       path         = SortListByDistance(pointList);
         uint      killedARanks = 0;
         await WaitUntilAsync(() => Vnavmesh.NavIsReady() && !Player.IsBusy, "Wait for VNav/Player", token);
         foreach (var point in path)
@@ -388,35 +428,122 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         uint[] paralyzeIds = { 17, 216, 482, 988, 3463, 3963 };
-        if (paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x)))
-        {
-            await WaitWhileAsync(() => paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x)), "Wait for paralyze status to end", token);
-        }
+        if (paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x))) await WaitWhileAsync(() => paralyzeIds.Any(x => Player.Status.Any(y => y.StatusId == x)), "Wait for paralyze status to end", token);
     }
-}
 
-[CommandGroup]
-internal static class MovementRPCs
-{
-    [Command]
-    internal static async Task<bool> GoToPlayer(uint territoryId, Vector3 position, string world, ulong CID, CancellationToken token = default)
+    // TODO: Replace with Mapping The Realm
+    internal static async Task HandleTeleportDetour(uint closestAetheryte, uint destinationTerritoryId, Vector3 destinationPosition, CancellationToken token = default)
     {
-        if (token.IsCancellationRequested) return false;
-        using var scope = new TaskDescriptionScope($"RPC: GoTo ({territoryId} | {position})");
-
-        if (Player.CurrentWorldName != world)
+        if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && destinationTerritoryId is 139 or 152 or 154 or 155 or 180)
         {
-            if (Lifestream.ChangeWorld(world))
-                await WaitPulseConditionAsync(() => Lifestream.IsBusy(), "Waiting for World change", token);
+            switch (destinationTerritoryId)
+            {
+                // Reroute through Western La Noscea if target is on the left side of Upper La Noscea
+                case 139:
+                {
+                    ErrorThrowIf(!IsAetheryteUnlocked(14), $"You aren't attuned to Western La Noscea Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                    await TeleportTo(14, token);
+                    if (destinationPosition.ToVector2()
+                                           .IsWithinRadius(new Vector2(-460f, 150f), 150f))
+                        await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
+                    else
+                    {
+                        await MoveToNextZone(new Vector3(812f, 50f, 400f), 134, token);
+                        await MoveToNextZone(new Vector3(-162f, 36f, -740f), 137, token);
+
+                        if (!IsAetheryteUnlocked(12))
+                        {
+                            await MoveTo(new Vector3(-15f, 70.6f, 7f), true, token);
+                            await InteractWithByBaseId(12, token);
+                            await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                        }
+
+                        if (!IsAetheryteUnlocked(15))
+                        {
+                            await MoveToNextZone(new Vector3(82f, 80f, -125f), 139, token);
+                            await MoveTo(new Vector3(427f, 4.11f, 92f), true, token);
+                            await InteractWithByBaseId(15, token);
+                            await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                        }
+                    }
+
+                    break;
+                }
+                case 152:
+                {
+                    ErrorThrowIf(!IsAetheryteUnlocked(3), $"You aren't attuned to Central Shroud Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                    await TeleportTo(3, token);
+                    await MoveToNextZone(new Vector3(390f, -3.3f, -186f), 152, token);
+                    await MoveTo(new Vector3(-191f, 4.44f, 297f), true, token);
+                    await InteractWithByBaseId(4, token);
+                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                    break;
+                }
+                case 154:
+                {
+                    ErrorThrowIf(!IsAetheryteUnlocked(2), $"You aren't attuned to New Gridania Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                    await TeleportTo(2, token);
+                    await MoveToNextZone(new Vector3(-106f, 1.1f, 8f), 133, token);
+                    await MoveToNextZone(new Vector3(-208f, 10.4f, -95f), 154, token);
+
+                    await MoveTo(new Vector3(-34f, -40.45f, 232f), true, token);
+                    await InteractWithByBaseId(7, token);
+                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                    break;
+                }
+                case 155:
+                {
+                    if (IsAetheryteUnlocked(7))
+                    {
+                        await TeleportTo(7, token);
+                        await MoveToNextZone(new Vector3(-369f, -7f, 185f), 155, token);
+                    }
+                    else
+                    {
+                        ErrorThrowIf(!IsAetheryteUnlocked(2), $"You aren't attuned to New Gridania Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                        await TeleportTo(2, token);
+                        await MoveToNextZone(new Vector3(-106f, 1.1f, 8f), 133, token);
+                        await MoveToNextZone(new Vector3(-208f, 10.4f, -95f), 154, token);
+                        await MoveToNextZone(new Vector3(-369f, -7f, 185f), 155, token);
+                    }
+
+                    await MoveTo(new Vector3(229f, 312f, -238f), true, token);
+                    await InteractWithByBaseId(23, token);
+                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                    break;
+                }
+                case 180:
+                {
+                    ErrorThrowIf(!IsAetheryteUnlocked(14), $"You aren't attuned to Western La Noscea Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                    await TeleportTo(14, token);
+                    await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
+                    await MoveToNextZone(new Vector3(-339f, 48.60f, -19f), 180, token);
+                    await MoveTo(new Vector3(-114f, 64.65f, -216f), true, token);
+                    await InteractWithByBaseId(16, token);
+                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+                    break;
+                }
+            }
+        }
+        else if (closestAetheryte > 0)
+        {
+            if (destinationTerritoryId == 139 &&
+                destinationPosition.ToVector2()
+                                   .IsWithinRadius(new Vector2(-460f, 150f), 150f) &&
+                IsAetheryteUnlocked(14))
+            {
+                await TeleportTo(14, token);
+                await MoveToNextZone(new Vector3(412f, 31f, -15f), 139, token);
+            }
             else
-                return false;
+                await TeleportTo(closestAetheryte, token);
+        }
+        else
+        {
+            ErrorThrowIf(closestAetheryte == 0 || !IsAetheryteUnlocked(closestAetheryte),
+                         $"You aren't attuned to any Aetheryte for the Hunt Marks territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
         }
 
-        var aetheryteId = GetAetheryte(territoryId, position);
-        if (aetheryteId == 0 || !IsAetheryteUnlocked(aetheryteId)) return false;
-
-        await TeleportTo(aetheryteId, token);
-        await MoveCloseToPlayer(position, CID, token);
-        return true;
+        if (Player.Territory.RowId == 478) await MoveToNextZone(new Vector3(164f, 207f, 129f), 399, token);
     }
 }

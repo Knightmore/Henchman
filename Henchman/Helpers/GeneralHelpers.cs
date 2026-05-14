@@ -6,15 +6,17 @@ using ECommons.GameHelpers;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
+using InstanceContent = Lumina.Excel.Sheets.InstanceContent;
 using Map = Lumina.Excel.Sheets.Map;
 
 namespace Henchman.Helpers;
 
-internal static class GeneralHelpers
+public static class GeneralHelpers
 {
     public enum KillResult
     {
@@ -28,12 +30,16 @@ internal static class GeneralHelpers
                                            .GetRow(Player.ClassJob.RowId)
                                            .Role is 1 or 2;
 
-    public static          bool  IsPlayerBusy                                                       => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
-    internal static unsafe float GetChocoboTimeLeft                                                 => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
-    internal static        bool  IsPlayerInObjectRange3D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
-    internal static        bool  IsPlayerInObjectRange2D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
-    internal static        bool  IsPlayerInPositionRange3D(Vector3   position, float distance = 5f) => Player.DistanceTo(position) < distance;
-    internal static        bool  IsPlayerInPositionRange2D(Vector2   position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    public static          bool  IsPlayerBusy       => IsOccupied() || Player.Object.IsCasting || Player.IsMoving || Player.IsAnimationLocked;
+    internal static unsafe float GetChocoboTimeLeft => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
+
+    internal static unsafe IEnumerable<PartyMember> PartyMembers => GroupManager.Instance()->MainGroup.PartyMembers.ToArray()
+                                                                                                      .Where(x => x.TerritoryType != 0);
+
+    internal static bool IsPlayerInObjectRange3D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
+    internal static bool IsPlayerInObjectRange2D(IGameObject gameObj,  float distance = 5f) => Player.DistanceTo(gameObj)  < distance;
+    internal static bool IsPlayerInPositionRange3D(Vector3   position, float distance = 5f) => Player.DistanceTo(position) < distance;
+    internal static bool IsPlayerInPositionRange2D(Vector2   position, float distance = 5f) => Player.DistanceTo(position) < distance;
 
     internal static unsafe byte? GetFirstGearsetForClassJob(ClassJob cj)
     {
@@ -68,7 +74,7 @@ internal static class GeneralHelpers
             gearsetModule->EquipGearset(gearset.Value.Id);
             return true;
         }
-        
+
         return false;
     }
 
@@ -145,7 +151,29 @@ internal static class GeneralHelpers
         return false;
     }
 
-    internal static unsafe byte GetGrandCompanyRank() => PlayerState.Instance()->GetGrandCompanyRank();
+    internal static unsafe uint GetGrandCompany() => PlayerState.Instance()->GrandCompany;
+
+    internal static int GetRankInfo(bool gcLog) => gcLog
+                                                           ? HuntLogHelper.GetGrandCompanyRankInfo()
+                                                           : HuntLogHelper.GetClassJobRankInfo();
+
+    public static unsafe int GetGrandCompanyRank()
+    {
+        var playerState = PlayerState.Instance();
+        var playerGC    = playerState->GrandCompany;
+
+        switch (playerGC)
+        {
+            case 1:
+                return playerState->GCRanks[0];
+            case 2:
+                return playerState->GCRanks[1];
+            case 3:
+                return playerState->GCRanks[2];
+            default:
+                return -1;
+        }
+    }
 
     internal static unsafe void ChangeBait(int baitId) => ((FishingEventHandler*)EventFramework.Instance()->GetEventHandlerById(0x150001))->ChangeBait(baitId);
 
@@ -198,7 +226,7 @@ internal static class GeneralHelpers
         if (level != null)
             return new Vector3(level.Value.X, level.Value.Y, level.Value.Z);
 
-        var marker = FindRow<MapMarker>(m => m.DataType == 3 && m.DataKey.RowId == aetheryte.RowId) ?? FindRow<MapMarker>(m => m.DataType == 4 && m.DataKey.RowId == aetheryte.AethernetName.RowId)!;
+        var marker = FindSubrow<MapMarker>(m => m.DataType == 3 && m.DataKey.RowId == aetheryte.RowId) ?? FindSubrow<MapMarker>(m => m.DataType == 4 && m.DataKey.RowId == aetheryte.AethernetName.RowId)!;
 
         return ConvertMapCoordXZToWorldCoord(marker.Value.X, marker.Value.Y, aetheryte.Territory.Value.Map.Value);
     }
@@ -252,4 +280,23 @@ internal static class GeneralHelpers
     }
 
     internal static bool IsScreenAndPlayerReady() => Player.Interactable && !Player.IsAnimationLocked && IsScreenReady();
+
+    internal static bool IsDutyUnlocked(uint dutyId) => Svc.UnlockState.IsInstanceContentUnlocked(Svc.Data.Excel.GetSheet<InstanceContent>()
+                                                                                                     .GetRow(Svc.Data.Excel.GetSheet<ContentFinderCondition>()
+                                                                                                                .First(x => x.TerritoryType.RowId == dutyId)
+                                                                                                                .RowId));
+
+    internal static        bool IsQuestCompleted(uint questId) => QuestManager.IsQuestComplete(questId);
+    internal static unsafe bool IsQuestAccepted(uint  questId) => QuestManager.Instance()->IsQuestAccepted(questId);
+    internal static unsafe void AbandonQuest(uint     questID) => Journal.Instance()->AbandonQuest(Journal.QuestType.NormalQuest, questID - 65536);
+
+    private static ClassJob ClassRow(uint classId) => Svc.Data.GetExcelSheet<ClassJob>()
+                                                         .GetRow(classId);
+
+    internal static bool IsCombat(uint classId) => ClassRow(classId)
+                                                  .ClassJobCategory.Value.Name.ExtractText()
+                                                  .Contains("War") ||
+                                                   ClassRow(classId)
+                                                          .ClassJobCategory.Value.Name.ExtractText()
+                                                          .Contains("Magic");
 }

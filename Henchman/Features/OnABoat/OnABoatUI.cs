@@ -2,10 +2,10 @@ using System.Linq;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using ECommons.Configuration;
+using Dalamud.Interface.Utility.Raii;
 using ECommons.GameHelpers;
 using ECommons.ImGuiMethods;
-using Henchman.TaskManager;
+using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -13,15 +13,61 @@ using Action = System.Action;
 namespace Henchman.Features.OnABoat;
 
 [Feature]
-internal class OnABoatUI : FeatureUI<Configuration>
+internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
 {
-    internal static readonly OnABoat feature = new();
+    private static bool ConfigChanged;
 
-    private static                  bool            ConfigChanged;
+    private static readonly Dictionary<string, World> Worlds =
+            Svc.Data.GetExcelSheet<World>()
+               .DistinctBy(x => x.Name.ExtractText())
+               .ToDictionary(x => x.Name.ExtractText(), x => x);
+
+    private readonly Table<OfflineCharacterData> ARTable;
+
+    public OnABoatUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+        ARTable = new Table<OfflineCharacterData>(
+                                                  "##ARFisherTable",
+                                                  new List<TableColumn<OfflineCharacterData>>
+                                                  {
+                                                          new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                                     {
+                                                                                                                                         if (!Configuration.EnableCharacterForOCFishing.TryAdd(x.CID, false))
+                                                                                                                                         {
+                                                                                                                                             var isEnabled = Configuration.EnableCharacterForOCFishing[x.CID];
+                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                                             if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
+                                                                                                                                             {
+                                                                                                                                                 Configuration.EnableCharacterForOCFishing[x.CID] = !isEnabled;
+                                                                                                                                                 ConfigChanged                                    = true;
+                                                                                                                                             }
+
+                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                                         }
+                                                                                                                                         else
+                                                                                                                                             ConfigChanged = true;
+                                                                                                                                     }),
+                                                          new("Name", x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
+                                                          new("World", x => x.World, 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          new("DataCenter", x => Worlds[x.World]
+                                                                                .DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          new("Lvl", x => x.ClassJobLevelArray[17]
+                                                                           .ToString(), 35, Alignment: ColumnAlignment.Center),
+                                                          new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment: ColumnAlignment.Center)
+                                                  },
+                                                  () => Feature.GetCurrentARCharacterData(),
+                                                  x => x.CID == Player.CID,
+                                                  new Vector2(500, 0)
+                                                 );
+    }
+
     public sealed override Configuration   Configuration { get; init; }
-    public override                 string          Name          => "On A Boat";
-    public override                 string          Category      => Henchman.Category.Economy;
-    public override                 FontAwesomeIcon Icon          => FontAwesomeIcon.Sailboat;
+    public override        string          Name          => "On A Boat";
+    public override        Category        Category      => Category.Economy;
+    public override        FontAwesomeIcon Icon          => FontAwesomeIcon.Sailboat;
 
     public override Action? Help => () =>
                                     {
@@ -53,54 +99,28 @@ internal class OnABoatUI : FeatureUI<Configuration>
 
     public override bool LoginNeeded => false;
 
-    private Table<OfflineCharacterData> ARTable;
+    public void Start() => Feature.RunTask();
 
-    private static Dictionary<string, World> Worlds =
-            Svc.Data.GetExcelSheet<World>()
-               .DistinctBy(x => x.Name.ExtractText())
-               .ToDictionary(x => x.Name.ExtractText(), x => x);
-
-    public void Start() => EnqueueTask(new TaskRecord(feature.Start, "On A Boat", onDone: () => feature.UnsubscribeEvents(), onAbort: feature.UnsubscribeEvents, onError: feature.OnError));
-
-    public OnABoatUI()
-    {
-        Configuration = LoadConfig<Configuration>() ?? new Configuration();
-
-        ARTable = new Table<OfflineCharacterData>(
-                                                  "##ARFisherTable",
-                                                  new List<TableColumn<OfflineCharacterData>>
-                                                  {
-                                                          new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
-                                                                                                                                     {
-                                                                                                                                         if (!Configuration.EnableCharacterForOCFishing.TryAdd(x.CID, false))
-                                                                                                                                         {
-                                                                                                                                             var isEnabled = Configuration.EnableCharacterForOCFishing[x.CID];
-                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
-
-                                                                                                                                             if (ImGuiEx.IconButton($"\uf021###{x.CID}"))
-                                                                                                                                             {
-                                                                                                                                                 Configuration.EnableCharacterForOCFishing[x.CID] = !isEnabled;
-                                                                                                                                                 ConfigChanged                                    = true;
-                                                                                                                                             }
-
-                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
-                                                                                                                                         }
-                                                                                                                                         else
-                                                                                                                                             ConfigChanged = true;
-                                                                                                                                     }),
-                                                          new("Name", x => x.Name, 135, FilterType.String, Alignment : ColumnAlignment.Center),
-                                                          new("World", x => x.World, 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                          new("DataCenter", x => Worlds[x.World].DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, Alignment : ColumnAlignment.Center),
-                                                          new("Lvl", x => x.ClassJobLevelArray[17]
-                                                                           .ToString(), 35, Alignment : ColumnAlignment.Center),
-                                                          new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment : ColumnAlignment.Center)
-                                                  },
-                                                  () => feature.GetCurrentARCharacterData(),
-                                                  highlightPredicate: x => x.CID == Player.CID,
-                                                  size: new Vector2(500, 0)
-                                                 );
-    }
     public override void Draw()
+    {
+        using var tabs = ImRaii.TabBar("Tabs");
+        if (tabs)
+        {
+            using (var tab = ImRaii.TabItem("Main"))
+            {
+                if (tab)
+                    DrawMain();
+            }
+
+            using (var tab = ImRaii.TabItem("Settings"))
+            {
+                if (tab)
+                    DrawSettings();
+            }
+        }
+    }
+
+    private void DrawMain()
     {
         ConfigChanged = false;
         var utcNow = DateTime.UtcNow;
@@ -113,42 +133,35 @@ internal class OnABoatUI : FeatureUI<Configuration>
                                if (StartButton() && !IsTaskEnqueued(Name)) Start();
                            }, () =>
                               {
-                                  if (feature.IsRegistrationOpen)
+                                  if (Feature.IsRegistrationOpen)
                                   {
                                       var remaining = new TimeSpan(0, 14 - minute, 59 - second);
                                       ImGui.Text($"Registration open for {remaining.Minutes:D2}:{remaining.Seconds:D2} minutes");
                                   }
                                   else
                                   {
-                                      var nextEvenHour = hour % 2 == 0
-                                                                 ? hour + 2
-                                                                 : hour + 1;
-                                      var nextWindowStart = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc).AddHours(nextEvenHour);
+                                      DateTime nextWindowStart;
 
-                                      if (nextWindowStart <= utcNow)
-                                          nextWindowStart = nextWindowStart.AddHours(2);
+                                      var currentWindow = new DateTime(
+                                                                       utcNow.Year, utcNow.Month, utcNow.Day,
+                                                                       utcNow.Hour, 00, 0, DateTimeKind.Utc);
+
+                                      if (utcNow.Hour % 2 == 0)
+                                      {
+                                          nextWindowStart = utcNow < currentWindow
+                                                                    ? currentWindow
+                                                                    : currentWindow.AddHours(2);
+                                      }
+                                      else
+                                          nextWindowStart = currentWindow.AddHours(1);
 
                                       var waitTime = nextWindowStart - utcNow;
                                       ImGui.Text($"Next Voyage in {waitTime.Hours:D2}:{waitTime.Minutes:D2}:{waitTime.Seconds:D2}");
                                   }
                               });
 
-        DrawCentered("##boatVersatile", () =>
-                                        {
-                                            ImGui.Text("Use only Versatile Lure:");
-                                            ImGui.SameLine(200 * GlobalFontScale);
-                                            ConfigChanged |= ImGui.Checkbox("##onlyVLure", ref Configuration.UseOnlyVersatile);
-                                        });
-
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##boatArDiscard", () =>
-                                            {
-                                                ImGui.Text("Use AR Discard after Voyage:");
-                                                ImGui.SameLine(200 * GlobalFontScale);
-                                                ConfigChanged |= ImGui.Checkbox("##ARDiscard", ref Configuration.DiscardAfterVoyage);
-                                            });
-
             DrawCentered("##boatArCharacters", () =>
                                                {
                                                    ImGui.Text("Use with AutoRetainer Multimode:");
@@ -157,45 +170,45 @@ internal class OnABoatUI : FeatureUI<Configuration>
                                                });
 
             DrawCentered("##boatArStopAt100", () =>
-                                               {
-                                                   ImGui.Text("Stop if selected chars are lvl 100:");
-                                                   ImGui.SameLine(200 * GlobalFontScale);
-                                                   ConfigChanged |= ImGui.Checkbox("##stopAt100", ref Configuration.OCFishingStop100);
-                                               });
+                                              {
+                                                  ImGui.Text("Stop if selected chars are lvl 100:");
+                                                  ImGui.SameLine(200 * GlobalFontScale);
+                                                  ConfigChanged |= ImGui.Checkbox("##stopAt100", ref Configuration.OCFishingStop100);
+                                              });
         }
 
         if (Configuration.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##TradeCharSelector", () =>
-                                                {
-                                                    if (ImGui.Button("Select All"))
-                                                    {
-                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
-                                                        ConfigChanged = true;
-                                                    }
+            DrawCentered("##BoatCharSelector", () =>
+                                               {
+                                                   if (ImGui.Button("Select All"))
+                                                   {
+                                                       foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
+                                                       ConfigChanged = true;
+                                                   }
 
-                                                    ImGui.SameLine();
-                                                    if (ImGui.Button("Deselect All"))
-                                                    {
-                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
-                                                        ConfigChanged = true;
-                                                    }
-                                                });
-            DrawCentered("##TradeFilteredCharSelector", () =>
-                                                        {
-                                                            if (ImGui.Button("Select All Shown"))
-                                                            {
-                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
-                                                                ConfigChanged = true;
-                                                            }
+                                                   ImGui.SameLine();
+                                                   if (ImGui.Button("Deselect All"))
+                                                   {
+                                                       foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
+                                                       ConfigChanged = true;
+                                                   }
+                                               });
+            DrawCentered("##BoatFilteredCharSelector", () =>
+                                                       {
+                                                           if (ImGui.Button("Select All Shown"))
+                                                           {
+                                                               foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
+                                                               ConfigChanged = true;
+                                                           }
 
-                                                            ImGui.SameLine();
-                                                            if (ImGui.Button("Deselect All Shown"))
-                                                            {
-                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
-                                                                ConfigChanged = true;
-                                                            }
-                                                        });
+                                                           ImGui.SameLine();
+                                                           if (ImGui.Button("Deselect All Shown"))
+                                                           {
+                                                               foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
+                                                               ConfigChanged = true;
+                                                           }
+                                                       });
             DrawCentered("##CenteredARFisherTable", () => DrawARTable());
         }
         else
@@ -216,10 +229,41 @@ internal class OnABoatUI : FeatureUI<Configuration>
                                                                                                                               ? row.Name.ExtractText()
                                                                                                                               : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
                                             {
-                                                Configuration.OceanWorld  = selectedWorld.Name.ExtractText();
-                                                ConfigChanged = true;
+                                                Configuration.OceanWorld = selectedWorld.Name.ExtractText();
+                                                ConfigChanged            = true;
                                             }
                                         });
+        }
+
+        if (ConfigChanged) SaveConfig(Configuration);
+    }
+
+    private void DrawSettings()
+    {
+        DrawCentered("##boatVersatile", () =>
+                                        {
+                                            ImGui.Text("Use only Versatile Lure");
+                                            ImGui.SameLine(200 * GlobalFontScale);
+                                            ConfigChanged |= ImGui.Checkbox("##onlyVLure", ref Configuration.UseOnlyVersatile);
+                                        });
+
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            DrawCentered("##boatArSelling", () =>
+                                            {
+                                                ImGui.Text("Use AR ItemSell after Voyage");
+                                                ImGui.SameLine();
+                                                HelpMarker(() => ImGui.Text("This will only work if you return to a destination with a retainer bell/vendor NPC nearby."));
+                                                ImGui.SameLine(200 * GlobalFontScale);
+                                                ConfigChanged |= ImGui.Checkbox("##ARItemSell", ref Configuration.SellAfterVoyage);
+                                            });
+
+            DrawCentered("##boatArDiscard", () =>
+                                            {
+                                                ImGui.Text("Use AR Discard after Voyage");
+                                                ImGui.SameLine(200 * GlobalFontScale);
+                                                ConfigChanged |= ImGui.Checkbox("##ARDiscard", ref Configuration.DiscardAfterVoyage);
+                                            });
         }
 
         if (ConfigChanged) SaveConfig(Configuration);

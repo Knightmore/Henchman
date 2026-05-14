@@ -42,10 +42,9 @@ public static class RotationSolverReborn
         AutoDuty,
 
         /// <summary>
-        /// 
         /// </summary>
         [Description("This mode is managed by the Henchman plugin")]
-        Henched,
+        Henched
     }
 
     [EzIPC]
@@ -56,10 +55,7 @@ public static class RotationSolverReborn
 
     public static void Enable()
     {
-        if (SubscriptionManager.IsInitialized(IPCNames.RotationSolverReborn))
-        {
-            ChangeOperatingMode((byte)StateCommandType.Henched);
-        }
+        if (SubscriptionManager.IsInitialized(IPCNames.RotationSolverReborn)) ChangeOperatingMode((byte)StateCommandType.Henched);
     }
 
     public static void Disable()

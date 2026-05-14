@@ -9,8 +9,7 @@ using Dalamud.Interface.Utility.Raii;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
 using ECommons.MathHelpers;
-using Henchman.Helpers;
-using Henchman.TaskManager;
+using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -19,7 +18,7 @@ using Map = Lumina.Excel.Sheets.Map;
 namespace Henchman.Features.BringYourXGame;
 
 [Feature]
-public class BringYourXGameUI : FeatureUI<Configuration>
+public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
 {
     private readonly ImmutableSortedSet<uint> ARankTerritories = BRanks
                                                                 .Values
@@ -30,7 +29,7 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                                                                 .Select(x => x.TerritoryId)
                                                                 .ToImmutableSortedSet();
 
-    private readonly BringYourXGame feature = new();
+    private readonly BringYourXGame Feature = new();
 
     private readonly Dictionary<uint, List<uint>> GroupedARankTerritories = BRanks
                                                                            .Values
@@ -75,10 +74,13 @@ public class BringYourXGameUI : FeatureUI<Configuration>
     internal List<Vector3> FoundSpawns = [];
     private  Map           map;
 
-    internal        List<Vector3>   PossibleSpawnPoints = [];
-    internal        uint            SpawnsRecordedFor;
+    internal List<Vector3> PossibleSpawnPoints = [];
+    internal uint          SpawnsRecordedFor;
+
+    public BringYourXGameUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
     public override string          Name     => "Bring Your A/B Game";
-    public override string          Category => Henchman.Category.Combat;
+    public override Category        Category => Category.Combat;
     public override FontAwesomeIcon Icon     => FontAwesomeIcon.Gamepad;
 
 
@@ -109,11 +111,6 @@ public class BringYourXGameUI : FeatureUI<Configuration>
     public override                 bool          LoginNeeded   => false;
     public sealed override required Configuration Configuration { get; init; }
 
-    public BringYourXGameUI()
-    {
-        Configuration = LoadConfig<Configuration>() ?? new Configuration();
-    }
-
     public override void Draw()
     {
         if (ImGui.BeginTabBar("RankTabs"))
@@ -141,15 +138,7 @@ public class BringYourXGameUI : FeatureUI<Configuration>
         DrawCentered("##ARankStart", () =>
                                              Layout.DrawButton(() =>
                                                                {
-                                                                   if (StartButton() && !IsTaskEnqueued(Name))
-                                                                   {
-                                                                       EnqueueTask(new TaskRecord(feature.StartA, Name, onDone: () =>
-                                                                                                                                {
-                                                                                                                                    Bossmod.DisableAI();
-                                                                                                                                    AutoRotation.Disable();
-                                                                                                                                    ResetCurrentTarget();
-                                                                                                                                }));
-                                                                   }
+                                                                   if (StartButton() && !IsTaskEnqueued(Name)) Feature.RunTask(true);
                                                                }));
 
         DrawCentered("###ARankSelector", () =>
@@ -157,7 +146,7 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                                              if (ImGui.Button("Select All"))
                                              {
                                                  Configuration.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
-                                                 configChanged                = true;
+                                                 configChanged                            = true;
                                              }
 
                                              ImGui.SameLine();
@@ -193,7 +182,7 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                                                                        if (ImGui.Button("Deselect Expansion"))
                                                                        {
                                                                            Configuration.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Value.Values.SelectMany(e => e)
-                                                                                                                                  .Contains(x));
+                                                                                                                                              .Contains(x));
 
                                                                            configChanged = true;
                                                                        }
@@ -277,12 +266,8 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                                                              {
                                                                  if (StartButton() && !IsTaskEnqueued(Name))
                                                                  {
-                                                                     EnqueueTask(new TaskRecord(feature.StartB, Name, onDone: () =>
-                                                                                                                              {
-                                                                                                                                  Bossmod.DisableAI();
-                                                                                                                                  AutoRotation.Disable();
-                                                                                                                                  ResetCurrentTarget();
-                                                                                                                              }));
+                                                                     Feature.RunTask(false);
+
                                                                      if (C.TrackBRankSpots)
                                                                      {
                                                                          if (BRanks.TryGetValue(Configuration.BRankToFarm, out var mark))
@@ -305,12 +290,12 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                          ImGui.SameLine(150);
                          ImGui.SetNextItemWidth(150f);
                          if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(Configuration.BRankToFarm) is { } row
-                                                                                                      ? Utils.ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
-                                                                                                                                   .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                                      : string.Empty, x => Utils.ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
+                                                                                                      ? ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
+                                                                                                                             .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
+                                                                                                      : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
                          {
                              Configuration.BRankToFarm = brank.RowId;
-                             configChanged = true;
+                             configChanged             = true;
                          }
 
                          ImGui.Text("Track found B-Rank spots");
@@ -351,7 +336,7 @@ public class BringYourXGameUI : FeatureUI<Configuration>
                                      sb.AppendLine("");
                                  }
 
-                                 Log(sb.ToString());
+                                 TaskLog(sb.ToString());
                              }
 
                              ImGui.SameLine();

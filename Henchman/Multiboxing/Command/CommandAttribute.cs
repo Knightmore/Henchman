@@ -1,4 +1,4 @@
-namespace Henchman.Multibox.Command;
+namespace Henchman.Multiboxing.Command;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field)]
 public class CommandAttribute : Attribute { }
