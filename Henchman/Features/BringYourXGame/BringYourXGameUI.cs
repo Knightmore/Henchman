@@ -1,6 +1,3 @@
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -12,6 +9,9 @@ using ECommons.MathHelpers;
 using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
 using Action = System.Action;
 using Map = Lumina.Excel.Sheets.Map;
 
@@ -21,7 +21,6 @@ namespace Henchman.Features.BringYourXGame;
 public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
 {
     private readonly ImmutableSortedSet<uint> ARankTerritories = BRanks
-                                                                .Values
                                                                 .Where(x => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                                .GetRow(x.TerritoryId)
                                                                                .ExVersion.Value.RowId <=
@@ -32,7 +31,6 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
     private readonly BringYourXGame Feature = new();
 
     private readonly Dictionary<uint, List<uint>> GroupedARankTerritories = BRanks
-                                                                           .Values
                                                                            .Where(x => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                                           .GetRow(x.TerritoryId)
                                                                                           .ExVersion.Value.RowId <=
@@ -48,7 +46,7 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                                                                         );
 
     private readonly Dictionary<uint, Dictionary<uint, List<uint>>> TerritoryGroupedByExpansionAndZone =
-            BRanks.Values
+            BRanks
                   .Where(x =>
                                  Svc.Data.GetExcelSheet<TerritoryType>()
                                     .GetRow(x.TerritoryId)
@@ -72,30 +70,21 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                );
 
     internal List<Vector3> FoundSpawns = [];
-    private  Map           map;
+    private Map map;
 
     internal List<Vector3> PossibleSpawnPoints = [];
-    internal uint          SpawnsRecordedFor;
+    internal uint SpawnsRecordedFor;
 
     public BringYourXGameUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
 
-    public override string          Name     => "Bring Your A/B Game";
-    public override Category        Category => Category.Combat;
-    public override FontAwesomeIcon Icon     => FontAwesomeIcon.Gamepad;
+    public override string Name => "Bring Your A/B Game";
+    public override Category Category => Category.Combat;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.Gamepad;
 
 
     public override Action Help => () =>
                                    {
-                                       ImGui.Text("""
-                                                  A:
-                                                  Just hit "Start" and it will roam all available A-Rank destinations up to Stormbloond.
-
-                                                  B:
-                                                  Pick the territory you want to roam and click "Start" to begin.
-                                                  It will farm any B-Rank that it can find until you stop it.
-                                                  """);
-
-
+                                       ImGui.Text(T("HelpText"));
                                        DrawRequirements(Requirements);
                                    };
 
@@ -108,20 +97,20 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
             (IPCNames.RotationSolverReborn, false)
     ];
 
-    public override                 bool          LoginNeeded   => false;
+    public override bool LoginNeeded => false;
     public sealed override required Configuration Configuration { get; init; }
 
     public override void Draw()
     {
         if (ImGui.BeginTabBar("RankTabs"))
         {
-            using (var tab = ImRaii.TabItem("A-Rank"))
+            using (var tab = ImRaii.TabItem(T("TabARank")))
             {
                 if (tab)
                     DrawA();
             }
 
-            using (var tab = ImRaii.TabItem("B-Rank"))
+            using (var tab = ImRaii.TabItem(T("TabBRank")))
             {
                 if (tab)
                     DrawB();
@@ -143,14 +132,14 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
 
         DrawCentered("###ARankSelector", () =>
                                          {
-                                             if (ImGui.Button("Select All"))
+                                             if (ImGui.Button(T("SelectAll")))
                                              {
                                                  Configuration.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
-                                                 configChanged                            = true;
+                                                 configChanged = true;
                                              }
 
                                              ImGui.SameLine();
-                                             if (ImGui.Button("Deselect All"))
+                                             if (ImGui.Button(T("DeselectAll")))
                                              {
                                                  Configuration.EnabledTerritoriesForARank.Clear();
                                                  configChanged = true;
@@ -172,14 +161,14 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                         ImGui.NewLine();
                         ImGuiEx.LineCentered("##ExpansionButtons", () =>
                                                                    {
-                                                                       if (ImGui.Button("Select Expansion"))
+                                                                       if (ImGui.Button(T("SelectExpansion")))
                                                                        {
                                                                            Configuration.EnabledTerritoriesForARank.AddRange(expansion.Value.Values.SelectMany(e => e));
                                                                            configChanged = true;
                                                                        }
 
                                                                        ImGui.SameLine();
-                                                                       if (ImGui.Button("Deselect Expansion"))
+                                                                       if (ImGui.Button(T("DeselectExpansion")))
                                                                        {
                                                                            Configuration.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Value.Values.SelectMany(e => e)
                                                                                                                                               .Contains(x));
@@ -203,14 +192,14 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                         ImGui.NewLine();
                                         ImGuiEx.LineCentered("##ZoneButtons", () =>
                                                                               {
-                                                                                  if (ImGui.Button("Select Zone"))
+                                                                                  if (ImGui.Button(T("SelectZone")))
                                                                                   {
                                                                                       Configuration.EnabledTerritoriesForARank.AddRange(zone.Value);
                                                                                       configChanged = true;
                                                                                   }
 
                                                                                   ImGui.SameLine();
-                                                                                  if (ImGui.Button("Deselect Zone"))
+                                                                                  if (ImGui.Button(T("DeselectZone")))
                                                                                   {
                                                                                       Configuration.EnabledTerritoriesForARank.RemoveWhere(t => zone.Value.Contains(t));
 
@@ -248,7 +237,7 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                                                                                                                    Configuration.EnabledTerritoriesForARank.Remove(x);
                                                                                                                            }
                                                                                                                        }),
-                                            new("Territory", x => Svc.Data.GetExcelSheet<TerritoryType>()
+                                            new(T("ColTerritory"), x => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                      .GetRow(x)
                                                                      .PlaceName.Value.Name.GetText(), 200, Alignment: ColumnAlignment.Center)
                                     },
@@ -270,7 +259,7 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
 
                                                                      if (C.TrackBRankSpots)
                                                                      {
-                                                                         if (BRanks.TryGetValue(Configuration.BRankToFarm, out var mark))
+                                                                         if (GetBRank(Configuration.BRankToFarm) is { } mark)
                                                                          {
                                                                              if (SpawnsRecordedFor != Configuration.BRankToFarm)
                                                                              {
@@ -286,26 +275,26 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
 
         DrawCentered(() =>
                      {
-                         ImGui.Text("B-Rank to Farm:");
+                         ImGui.Text(T("BRankToFarm"));
                          ImGui.SameLine(150);
                          ImGui.SetNextItemWidth(150f);
                          if (ImGuiEx.ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(Configuration.BRankToFarm) is { } row
                                                                                                       ? ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
                                                                                                                              .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                                      : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Keys.Any(b => b == x.RowId)))
+                                                                                                      : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Any(b => b.BNpcNameRowId == x.RowId)))
                          {
                              Configuration.BRankToFarm = brank.RowId;
-                             configChanged             = true;
+                             configChanged = true;
                          }
 
-                         ImGui.Text("Track found B-Rank spots");
-                         ImGui.SameLine(200);
+                         ImGui.Text(T("TrackFoundSpots"));
+                         ImGui.SameLine();
                          configChanged |= ImGui.Checkbox("##echoBRanks", ref C.TrackBRankSpots);
                      });
 
         if (C.TrackBRankSpots)
         {
-            if (BRanks.TryGetValue(Configuration.BRankToFarm, out var mark))
+            if (GetBRank(Configuration.BRankToFarm) is { } mark)
             {
                 map = Svc.Data.GetExcelSheet<TerritoryType>()
                          .GetRow(mark.TerritoryId)
@@ -315,10 +304,10 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
             ImGui.Separator();
             DrawCentered(() =>
                          {
-                             if (ImGui.Button("Write positions to log"))
+                             if (ImGui.Button(T("WritePositions")))
                              {
                                  var sb = new StringBuilder();
-                                 sb.AppendLine("Left over possible positions");
+                                 sb.AppendLine(T("LeftPositions"));
                                  foreach (var position in PossibleSpawnPoints)
                                  {
                                      sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
@@ -327,7 +316,7 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                      sb.AppendLine("");
                                  }
 
-                                 sb.AppendLine("Registered spawn positions");
+                                 sb.AppendLine(T("RegisteredPositions"));
                                  foreach (var position in FoundSpawns)
                                  {
                                      sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
@@ -340,23 +329,24 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                              }
 
                              ImGui.SameLine();
-                             if (ImGui.Button("Print spawn locations to chat"))
+                             if (ImGui.Button(T("PrintSpawnLocations")))
                              {
+                                 var selectedMark = GetBRank(Configuration.BRankToFarm)!;
                                  var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
-                                                 .GetRow(BRanks[Configuration.BRankToFarm].TerritoryId)
+                                                 .GetRow(selectedMark.TerritoryId)
                                                  .Map.Value;
                                  foreach (var position in FoundSpawns)
                                  {
                                      var mapCoords = WorldToMap(position.ToVector2(), mapRow.OffsetX, mapRow.OffsetY, mapRow.SizeFactor);
-                                     var mapLink   = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
+                                     var mapLink = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
                                      var message = new XivChatEntry
-                                                   {
-                                                           Type = XivChatType.Echo,
-                                                           Message = new SeStringBuilder().AddUiForeground($"B-Rank {BRanks[Configuration.BRankToFarm].Name} found @ ", 561)
+                                     {
+                                         Type = XivChatType.Echo,
+                                         Message = new SeStringBuilder().AddUiForeground($"B-Rank {selectedMark.Name} found @ ", 561)
                                                                                           .Append(mapLink)
                                                                                           .AddUiForegroundOff()
                                                                                           .Build()
-                                                   };
+                                     };
                                      Svc.Chat.Print(message);
                                  }
                              }
@@ -392,8 +382,8 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                            "##BGamePossible",
                                            new List<TableColumn<Vector3>>
                                            {
-                                                   new("World", pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
-                                                   new("Map", pos =>
+                                                   new(T("ColWorld"), pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
+                                                   new(T("ColMap"), pos =>
                                                               {
                                                                   var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
                                                                   return $"X: {mapCoords.X} | Y: {mapCoords.Y}";
@@ -414,8 +404,8 @@ public class BringYourXGameUI : FeatureUI<BringYourXGame, Configuration>
                                            "##BGameSpawned",
                                            new List<TableColumn<Vector3>>
                                            {
-                                                   new("World", pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
-                                                   new("Map", pos =>
+                                                   new(T("ColWorld"), pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
+                                                   new(T("ColMap"), pos =>
                                                               {
                                                                   var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
                                                                   return $"X: {mapCoords.X} | Y: {mapCoords.Y}";

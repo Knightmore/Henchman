@@ -1,4 +1,3 @@
-using System.Linq;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
@@ -8,6 +7,7 @@ using ECommons.ImGuiMethods;
 using Henchman.Abstractions;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.OnABoat;
@@ -64,27 +64,14 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
                                                  );
     }
 
-    public sealed override Configuration   Configuration { get; init; }
-    public override        string          Name          => "On A Boat";
-    public override        Category        Category      => Category.Economy;
-    public override        FontAwesomeIcon Icon          => FontAwesomeIcon.Sailboat;
+    public sealed override Configuration Configuration { get; init; }
+    public override string Name => "On A Boat";
+    public override Category Category => Category.Economy;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.Sailboat;
 
     public override Action? Help => () =>
                                     {
-                                        ImGui.Text("""
-                                                   AutoRetainer Mode:
-                                                   - Enable all your characters that you want to cycle through for ocean fishing.
-                                                   - On A Boat will always log into the character with the lowest fisher level.
-                                                   - If you don't have enough characters with retainers running to end in PostProcess,
-                                                     setup your AutoRetainer to wait on Titlescreen.
-                                                        
-                                                   Single Character Mode:
-                                                   - Just enter your character name, pick its world and On A Boat will level only with that character.
-
-                                                   If you don't have completed the ocean fishing quest already, it will be done for you. (Requires Questionable)
-                                                   To take less travelling time, it will attune to the Arcanists' Guild aetheryte to use the athernet next time.
-                                                   """);
-
+                                        ImGui.Text(T("HelpText"));
                                         DrawRequirements(Requirements);
                                     };
 
@@ -106,13 +93,13 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
-            using (var tab = ImRaii.TabItem("Main"))
+            using (var tab = ImRaii.TabItem(T("TabMain")))
             {
                 if (tab)
                     DrawMain();
             }
 
-            using (var tab = ImRaii.TabItem("Settings"))
+            using (var tab = ImRaii.TabItem(T("TabSettings")))
             {
                 if (tab)
                     DrawSettings();
@@ -124,7 +111,7 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
     {
         ConfigChanged = false;
         var utcNow = DateTime.UtcNow;
-        var hour   = utcNow.Hour;
+        var hour = utcNow.Hour;
         var minute = utcNow.Minute;
         var second = utcNow.Second;
 
@@ -136,7 +123,7 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
                                   if (Feature.IsRegistrationOpen)
                                   {
                                       var remaining = new TimeSpan(0, 14 - minute, 59 - second);
-                                      ImGui.Text($"Registration open for {remaining.Minutes:D2}:{remaining.Seconds:D2} minutes");
+                                      ImGui.Text(string.Format(T("RegistrationOpenFmt"), remaining.Minutes, remaining.Seconds));
                                   }
                                   else
                                   {
@@ -156,7 +143,7 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
                                           nextWindowStart = currentWindow.AddHours(1);
 
                                       var waitTime = nextWindowStart - utcNow;
-                                      ImGui.Text($"Next Voyage in {waitTime.Hours:D2}:{waitTime.Minutes:D2}:{waitTime.Seconds:D2}");
+                                      ImGui.Text(string.Format(T("NextVoyageFmt"), waitTime.Hours, waitTime.Minutes, waitTime.Seconds));
                                   }
                               });
 
@@ -164,15 +151,16 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
         {
             DrawCentered("##boatArCharacters", () =>
                                                {
-                                                   ImGui.Text("Use with AutoRetainer Multimode:");
-                                                   ImGui.SameLine(200 * GlobalFontScale);
+                                                   ImGui.Text(T("UseWithARMultimode"));
+                                                   ImGui.SameLine();
                                                    ConfigChanged |= ImGui.Checkbox("##HandleAR", ref Configuration.OCFishingHandleAR);
                                                });
 
             DrawCentered("##boatArStopAt100", () =>
                                               {
-                                                  ImGui.Text("Stop if selected chars are lvl 100:");
-                                                  ImGui.SameLine(200 * GlobalFontScale);
+                                                  ImGui.Text(T("StopAt100"));
+                                                  //ImGui.SameLine(200 * GlobalFontScale);
+                                                  ImGui.SameLine();
                                                   ConfigChanged |= ImGui.Checkbox("##stopAt100", ref Configuration.OCFishingStop100);
                                               });
         }
@@ -181,14 +169,14 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
         {
             DrawCentered("##BoatCharSelector", () =>
                                                {
-                                                   if (ImGui.Button("Select All"))
+                                                   if (ImGui.Button(T("SelectAll")))
                                                    {
                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
                                                        ConfigChanged = true;
                                                    }
 
                                                    ImGui.SameLine();
-                                                   if (ImGui.Button("Deselect All"))
+                                                   if (ImGui.Button(T("DeselectAll")))
                                                    {
                                                        foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
                                                        ConfigChanged = true;
@@ -196,14 +184,14 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
                                                });
             DrawCentered("##BoatFilteredCharSelector", () =>
                                                        {
-                                                           if (ImGui.Button("Select All Shown"))
+                                                           if (ImGui.Button(T("SelectAllShown")))
                                                            {
                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
                                                                ConfigChanged = true;
                                                            }
 
                                                            ImGui.SameLine();
-                                                           if (ImGui.Button("Deselect All Shown"))
+                                                           if (ImGui.Button(T("DeselectAllShown")))
                                                            {
                                                                foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
                                                                ConfigChanged = true;
@@ -215,22 +203,24 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
         {
             DrawCentered("##boatSingleCharName", () =>
                                                  {
-                                                     ImGui.Text("Character Name:");
-                                                     ImGui.SameLine(200 * GlobalFontScale);
+                                                     ImGui.Text(T("CharacterName"));
+                                                     //ImGui.SameLine(200 * GlobalFontScale);
+                                                     ImGui.SameLine();
                                                      ImGui.SetNextItemWidth(150f);
                                                      ConfigChanged |= ImGui.InputText("##character", ref Configuration.OceanChar, 21);
                                                  });
             DrawCentered("##boatWorld", () =>
                                         {
-                                            ImGui.Text("World:");
-                                            ImGui.SameLine(200 * GlobalFontScale);
+                                            ImGui.Text(T("World"));
+                                            //ImGui.SameLine(200 * GlobalFontScale);
+                                            ImGui.SameLine();
                                             ImGui.SetNextItemWidth(150f);
                                             if (ImGuiEx.ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == Configuration.OceanWorld) is { } row
                                                                                                                               ? row.Name.ExtractText()
                                                                                                                               : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
                                             {
                                                 Configuration.OceanWorld = selectedWorld.Name.ExtractText();
-                                                ConfigChanged            = true;
+                                                ConfigChanged = true;
                                             }
                                         });
         }
@@ -242,27 +232,28 @@ internal class OnABoatUI : FeatureUI<OnABoat, Configuration>
     {
         DrawCentered("##boatVersatile", () =>
                                         {
-                                            ImGui.Text("Use only Versatile Lure");
-                                            ImGui.SameLine(200 * GlobalFontScale);
-                                            ConfigChanged |= ImGui.Checkbox("##onlyVLure", ref Configuration.UseOnlyVersatile);
+                                            ConfigChanged |= ImGui.Checkbox(T("UseOnlyVersatileLure"), ref Configuration.UseOnlyVersatile);
                                         });
 
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
             DrawCentered("##boatArSelling", () =>
                                             {
-                                                ImGui.Text("Use AR ItemSell after Voyage");
+                                                ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.SellAfterVoyage);
                                                 ImGui.SameLine();
-                                                HelpMarker(() => ImGui.Text("This will only work if you return to a destination with a retainer bell/vendor NPC nearby."));
-                                                ImGui.SameLine(200 * GlobalFontScale);
-                                                ConfigChanged |= ImGui.Checkbox("##ARItemSell", ref Configuration.SellAfterVoyage);
+                                                HelpMarker(() => ImGui.Text(T("UseARItemSellHelp")));
+                                            });
+
+            DrawCentered("##boatArLocalSelling", () =>
+                                            {
+                                                ConfigChanged |= ImGui.Checkbox(T("UseARLocalSell"), ref Configuration.SellAfterVoyage);
+                                                ImGui.SameLine();
+                                                HelpMarker(() => ImGui.Text(T("UseARLocalSellHelp")));
                                             });
 
             DrawCentered("##boatArDiscard", () =>
                                             {
-                                                ImGui.Text("Use AR Discard after Voyage");
-                                                ImGui.SameLine(200 * GlobalFontScale);
-                                                ConfigChanged |= ImGui.Checkbox("##ARDiscard", ref Configuration.DiscardAfterVoyage);
+                                                ConfigChanged |= ImGui.Checkbox(T("UseARDiscard"), ref Configuration.DiscardAfterVoyage);
                                             });
         }
 

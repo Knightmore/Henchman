@@ -1,0 +1,14 @@
+{
+  "HelpText":                      "Dieser Abschnitt enthält echte Hacks! Benutzung auf eigene Gefahr. Heul nicht rum, wenn du gebannt wirst.",
+  "Confirmation":                  "Hiermit bestätige ich, dass ich allein für alle Konsequenzen verantwortlich bin und diese Tweaks/Hacks auf eigenes Risiko verwende!\n\nKeiner dieser Hacks ist dauerhaft!\n\nGEKAUFT WIE GESEHEN, ES GIBT KEINEN SUPPORT (WEDER PER DM NOCH AUF DISCORD-SERVERN)",
+  "Section.On Your Mark":          "Auf die Jagd",
+  "Section.Movement":              "Bewegung",
+  "Section.Grand Company":         "Staatliche Gesellschaft",
+  "HacksUI_AcceptanceHack":        "Jagdaufträge aus der Ferne annehmen",
+  "HacksUI_AcceptanceHack_Help":   "Überspringt das Teleportieren und Laufen zu jeder Jagdtafel.\nAlle aktivierten Jagdaufträge werden von egal wo angenommen.",
+  "GetFlightAllowedStatus":        "Fliegen freischalten",
+  "GetFlightAllowedStatus_Help":   "Schaltet das Fliegen in ALLEN Gebieten frei, in denen Reittiere erlaubt sind.\nAuch ohne MSQ-Fortschritt oder gesammelte Ätherströme.",
+  "NoFallDamage":                  "Kein Fallschaden",
+  "GetGrandCompanyRank":           "Expertenlieferaufträge freischalten",
+  "GetGrandCompanyRank_Help":      "Ermöglicht Expertenlieferaufträge unabhängig vom Rang.\nNur wirksam, wenn Expertenlieferaufträge noch nicht freigeschaltet sind.\n(Aus CBT wiederhergestellt)"
+}

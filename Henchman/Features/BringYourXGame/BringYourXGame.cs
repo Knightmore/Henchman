@@ -15,6 +15,12 @@ public class BringYourXGame : Feature
 
     public void RunTask(bool runA)
     {
+        if (!IsCombat(Player.ClassJob.RowId))
+        {
+            ChatPrintWarning("You do not have equipped a combat class!");
+            return;
+        }
+
         if (runA)
         {
             EnqueueTask(new TaskRecord(StartA, "Bring Your A/B Game", onDone: () =>
@@ -38,7 +44,6 @@ public class BringYourXGame : Feature
     internal async Task StartA(CancellationToken token = default)
     {
         var aggregatedPositions = BRanks
-                                 .Values
                                  .Where(x => Svc.Data.GetExcelSheet<TerritoryType>()
                                                 .GetRow(x.TerritoryId)
                                                 .ExVersion.Value.RowId <=
@@ -56,7 +61,7 @@ public class BringYourXGame : Feature
 
     internal async Task StartB(CancellationToken token = default)
     {
-        if (Configuration.BRankToFarm > 0 && BRanks.TryGetValue(Configuration.BRankToFarm, out var huntMark))
+        if (Configuration.BRankToFarm > 0 && GetBRank(Configuration.BRankToFarm) is { } huntMark)
             await FarmBRank(huntMark, token);
         else
             FullError("No valid B-Rank to farm picked!");

@@ -1,6 +1,6 @@
+using ECommons.EzIpcManager;
 using System.Threading;
 using System.Threading.Tasks;
-using ECommons.EzIpcManager;
 //using Henchman.Features.Private.Multibox.Command;
 using Action = System.Action;
 
@@ -48,14 +48,6 @@ public static class Vnavmesh
 
     [EzIPC("Query.Mesh.PointOnFloor")]
     public static Func<Vector3, bool, float, Vector3?> QueryMeshPointOnFloor;
-
-
-    [EzIPC("Query.Mesh.PointIsReachable")]
-    public static Func<Vector3, float, float, bool> QueryMeshPointIsReachable;
-
-    [EzIPC("Query.Mesh.BothPointsReachable")]
-    public static Func<Vector3, Vector3, float, float, bool> QueryMeshBothPointsReachable;
-
 
     [EzIPC("Path.MoveTo")]
     public static Action<List<Vector3>, bool> PathMoveTo;

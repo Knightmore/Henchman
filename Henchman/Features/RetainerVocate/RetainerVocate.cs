@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.GameFunctions;
@@ -17,6 +14,9 @@ using Henchman.Helpers;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 
 namespace Henchman.Features.RetainerVocate;
@@ -77,9 +77,9 @@ public class RetainerVocate : Feature
     internal async Task GoToRetainerVocate(CancellationToken token = default)
     {
         if (token.IsCancellationRequested) return;
-        using var scope              = new TaskDescriptionScope("Go to Retainer Vocate");
-        var       retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
-        byte      maxRetainerEntitlement;
+        using var scope = new TaskDescriptionScope("Go to Retainer Vocate");
+        var retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
+        byte maxRetainerEntitlement;
         unsafe
         {
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
@@ -167,20 +167,20 @@ public class RetainerVocate : Feature
         switch (startTown)
         {
             case 1:
-            {
-                await Questionable.CompleteQuest(66969, token);
-                break;
-            }
+                {
+                    await Questionable.CompleteQuest(66969, token);
+                    break;
+                }
             case 2:
-            {
-                await Questionable.CompleteQuest(66968, token);
-                break;
-            }
+                {
+                    await Questionable.CompleteQuest(66968, token);
+                    break;
+                }
             case 3:
-            {
-                await Questionable.CompleteQuest(66970, token);
-                break;
-            }
+                {
+                    await Questionable.CompleteQuest(66970, token);
+                    break;
+                }
             default:
                 Console.WriteLine("Unknown start town, no quest assigned.");
                 break;
@@ -190,9 +190,9 @@ public class RetainerVocate : Feature
     internal async Task BuyAndEquipRetainerGear(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0, bool firstExploration = false)
     {
         using var scope = new TaskDescriptionScope("Buy and Equip Gear");
-        byte      maxRetainerEntitlement;
-        bool      anyRetainerNoJob;
-        int       retainerAmountNoJob;
+        byte maxRetainerEntitlement;
+        bool anyRetainerNoJob;
+        int retainerAmountNoJob;
         unsafe
         {
             maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
@@ -218,8 +218,8 @@ public class RetainerVocate : Feature
 
     private async Task GoToVendor(uint retainerClassId, CancellationToken token = default)
     {
-        using var scope      = new TaskDescriptionScope("Go to Vendor");
-        var       vendorData = VendorData(retainerClassId);
+        using var scope = new TaskDescriptionScope("Go to Vendor");
+        var vendorData = VendorData(retainerClassId);
         await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
 
         if (vendorData.ZoneTransitionPosition != null && Player.Territory.RowId != vendorData.TerritoryId)
@@ -231,8 +231,8 @@ public class RetainerVocate : Feature
     private async Task PurchaseStarterGear(uint retainerAmount, uint retainerClassId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        using var scope      = new TaskDescriptionScope("Purchase Starter Gear");
-        var       vendorData = VendorData(retainerClassId);
+        using var scope = new TaskDescriptionScope("Purchase Starter Gear");
+        var vendorData = VendorData(retainerClassId);
 
         await WaitUntilAsync(() => TargetNearestByBaseId(vendorData.BaseId, token), $"Target {vendorData.Name}", token);
         await WaitUntilAsync(() => EventUtils.OpenEventHandler(vendorData.BaseId, VendorShop(MainHand(retainerClassId)
@@ -323,12 +323,12 @@ public class RetainerVocate : Feature
 
         for (var i = index; i < index + retainerAmount; i++)
         {
-            var    pos = i;
-            byte   classJob;
+            var pos = i;
+            byte classJob;
             string nameString;
             unsafe
             {
-                classJob   = RetainerManager.Instance()->Retainers[pos].ClassJob;
+                classJob = RetainerManager.Instance()->Retainers[pos].ClassJob;
                 nameString = RetainerManager.Instance()->Retainers[pos].NameString;
             }
 
@@ -392,7 +392,7 @@ public class RetainerVocate : Feature
         }
 
         byte maxRetainerEntitlement = 0;
-        byte retainerCount          = 0;
+        byte retainerCount = 0;
 
         await WaitUntilAsync(async () =>
                              {
@@ -400,7 +400,7 @@ public class RetainerVocate : Feature
                                  {
                                      var manager = RetainerManager.Instance();
                                      maxRetainerEntitlement = manager->MaxRetainerEntitlement;
-                                     retainerCount          = manager->GetRetainerCount();
+                                     retainerCount = manager->GetRetainerCount();
                                  }
 
                                  return (maxRetainerEntitlement > 0 && maxRetainerEntitlement == retainerCount) || await TrySelectSpecificEntry(Lang.SelectStringHireARetainer);
@@ -412,7 +412,7 @@ public class RetainerVocate : Feature
         {
             var manager = RetainerManager.Instance();
             maxRetainerEntitlement = manager->MaxRetainerEntitlement;
-            retainerCount          = manager->GetRetainerCount();
+            retainerCount = manager->GetRetainerCount();
         }
 
         if (maxRetainerEntitlement != retainerCount)
@@ -459,7 +459,7 @@ public class RetainerVocate : Feature
             {
                 await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
                 await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount
-                                                                               ? (int)Configuration!.RetainerRace                            + (int)Configuration!.RetainerGender
+                                                                               ? (int)Configuration!.RetainerRace + (int)Configuration!.RetainerGender
                                                                                : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
                 await WaitUntilAsync(() => SelectClan(Configuration!.RetainerCharacters[characterIndex].Clan, token), "Select Clan", token);
                 await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
@@ -468,7 +468,7 @@ public class RetainerVocate : Feature
         else
         {
             await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount
-                                                                           ? (int)Configuration!.RetainerRace                            + (int)Configuration!.RetainerGender
+                                                                           ? (int)Configuration!.RetainerRace + (int)Configuration!.RetainerGender
                                                                            : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
             await WaitUntilAsync(() => SelectClan(Configuration!.RetainerCharacters[characterIndex].Clan, token), "Select Clan", token);
             await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
@@ -505,14 +505,16 @@ public class RetainerVocate : Feature
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeRaceGender", out var charaMakeRaceGenderAddon) && IsAddonReady(charaMakeRaceGenderAddon))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeRaceGender", out var charaMakeRaceGenderAddon) && IsAddonReady(charaMakeRaceGenderAddon) && charaMakeRaceGenderAddon->IsVisible)
             {
-                if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgessAddon) && IsAddonReady(charaMakeProgessAddon))
+                if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgessAddon) && IsAddonReady(charaMakeProgessAddon) && charaMakeProgessAddon->IsVisible)
                 {
                     Debug($"RaceGender {raceGender}");
-                    Callback.Fire(charaMakeProgessAddon, true, 0, raceGender, 0, "", 0);
-                    var evt  = new AtkEvent { Node = null, Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                    var evt = new AtkEvent { Node = null, Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
                     var data = new AtkEventData();
+                    charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, raceGender, &evt, &data);
+                    evt = new AtkEvent { Node = null, Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                    data = new AtkEventData();
                     charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, 28, &evt, &data);
                     return true;
                 }
@@ -528,19 +530,18 @@ public class RetainerVocate : Feature
     {
         unsafe
         {
-            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeTribe", out var charaMakeTribe) && IsAddonReady(charaMakeTribe))
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeTribe", out var charaMakeTribe) && IsAddonReady(charaMakeTribe) && charaMakeTribe->IsVisible && charaMakeTribe->IsFullyLoaded())
             {
-                var evt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
-                var data = new AtkEventData();
-                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, tribe, &evt, &data);
-                evt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
-                data = new AtkEventData();
-                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, 3, &evt, &data);
+                var selectEvt = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var selectData = new AtkEventData();
+                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, tribe, &selectEvt, &selectData);
+                var confirmEvt = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var confirmData = new AtkEventData();
+                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, 3, &confirmEvt, &confirmData);
                 return true;
             }
         }
 
-        Debug("Clan waiting");
         await Task.Delay(GeneralDelayMs * 2, token);
         return false;
     }
@@ -551,7 +552,7 @@ public class RetainerVocate : Feature
         {
             if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
             {
-                var evt  = new AtkEvent { Node = null, Listener = &charaMakeFeatureAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var evt = new AtkEvent { Node = null, Listener = &charaMakeFeatureAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
                 var data = new AtkEventData();
                 charaMakeFeatureAddon->ReceiveEvent(AtkEventType.ButtonClick, 4, &evt, &data);
                 Debug("Randomize Retainer Look");
@@ -700,11 +701,11 @@ public class RetainerVocate : Feature
 
                 for (var i = 0; i < invSize; ++i)
                 {
-                    uint   itemId;
+                    uint itemId;
                     ushort invSlot;
                     unsafe
                     {
-                        itemId  = InventoryManager.Instance()->GetInventoryContainer(inventoryType)->GetInventorySlot(i)->ItemId;
+                        itemId = InventoryManager.Instance()->GetInventoryContainer(inventoryType)->GetInventorySlot(i)->ItemId;
                         invSlot = (ushort)InventoryManager.Instance()->GetInventoryContainer(inventoryType)->GetInventorySlot(i)->Slot;
                     }
 

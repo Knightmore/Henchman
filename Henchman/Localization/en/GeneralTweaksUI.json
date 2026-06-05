@@ -1,0 +1,8 @@
+{
+  "HelpText": "Just a bunch of general game tweaks to make your game experience better/easier.\nFor more information, read each tweaks tooltip.",
+  "SectionPerformance": "Performance",
+  "DisableRender": "Disable Render",
+  "DisableRenderHelp": "This will disable your 3D rendering to minimize your GPU load but keeps the whole UI intact.\nTo get the best result, add a framerate limit of 30 FPS to it.\nThere may be other plugins which are forcing this state, so if this is set to something you did not expect, it's not my fault.\nIf you don't want other plugins to force their state on your, use the checkbox below!\n\nTHIS IS NON-PERSISTENT AND WILL RESET ON EXITING THE GAME OR DISABLING THE PLUGIN!",
+  "ForceRender": "Force Renderstate",
+  "ForceRenderHelp": "Enable this if you don't give a shit about other plugins trying to set the render mode and you want Henchman to be the single point of responsiblity!\n\nTHIS IS NON-PERSISTENT AND WILL RESET ON EXITING THE GAME OR DISABLING THE PLUGIN!"
+}

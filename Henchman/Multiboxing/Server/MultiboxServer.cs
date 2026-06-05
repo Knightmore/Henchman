@@ -75,7 +75,7 @@ public class MultiboxServer
 
         if (clients.Count == 0 || (preCheck != null && !preCheck!.Invoke(clients.Count)))
         {
-            Disconnect();
+            await DisconnectAllAsync("Parallel pre-check failed.", token);
             Dispose();
             return;
         }
@@ -91,7 +91,7 @@ public class MultiboxServer
             keepRunning = await parallelSessionHandler!.Invoke(session, type, data, token);
         }
 
-        Disconnect();
+        await DisconnectAllAsync("Parallel server finished.", token);
         Dispose();
     }
 
@@ -131,28 +131,25 @@ public class MultiboxServer
 
                 if (client != null)
                 {
-                    var keepClient = await ProcessTurnAsync(client, token);
+                    VerboseSpecific("MultiboxServer", $"Starting turn for client {client.Id}");
 
-                    if (!keepClient)
-                    {
-                        await semaphore.WaitAsync(token);
-                        try
-                        {
-                            clients.Remove(client);
-                        } finally
-                        {
-                            semaphore.Release();
-                        }
+                    var turnResult = await ProcessTurnAsync(client, token);
 
-                        client.Pipe.Dispose();
-                    }
+                    if (!turnResult.KeepClient)
+                        await DisconnectClientAsync(client, turnResult.DisconnectReason ?? "Turn processing finished or failed.", token);
                 }
                 else
                     await Task.Delay(50, token);
             }
         }
-        catch
+        catch (OperationCanceledException)
         {
+            VerboseSpecific("MultiboxServer", "Round-robin server canceled.");
+            acceptingCts.Cancel();
+        }
+        catch (Exception ex)
+        {
+            VerboseSpecific("MultiboxServer", $"Round-robin server failed: {ex}");
             acceptingCts.Cancel();
         }
     }
@@ -188,15 +185,19 @@ public class MultiboxServer
                 var linkedCts    = CancellationTokenSource.CreateLinkedTokenSource(token, messagingCts.Token);
                 var linkedToken  = linkedCts.Token;
 
-                var messageChannel = Channel.CreateUnbounded<(CommandType type, string data)>();
+                var messageChannel    = Channel.CreateUnbounded<(CommandType type, string data)>();
+                var roundRobinChannel = Channel.CreateUnbounded<string>();
 
                 var session = new ClientSession(
                                                 connection,
                                                 messageChannel,
+                                                roundRobinChannel,
                                                 null!,
                                                 messagingCts,
                                                 connection.Id
                                                );
+
+                VerboseSpecific("MultiboxServer", $"Accepted client {session.Id}");
 
                 await semaphore.WaitAsync(token);
                 try
@@ -219,28 +220,56 @@ public class MultiboxServer
                                                        {
                                                            if (useParallelMode)
                                                                await globalChannel.Writer.WriteAsync((session, msg.Value.header, msg.Value.json), linkedToken);
+                                                           else if (msg.Value.header == CommandType.RoundRobinResponse)
+                                                               await roundRobinChannel.Writer.WriteAsync(msg.Value.json, linkedToken);
                                                            else
                                                                await messageChannel.Writer.WriteAsync((msg.Value.header, msg.Value.json), linkedToken);
                                                        }
                                                        else
                                                            return;
                                                    }
+                                               }
+                                               catch (OperationCanceledException)
+                                               {
+                                                   VerboseSpecific("MultiboxServer", $"Message handler canceled for client {session.Id}");
+                                               }
+                                               catch (Exception ex)
+                                               {
+                                                   VerboseSpecific("MultiboxServer", $"Message handler failed for client {session.Id}: {ex}");
                                                } finally
                                                {
+                                                   messageChannel.Writer.TryComplete();
+                                                   roundRobinChannel.Writer.TryComplete();
                                                    RemoveClient(session);
                                                }
                                            }, linkedToken);
 
                 session = session with { MessageHandler = handlerTask };
+
+                await semaphore.WaitAsync(token);
+                try
+                {
+                    var index = clients.FindIndex(x => x.Id == session.Id);
+                    if (index != -1)
+                        clients[index] = session;
+                } finally
+                {
+                    semaphore.Release();
+                }
             }
         }
-        catch
+        catch (OperationCanceledException)
         {
+            VerboseSpecific("MultiboxServer", "Accept loop canceled.");
+        }
+        catch (Exception ex)
+        {
+            VerboseSpecific("MultiboxServer", $"Accept loop failed: {ex}");
             Dispose();
         }
     }
 
-    private async Task<bool> ProcessTurnAsync(ClientSession client, CancellationToken token)
+    private async Task<TurnResult> ProcessTurnAsync(ClientSession client, CancellationToken token)
     {
         using var scope = new TaskDescriptionScope("Processing Turns");
 
@@ -255,15 +284,17 @@ public class MultiboxServer
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
 
-            var answer = await client.MessageChannel.Reader.ReadAsync(cts.Token);
+            var answer = await client.RoundRobinChannel.Reader.ReadAsync(cts.Token);
 
-            if (answer.type != CommandType.RoundRobinResponse)
-                return false;
-
-            var response = JsonSerializer.Deserialize<string>(answer.data);
+            var response = JsonSerializer.Deserialize<string>(answer);
 
             if (!Enum.TryParse(response, out RoundRobinResponse result))
-                return false;
+            {
+                VerboseSpecific("MultiboxServer", $"Client {client.Id} sent invalid round-robin response: {answer}");
+                return new TurnResult(false, "Client sent an invalid round-robin response.");
+            }
+
+            VerboseSpecific("MultiboxServer", $"Client {client.Id} responded: {result}");
 
             switch (result)
             {
@@ -274,46 +305,60 @@ public class MultiboxServer
 
                     var keepRunning = false;
 
-                    await foreach (var message in client.MessageChannel.Reader.ReadAllAsync(token))
+                    await foreach (var message in client.RoundRobinChannel.Reader.ReadAllAsync(token))
                     {
-                        if (message.type == CommandType.RoundRobinResponse)
+                        var r = message.FromJsonEnum<RoundRobinResponse>();
+
+                        if (r == RoundRobinResponse.TurnDone)
                         {
-                            var r = message.data.FromJsonEnum<RoundRobinResponse>();
+                            keepRunning = true;
+                            VerboseSpecific("MultiboxServer", $"Turn done for client {client.Id}");
+                            break;
+                        }
 
-                            if (r == RoundRobinResponse.TurnDone)
-                            {
-                                keepRunning = true;
-                                break;
-                            }
-
-                            if (r == RoundRobinResponse.Finished)
-                                break;
+                        if (r == RoundRobinResponse.Finished)
+                        {
+                            VerboseSpecific("MultiboxServer", $"Client {client.Id} reported no remaining characters.");
+                            break;
                         }
                     }
 
-                    return keepRunning;
+                    return keepRunning
+                                   ? new TurnResult(true)
+                                   : new TurnResult(false, "Client reported no remaining characters.");
                 }
 
                 case RoundRobinResponse.Finished:
-                    return false;
+                    return new TurnResult(false, "Client reported no remaining characters.");
             }
 
-            return true;
+            return new TurnResult(true);
         }
-        catch
+        catch (OperationCanceledException ex)
         {
-            client.HandlerTokenSource.Cancel();
-            client.HandlerTokenSource.Dispose();
-            return false;
+            VerboseSpecific("MultiboxServer", $"Turn processing canceled for client {client.Id}: {ex.Message}");
+            return new TurnResult(false, "Turn processing canceled.");
+        }
+        catch (ChannelClosedException ex)
+        {
+            VerboseSpecific("MultiboxServer", $"Message channel closed for client {client.Id}: {ex.Message}");
+            return new TurnResult(false, "Client message channel closed.");
+        }
+        catch (Exception ex)
+        {
+            VerboseSpecific("MultiboxServer", $"Turn processing failed for client {client.Id}: {ex}");
+            return new TurnResult(false, "Turn processing failed.");
         }
     }
 
     internal void RemoveClient(ClientSession c)
     {
+        VerboseSpecific("MultiboxServer", $"Removing client {c.Id}");
+
         semaphore.Wait();
         try
         {
-            var index = clients.IndexOf(c);
+            var index = clients.FindIndex(x => x.Id == c.Id);
             if (index == -1)
                 return;
 
@@ -334,8 +379,42 @@ public class MultiboxServer
         c.Connection.Dispose();
     }
 
+    private async Task DisconnectClientAsync(
+            ClientSession     client,
+            string            reason,
+            CancellationToken token = default)
+    {
+        VerboseSpecific("MultiboxServer", $"Disconnecting client {client.Id}: {reason}");
 
-    public void Disconnect() => clients.ToList()
+        try
+        {
+            await MessageHandler.WriteMessageAsync(
+                                                   client.Pipe,
+                                                   CommandType.ServerRequest,
+                                                   ServerRequest.Disconnect.ToJson(),
+                                                   token);
+        }
+        catch (OperationCanceledException)
+        {
+            VerboseSpecific("MultiboxServer", $"Disconnect message canceled for client {client.Id}");
+        }
+        catch (Exception ex)
+        {
+            VerboseSpecific("MultiboxServer", $"Could not send disconnect to client {client.Id}: {ex.Message}");
+        } finally
+        {
+            RemoveClient(client);
+        }
+    }
+
+    private async Task DisconnectAllAsync(string reason, CancellationToken token = default)
+    {
+        foreach (var client in GetClientSnapshot())
+            await DisconnectClientAsync(client, reason, token);
+    }
+
+
+    public void Disconnect() => GetClientSnapshot()
                                        .ForEach(x => RemoveClient(x));
 
     public void Kick(ClientSession client) => RemoveClient(client);
@@ -356,20 +435,30 @@ public class MultiboxServer
             string            data,
             CancellationToken token = default)
     {
-        List<ClientSession> snapshot;
-        lock (clients)
-            snapshot = clients.ToList();
-
-        var tasks = snapshot.Select(c =>
+        var tasks = GetClientSnapshot()
+                   .Select(c =>
                                             MessageHandler.WriteMessageAsync(c.Pipe, type, data, token));
 
         return Task.WhenAll(tasks);
+    }
+
+    private List<ClientSession> GetClientSnapshot()
+    {
+        semaphore.Wait();
+        try
+        {
+            return clients.ToList();
+        } finally
+        {
+            semaphore.Release();
+        }
     }
 
 
     public record ClientSession(
             IConnection                              Connection,
             Channel<(CommandType type, string data)> MessageChannel,
+            Channel<string>                          RoundRobinChannel,
             Task                                     MessageHandler,
             CancellationTokenSource                  HandlerTokenSource,
             string                                   Id,
@@ -377,4 +466,6 @@ public class MultiboxServer
     {
         public Stream Pipe => Connection.Stream;
     }
+
+    private record TurnResult(bool KeepClient, string? DisconnectReason = null);
 }

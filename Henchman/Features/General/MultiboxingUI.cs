@@ -9,11 +9,11 @@ namespace Henchman.Features.General;
 internal class MultiboxingUI : FeatureUI
 {
     public MultiboxingUI() => Configuration = LoadConfig<Multiboxing.Configuration>() ?? new Multiboxing.Configuration();
-    public override string Name => "Multiboxing";
-    public override Category Category => Category.System;
-    public override FontAwesomeIcon Icon => FontAwesomeIcon.NetworkWired;
-    public override Action? Help => () => { ImGui.Text("Settings for multiboxing connections."); };
-    public override bool LoginNeeded => false;
+    public override string          Name        => "Multiboxing";
+    public override Category        Category    => Category.System;
+    public override FontAwesomeIcon Icon        => FontAwesomeIcon.NetworkWired;
+    public override Action?         Help        => () => { ImGui.Text(T("HelpText")); };
+    public override bool            LoginNeeded => false;
 
     public Multiboxing.Configuration Configuration { get; }
 
@@ -22,36 +22,39 @@ internal class MultiboxingUI : FeatureUI
         var configChanged = false;
         DrawCentered(() =>
                      {
-                         ImGui.TextColored(Theme.ErrorRed, "You are responsible for your own network settings. No general IT support will be provided.");
+                         ImGui.TextColored(Theme.ErrorRed, T("NetworkWarning"));
                          ImGui.NewLine();
 
-                         ImGui.Text("Use only locally:");
+                         ImGui.Text(T("UseOnlyLocally"));
                          ImGui.SameLine(240);
                          configChanged |= ImGui.Checkbox("##localOnly", ref Configuration.LocalOnly);
                          ImGui.SameLine();
-                         HelpMarker(() => ImGui.Text("""
-                                                     If you don't plan to use multiboxing across multiple machines but only locally, you can keep this option enabled.
-                                                     Networked multiboxing can trigger a firewall request on your boss (server) machine.
-                                                     """));
+                         HelpMarker(() => ImGui.Text(T("LocalOnlyHelp")));
 
-                         ImGui.Text("IP Address (Boss) to connect to");
+                         ImGui.Text(T("IPAddress"));
                          ImGui.SameLine(240);
                          ImGui.SetNextItemWidth(240);
                          ImGui.BeginDisabled(Configuration.LocalOnly);
                          ImGui.InputTextWithHint("##ipAddress", "127.0.0.1 / ::1", Configuration.IpBytes);
                          ImGui.EndDisabled();
                          ImGui.SameLine();
-                         HelpMarker(() => ImGui.Text("You only need to set this on your henchmen (clients) if you don't use it only locally."));
+                         HelpMarker(() => ImGui.Text(T("IPAddressHelp")));
 
-                         ImGui.Text("Port:");
+
+                         /*ImGui.Text("Only one Boss (server) instance:");
+                         ImGui.SameLine(240);
+                         configChanged |= ImGui.Checkbox("##singleServerInstance", ref Configuration.SingleServerInstance);
+                         ImGui.SameLine();
+                         HelpMarker(() => ImGui.Text("If you aren't using multiple boss instances (servers) of any feature, you can keep this option enabled."));*/
+
+                         ImGui.Text(T("Port"));
                          ImGui.SameLine(240);
                          ImGui.SetNextItemWidth(60);
+                         //ImGui.BeginDisabled(Configuration.SingleServerInstance);
                          configChanged |= ImGui.InputUInt("###port", ref Configuration.Port);
+                         //ImGui.EndDisabled();
                          ImGui.SameLine();
-                         HelpMarker(() => ImGui.Text("""
-                                                     If you are not running multiple boss instances (servers) in your network, you can keep the default port.
-                                                     Else you have to change the port for each distinct boss/henchmen (server/client) group to a different one.
-                                                     """));
+                         HelpMarker(() => ImGui.Text(T("PortHelp")));
 
                          if (configChanged) SaveConfig(Configuration);
                      });

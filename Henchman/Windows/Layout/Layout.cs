@@ -53,12 +53,12 @@ public class Layout(ImTextureID logoTextureHandle = default)
                                .Any(x => !SubscriptionManager.IsInitialized(x.pluginName)))
             {
                 var missingRequirements = selectedFeature.Requirements.Where(x => x.mandatory && !SubscriptionManager.IsInitialized(x.pluginName));
-                ImGuiEx.TextCentered("Missing Plugins");
+                ImGuiEx.TextCentered(Loc.G("Requirements.MissingPlugins"));
                 foreach (var requirement in missingRequirements)
                 {
                     ImGui.Text($"{requirement.pluginName}");
                     ImGui.SameLine(100);
-                    ImGui.TextColored(Theme.ErrorRed, "disabled");
+                    ImGui.TextColored(Theme.ErrorRed, Loc.G("Requirements.Disabled"));
                 }
 
                 return;
@@ -125,7 +125,7 @@ public class Layout(ImTextureID logoTextureHandle = default)
                         ImGui.PopStyleColor();
                         ImGui.PopFont();
 
-                        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Toggle Plugin Status");
+                        if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.G("UI.ToggleStatus"));
                     }
                 }
             }

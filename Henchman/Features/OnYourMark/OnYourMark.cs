@@ -1,4 +1,6 @@
+using Dalamud.Game;
 using ECommons.GameHelpers;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Abstractions;
 using Henchman.Data;
@@ -14,13 +16,14 @@ namespace Henchman.Features.OnYourMark;
 
 public class OnYourMark : Feature
 {
+    public static bool AcceptanceHack = false;
     private static Configuration? Configuration => GetFeatureConfig<OnYourMarkUI, Configuration>();
 
     internal async Task Start(CancellationToken token = default)
     {
         if (!IsCombat(Player.ClassJob.RowId))
         {
-            FullError("You do not have equipped a combat class!");
+            ChatPrintWarning("You do not have equipped a combat class!");
             return;
         }
 
@@ -38,7 +41,10 @@ public class OnYourMark : Feature
         else
             await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
 
-        await GetNewBills(mobHuntOrderType.GetEnumerator(), token);
+        if (AcceptanceHack)
+            await GetNewBillsHack(token);
+        else
+            await GetNewBills(mobHuntOrderType.GetEnumerator(), token);
         await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
     }
@@ -55,7 +61,7 @@ public class OnYourMark : Feature
 
         var huntTargets = new List<HuntMark>();
 
-        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>())
+        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>(ClientLanguage.English))
         {
             Verbose($"############### {expansion.Name.ExtractText()} ###############");
             Verbose($"InExpansion Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
@@ -73,7 +79,7 @@ public class OnYourMark : Feature
                 if (!expansionCategory.Value)
                 {
                     mobHuntOrderTypeEnumerator.MoveNext();
-                    Verbose("--------------- SKIP BILL ---------------");
+                    Verbose($"--------------- SKIP {expansionCategory.Key} ---------------");
                     continue;
                 }
 
@@ -82,6 +88,8 @@ public class OnYourMark : Feature
                 {
                     isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
                 }
+
+                Verbose($"Obtained {currentMobHuntType.RowId}: {isMarkBillObtained}");
 
                 if (!isMarkBillObtained)
                 {
@@ -94,11 +102,15 @@ public class OnYourMark : Feature
                                                                                      .OrderStart.Value.RowId +
                                                                                   ((uint)mobHuntOrderTypeOffset[currentMobHuntType.RowId] - 1)];
 
+                Verbose($"MobHuntTargets Amount: {mobHuntTargets.Count}");
+
                 bool allMobsKilled;
                 unsafe
                 {
                     allMobsKilled = mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)currentMobHuntType.RowId, (byte)x.SubrowId) == x.NeededKills);
                 }
+
+                Verbose($"All mobs killed: {allMobsKilled}");
 
                 if (!allMobsKilled)
                 {
@@ -107,7 +119,7 @@ public class OnYourMark : Feature
                     foreach (var mob in mobHuntTargets)
                     {
                         Verbose($"Mob: {mob.Target.Value.Name.Value.RowId} {mob.Target.Value.Name.Value.Singular.ExtractText()}");
-                        if (HuntMarks.TryGetValue(mob.Target.Value.Name.Value.RowId, out var tempMark))
+                        if (GetHuntMarkForExpansion(mob.Target.Value.Name.Value.RowId, expansion.RowId) is { } tempMark)
                         {
                             tempMark.NeededKills = mob.NeededKills;
                             tempMark.MobHuntRowId = (byte)currentMobHuntType.RowId;
@@ -214,6 +226,50 @@ public class OnYourMark : Feature
 
             await GoToHuntboard(location, expansion.Name.ExtractText(), enabledBillsSelectString, token);
         }
+    }
+
+    private async Task GetNewBillsHack(CancellationToken token = default)
+    {
+        var bills = GetEnabledAcceptableBills();
+        Log($"Acceptable bills: {bills.Count}");
+        foreach (var bill in bills)
+        {
+            GameMain.ExecuteCommand(428, bill.TypeRow, bill.Offset);
+
+            await Task.Delay(4 * GeneralDelayMs, token);
+        }
+    }
+
+    private static unsafe List<(byte TypeRow, byte Offset)> GetEnabledAcceptableBills()
+    {
+        var bills = new List<(byte TypeRow, byte Offset)>();
+        var mobHuntOrderTypes = GetCorrectedMobHuntOrderTypes();
+
+        for (var i = 0; i < HuntBoardOptions.Count && i < mobHuntOrderTypes.Count; i++)
+        {
+            var key = HuntBoardOptions[i];
+            if (!Configuration!.EnableHuntBills.TryGetValue(key, out var enabled) || !enabled)
+            {
+                Log($"{key}: {enabled}");
+                continue;
+            }
+
+            var typeRow = (byte)mobHuntOrderTypes[i].RowId;
+
+            if (!MobHunt.Instance()->IsMarkBillUnlocked(typeRow))
+                continue;
+
+            if (MobHunt.Instance()->IsMarkBillObtained(typeRow))
+                continue;
+
+            var offset = MobHunt.Instance()->AvailableMarkId[typeRow];
+            if (offset == 0)
+                continue;
+
+            bills.Add((typeRow, offset));
+        }
+
+        return bills;
     }
 
     private async Task GoToHuntboard(Location location, string expansion, List<string> billsSelectString, CancellationToken token)

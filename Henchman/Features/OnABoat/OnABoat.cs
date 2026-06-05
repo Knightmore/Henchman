@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.DutyState;
@@ -18,6 +15,9 @@ using Henchman.Data;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 #if PRIVATE
 using Henchman.Features.Private;
 #endif
@@ -41,10 +41,10 @@ internal class OnABoat : Feature
         Nighttime
     }
 
-    private static readonly Random  Rng         = new();
-    private readonly        Vector2 dryskthotaA = new(-409, 75.3f);
-    private readonly        Vector2 dryskthotaB = new(-407.5f, 72f);
-    internal                bool    AskARforAccess;
+    private static readonly Random Rng = new();
+    private readonly Vector2 dryskthotaA = new(-409, 75.3f);
+    private readonly Vector2 dryskthotaB = new(-407.5f, 72f);
+    internal bool AskARforAccess;
 
     // TODO: Add BaitData for new route
     public Dictionary<uint, BaitData> BaitMap = new()
@@ -62,32 +62,32 @@ internal class OnABoat : Feature
                                                         { 292, new BaitData(Bait.Krill, Bait.Ragworm, Bait.Krill, Bait.Krill) }
                                                 };
 
-    internal uint                       BaseIdDryskthota     = 1005421;
-    internal uint                       BaseIdMerchantMender = 1005422;
-    internal bool                       CachedMultiMode;
-    private  List<OfflineCharacterData> characters = [];
-    internal bool                       dutyStarted;
-    internal bool                       EventsSubscribed;
+    internal uint BaseIdDryskthota = 1005421;
+    internal uint BaseIdMerchantMender = 1005422;
+    internal bool CachedMultiMode;
+    private List<OfflineCharacterData> characters = [];
+    internal bool dutyStarted;
+    internal bool EventsSubscribed;
 
-    internal string HighGPPresetNormal       = "AH4_H4sIAAAAAAAACu1Zy1LjOBT9FUrrqMryQ37s0hmgqUkDRWBYdM1Ctq8TFY6VlmVohsq/d8m2ktgk0JnpxTDjnaN77/G5Dx2pnBc0rpSYsFKVk2yOohd0WrA4h3Geo0jJCkZIG6e8gK0xNaaLFEV2EI7QteRCcvWMIjJCF+Xp9ySvUki3y9p/3WB9ESJZaLD6wdZPNQ4NRuh8dbuQUC5EnqKIWFYH+W3ofdRCvwNgvcttsqiWB/J0ieX2CPrU6+AbEJHnkCiTmEsssutmv89CyJSz3ABQ4nYA3NbtjJeL02cod17k9Rh6XqeE1LSAPcBswTP1ifGap14ozcJMseShRJHXVpEGr3F3UcMW9ZopDkUCO3xoP452W2qbUMn/gglTzWCYt/aj7d5AOG307YLlnD2UZ+xRSA3QWTDp6PZ3DDeQiEeQKCK6Svvmhwaveu71OHQ5jmPxCCjKWF6aZn7i83O2rIsyLuY5yNIQ0oOQosjxLfdVpp13BGs939+VZJ09uuGqm3YrZk9sdVGoiisuinPGC1NKTEZoWkn4AmXJ5oAihEbosuaELkUBqEV4XgGKdE334E1Fqf423rWEEvYzRBgdsDdvrO1bPrMVJEqyfFJJCYX6RVn2UP9RrhqvyWcv16ZhuwnvdUOfoUgWS1ac4JOrBFhxYtx65dpLvS5aM2wzJVZaJ3gxnylY1fq8TbwdyLH8Nb3dhXvV2NkTX8aMqzOe5+Ub9puqKK8qg3BX8G8VaGYoiz3fJomL0yALsEuojcPYSrHvBxCDzUInsNF6hKa8VFeZZlmi6OtLzVeXYKMsoU/8w1n+AbJkiudwoj004KWQS5Z/FuJBQxiVuwf2sN2L2qp7/sRWpsntUlMql/haJk3wTElRzI8Jt5yd8CnMoUiZfD4a4TdRxfmGe+uxkZNat3qBNg03cVvax0Z2GO/xupV8dSQv37OdTeSRzDqxb3Br/fQuGmcK5IRV84Wa8qU+Nklj6G+v+r5UyeZc1g9G7x2j917YP1XevJqsR2ijimYKb+BbxSWkM8VUpc9qfXvqj+bPTeBPD9pHmqe7EprmNgVrNsQwZG8OmVHgiagKtRs3QldF/nxXwv0CiktR39vHj4znOntT3B2lpqFjB3ZGMHGCGLt+6OA4BhczkjjE9xJKiYfWo/3S7B6W5hs2fxJyOWjyoMkfVpOH0Rzk/YPLu+fSjDp2iolPHOxSLe+hk2Ea2FkQZlbqEXJQ3r3D8v675Hn+vrj/j281w4QPt+RBRv8jMsockqTgxJhCTLDLIMVxQDOcEJ+RGFLKgsO3ZHpYRq/zark6uR8uyoMs/zt2zCDLgyx/HFlOQx8cYmeYEKDYpRbFMbM9HPgejRPfzmhG0PpP8525/Tfz62ahUWr9u/m63aryqw/6jTB3P3G7LLTdkKbY9d0Yux4JcRgwC1PLoeBkTmo5gNY/AHUODJ60HQAA";
-    internal string HighGPPresetNormalName   = "anon_Henchman - Ocean Normal";
-    internal string HighGPPresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZQP5/Ot0wUGLQOIwvKA5sGxb1oLN+k4DjMs6n8fOR+laRtgVkjLQ95a+95zj69PjlP3GU0qXUxpqctpNkfJMzrOaSphIiVKtKrAQmbyXORgJs/meaHgW1GwBUoyKkuw2gTehZ9xlLhRbKErJQol9BNKHAudlce/mKw48JdhE79u8FvEZ1R/cF949GGDyEKnq5uFgnJRSI4Sx7Z7hV6vdAgyDnsA9ptUp4tqWbeCo4Q4NnmDUZdVSAlMbyU622Hu22ULxQWVA50JHNLDI23WiSgXx09QbtX1dwj7fo9w0O0IfYDZQmT6CxU1bTNQdgMzTdlDiRJ/szH7uNuocYt6RbWAnMEWn2A3L+g30O1SlfgXplQ3Oumq7ma7O+332uybBZWCPpQn9LFQBqA30C3Hs/rj18CKR1AocUyTDityTwFej0DXzy9ifkqX9cIn+VyCKruiZu9NWmiTvdX0oKK10fAvrWjvUd0QMhtzU8x+0tVZriuhRZGfUpF37cKOhc4rBd+gLOkcUIKQhS5qTuiiyAG1CE8rQInp2wG886LU/xnvSkEJhxkijAbmm4r1/Auf2QqYVlROK6Ug1x+0yh3UD1vrQbbo3jybIp9fU8G/H10UakklspBJaJIP0ml2+hX0tl9fIWeLJc2P8NElA5q/FGjUN9PFqiUw07CqPfqlE61CJ+pjGrANt7fTs59imVKhT4SU5Svz11VeXlYdwm0uflRgmKHYy7LAjxzsRyHHxE9THHFgOI6AUaA+te0MrS10Lkp9mRmWJUrun2u+pgUbO4lDJxxe5T+gSqqFhCMTYQCbln4tigcD0VnbHdD6uxk3i6g7QpzQWGAXM9OqyOcHomxvK+oc5pBzqp6GAv8qqlTuFtyYQns89xLdIN7kDZDYDhlm0ETdlnCjxEpC04RGnM3IH7EKfdesp8kc4tULeoVZG2cUPsk0qCmt5gt9LpbmHHOaiV3p1+84lWoOSvNh60RozNmP90/6Vw7ttYU2FtYp5Bp+VEIBn2mqK3N4mteZUTajbHqy6fxuWlS53s6z0GUun25LuFtAflHUb8qTRyqkaVHXxS1fjFzGg8xzceb5GSYRBDglDsMRiYOUezH34gitrcNGSIaN8JrOfxZqOTrgKOXRAUfZfGIHtLlDeMgYDm3OMXEyglPfs3Hm2pHrZ4R6fNgB/WEH/FsJKUf/G4U8+t8om0/sf24cZiHxXAxxTDEJfR/H4EfYDyB1U4+EbkAG/S8Y9r8rWS1XR3fvegls9q9ttPk93/F8n8zfmz6s/z9CGB+Mz/xgjH46yub/9FOfhoylJMUp8WJMwAkwZU6EM8q450cBhYCj9ffuqrH9U+t+M9BYrPneXHC2drp3V9td6fbvOR0WsIxlgCn3OSYpRJj6jGMIMwpZ5AWU2Gj9G/K19XzRGwAA";
+    internal string HighGPPresetNormal = "AH4_H4sIAAAAAAAACu1Zy1LjOBT9FUrrqMryQ37s0hmgqUkDRWBYdM1Ctq8TFY6VlmVohsq/d8m2ktgk0JnpxTDjnaN77/G5Dx2pnBc0rpSYsFKVk2yOohd0WrA4h3Geo0jJCkZIG6e8gK0xNaaLFEV2EI7QteRCcvWMIjJCF+Xp9ySvUki3y9p/3WB9ESJZaLD6wdZPNQ4NRuh8dbuQUC5EnqKIWFYH+W3ofdRCvwNgvcttsqiWB/J0ieX2CPrU6+AbEJHnkCiTmEsssutmv89CyJSz3ABQ4nYA3NbtjJeL02cod17k9Rh6XqeE1LSAPcBswTP1ifGap14ozcJMseShRJHXVpEGr3F3UcMW9ZopDkUCO3xoP452W2qbUMn/gglTzWCYt/aj7d5AOG307YLlnD2UZ+xRSA3QWTDp6PZ3DDeQiEeQKCK6Svvmhwaveu71OHQ5jmPxCCjKWF6aZn7i83O2rIsyLuY5yNIQ0oOQosjxLfdVpp13BGs939+VZJ09uuGqm3YrZk9sdVGoiisuinPGC1NKTEZoWkn4AmXJ5oAihEbosuaELkUBqEV4XgGKdE334E1Fqf423rWEEvYzRBgdsDdvrO1bPrMVJEqyfFJJCYX6RVn2UP9RrhqvyWcv16ZhuwnvdUOfoUgWS1ac4JOrBFhxYtx65dpLvS5aM2wzJVZaJ3gxnylY1fq8TbwdyLH8Nb3dhXvV2NkTX8aMqzOe5+Ub9puqKK8qg3BX8G8VaGYoiz3fJomL0yALsEuojcPYSrHvBxCDzUInsNF6hKa8VFeZZlmi6OtLzVeXYKMsoU/8w1n+AbJkiudwoj004KWQS5Z/FuJBQxiVuwf2sN2L2qp7/sRWpsntUlMql/haJk3wTElRzI8Jt5yd8CnMoUiZfD4a4TdRxfmGe+uxkZNat3qBNg03cVvax0Z2GO/xupV8dSQv37OdTeSRzDqxb3Br/fQuGmcK5IRV84Wa8qU+Nklj6G+v+r5UyeZc1g9G7x2j917YP1XevJqsR2ijimYKb+BbxSWkM8VUpc9qfXvqj+bPTeBPD9pHmqe7EprmNgVrNsQwZG8OmVHgiagKtRs3QldF/nxXwv0CiktR39vHj4znOntT3B2lpqFjB3ZGMHGCGLt+6OA4BhczkjjE9xJKiYfWo/3S7B6W5hs2fxJyOWjyoMkfVpOH0Rzk/YPLu+fSjDp2iolPHOxSLe+hk2Ea2FkQZlbqEXJQ3r3D8v675Hn+vrj/j281w4QPt+RBRv8jMsockqTgxJhCTLDLIMVxQDOcEJ+RGFLKgsO3ZHpYRq/zark6uR8uyoMs/zt2zCDLgyx/HFlOQx8cYmeYEKDYpRbFMbM9HPgejRPfzmhG0PpP8525/Tfz62ahUWr9u/m63aryqw/6jTB3P3G7LLTdkKbY9d0Yux4JcRgwC1PLoeBkTmo5gNY/AHUODJ60HQAA";
+    internal string HighGPPresetNormalName = "anon_Henchman - Ocean Normal";
+    internal string HighGPPresetSpectral = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZQP5/Ot0wUGLQOIwvKA5sGxb1oLN+k4DjMs6n8fOR+laRtgVkjLQ95a+95zj69PjlP3GU0qXUxpqctpNkfJMzrOaSphIiVKtKrAQmbyXORgJs/meaHgW1GwBUoyKkuw2gTehZ9xlLhRbKErJQol9BNKHAudlce/mKw48JdhE79u8FvEZ1R/cF949GGDyEKnq5uFgnJRSI4Sx7Z7hV6vdAgyDnsA9ptUp4tqWbeCo4Q4NnmDUZdVSAlMbyU622Hu22ULxQWVA50JHNLDI23WiSgXx09QbtX1dwj7fo9w0O0IfYDZQmT6CxU1bTNQdgMzTdlDiRJ/szH7uNuocYt6RbWAnMEWn2A3L+g30O1SlfgXplQ3Oumq7ma7O+332uybBZWCPpQn9LFQBqA30C3Hs/rj18CKR1AocUyTDityTwFej0DXzy9ifkqX9cIn+VyCKruiZu9NWmiTvdX0oKK10fAvrWjvUd0QMhtzU8x+0tVZriuhRZGfUpF37cKOhc4rBd+gLOkcUIKQhS5qTuiiyAG1CE8rQInp2wG886LU/xnvSkEJhxkijAbmm4r1/Auf2QqYVlROK6Ug1x+0yh3UD1vrQbbo3jybIp9fU8G/H10UakklspBJaJIP0ml2+hX0tl9fIWeLJc2P8NElA5q/FGjUN9PFqiUw07CqPfqlE61CJ+pjGrANt7fTs59imVKhT4SU5Svz11VeXlYdwm0uflRgmKHYy7LAjxzsRyHHxE9THHFgOI6AUaA+te0MrS10Lkp9mRmWJUrun2u+pgUbO4lDJxxe5T+gSqqFhCMTYQCbln4tigcD0VnbHdD6uxk3i6g7QpzQWGAXM9OqyOcHomxvK+oc5pBzqp6GAv8qqlTuFtyYQns89xLdIN7kDZDYDhlm0ETdlnCjxEpC04RGnM3IH7EKfdesp8kc4tULeoVZG2cUPsk0qCmt5gt9LpbmHHOaiV3p1+84lWoOSvNh60RozNmP90/6Vw7ttYU2FtYp5Bp+VEIBn2mqK3N4mteZUTajbHqy6fxuWlS53s6z0GUun25LuFtAflHUb8qTRyqkaVHXxS1fjFzGg8xzceb5GSYRBDglDsMRiYOUezH34gitrcNGSIaN8JrOfxZqOTrgKOXRAUfZfGIHtLlDeMgYDm3OMXEyglPfs3Hm2pHrZ4R6fNgB/WEH/FsJKUf/G4U8+t8om0/sf24cZiHxXAxxTDEJfR/H4EfYDyB1U4+EbkAG/S8Y9r8rWS1XR3fvegls9q9ttPk93/F8n8zfmz6s/z9CGB+Mz/xgjH46yub/9FOfhoylJMUp8WJMwAkwZU6EM8q450cBhYCj9ffuqrH9U+t+M9BYrPneXHC2drp3V9td6fbvOR0WsIxlgCn3OSYpRJj6jGMIMwpZ5AWU2Gj9G/K19XzRGwAA";
     internal string HighGPPresetSpectralName = "anon_Henchman - Ocean Spectral";
-    internal bool   InPostProcess;
+    internal bool InPostProcess;
 
     internal Vector3 PositionDryskthota = new(-408, 4, 75);
 
     internal Vector3 PositionMerchantMender = new(-399, 3, 80);
 
-    internal string PresetNormal       = "AH4_H4sIAAAAAAAACu1Z227jNhD9FYPPJkDdL29eN8kG9SZBnDQPi6KgyJFNRCa9FJVsGvjfC0qWbTl2LkVQwF2/KRzO4ZnhzCHNPKNBZdSQlqYc5hOUPqMTSbMCBkWBUqMr6CNrHAkJayNvTeccpW6c9NGVFkoL84RSp4/Oy5OfrKg48PWwnb9osL4pxaYWrP5w7VeNE8Z9dDa/mWoop6rgKHUI6SC/Dr2LWhJ1AMib3IbTarYnTt8h/hsEWxBVFMBMG5jvEGdzmvs2C6W5oEULEDp+B8BfTjsV5fTkCcqNhYIthkHQYRi2W0DvYTwVuflCRc3TDpTtwNhQdl+iNFhmMYxf4m6iJkvUK2oESAYbfMJtv7CbMbd11eJvGFLTFEa76ra3u5Vvb+l9M6WFoPflKX1Q2gJ0Btpw7PZ3DNfA1ANolDo2S7vqJ4xf7Pk2hy7HQaYeAKU5Lcp2M7+IyRmd1UkZyEkBumwJ2ULgKPUi4r+ItLNGvLD1/dNo2unRFVe7aTdq/Ejn59JUwgglz6iQbSqx00ejSsM3KEs6AZQi1EcXNSd0oSSgJcLTHFBqc7oDb6RK86/xrjSUsJshwmiPvVmxtq/5jOfAjKbFsNIapPmkKLdQPy3WnWwRlUr+9RUkm86o7OHeJQMqeyN4gELISa912srLTo51dpqqGhs1t4Ig5GRsYF4L8TrCZeUN9OcEtgn3YgfHj2KWUWFORVGUr9ivK1leVi3CrRQ/KrDMUORlThTTHGfcAeznAcFxlHGc+CzPYsI4yUO06KORKM1lblmWKP3+XPO1KVhJSBI50f4o/wBdUiMK6NkZFvBC6Rktvip1byFaObsDer9uOmstwdhA2vZbDjWp8p3I6mHrPDZayclH3Im34T6CCUhO9dOHEX5TVVasuC9nrHSjFqgtRzdMVn5r2h/17DDeMetGi/kHeUWB6608P8is4/sKt+U820WD3IAe0moyNSMxs+ej0xi226u+GFW6OYDtRyvsXivsQfLyyvDK6b/oo5X8tVV4DT8qoYGPDTWVPZTtNemwS/O2hKZWmhibicd6Pch6bcV8qCppNv366FIWT7cl3E1BXqj6rj94oKKw0bebviH6DvF4FHqAacZ87JMkxknAMxznNPEpdRNGHLTo71Z5f7/KX9PJo9Kzt+X9fa3y7o44avIvrsn/QT0dhfT/U2SfJqSEOhBFXoz9BHzsczfEceLHmCRJlpOQcxJHe4U02C+kv2tRFEcZPVb4UUaPRfYL3EeDmAVZnOE4JhT7PMtwwpwIOwAOcyjLc3e/jIb7ZfSqqGbz3t27rqSH9bPu2DEH2TFHWT4W2eHIchYkJCAhxYEXhNgPOMOUM4b9xHGDkPKYkBwt/mwfh5f/a/y+GmiU2v7dPEkvVXn/c3yj0N0Has/LQ4fFEQ4hYdgnnofjkHEcMRo5bhwmlBO0+Af0uqCDWx0AAA==";
-    internal string PresetNormalName   = "anon_Henchman - Ocean Leveling Normal";
-    internal string PresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZTvr7dOFxi0HUAUlofRauU4N61FandsB4ZB/e8rN0nbtA0MK6Sd1eatte89Pvfm5Nh1X9Co0mJMlFbjYobSF3TKSVbCqCxRqmUFFjKTE8bBTF7MuJDwRQg6R2lBSgVWk5C34Rc5St04sdC1ZEIy/YxSx0IX6vQ7Lasc8u2wiV/V+A3iC1p/cLc8urBhbKHz5e1cgpqLMkepY9udhV5f6RhkEnUA7DepjufVYt2KHKW+Y/tvMGqzRFkC1TuJzm6Y+/ayQuaMlD2dCR2/g+c3WWdMzU+fQe2sG+wRDoIO4bB9IuQBpnNW6E+ErWmbAdUOTDWhDwqlwebBHOLuoiYN6jXRDDiFnjJ8x3b3YNy9frotkmQ/YEx0LZuWRPhGttdk385JyciDOiOPQhqAzkBbnWd1x2+AikeQKHVMz44L9EAQXodA295PbHZOFus+jPisBKnaRY0UTFpk+wfVdKDilZH0dy1J583dEDLP6VZMn8jyguuKaSb4OWG8bRd2LDSpJHwBpcgMUIqQhS7XnNCl4IAahOcloNT07QjeRCj9j/GuJSg4zhBh1DNfr7ie3/KZLoFqScpxJSVw/UFV7qF+WK1H2R5UfHR1RLjgf30GTucLwk/wyRUFwk8m8Agl47OTSyEXpERWo6mpFkvjAIzPphqWayPe1tfobiQ/pqxduMNqntgiI0yfsbJUr8zfVFxdVS3CHWffKjDMUJ5nDrghxeAHMfZDSnCcU4IpEOpmnuNkuYdWFpowpa8Kw1Kh9OvLmq9pwcYkksiJ+qv8A6QimpVwYiIMYN3Sz0I8GIjWv+6BPGxfOTOrQJtC2pevGapb5TuRMcA2eaql4LP3pNveTvoEZsBzIp/fjXCn4DdRNfFtYD3SFtSkbayk2eM7aG5oqqnztrX0hnT4Hom6lWz5TgJR4HqbzD4KnaBXSDRx5mUZFRrkmFSzuZ6whdn3nHpi/y1an4kqWW+s5sPOllG7d5Acngxe2eRXFtp4XCu2G/hWMQn5VBNdmc3WHH/2FfhzQvtpPQ2y+a/JprXOsai43s2z0BUvn+8U3M+BX4r1yXr0SFhpWtQ+xh2Lje3YcyAmOAfXwb4TBziJgwJTN/LCJI5JSBK0so57qt/vqTdk9iTk4m0zHaT8P5fy4ICDbP5NBwygICQPzKkycbGfhSHOIA9xEpIw9jybJnnc64BBvwP+LllZDv43CHnwv0E2v7D/+WGQ0SBLcJCbH9m0oDihQYahoEVSeHZOAtLrf2G//12X1WJ5cj8cAgc1DyY4yOYXN8E4C7PEznAeRC72vdzFJHRsTNw4pHaROXaUoNWf7VVj88/V181A7Yvme33B2Xhg/6Vte9PbvfAMczdyfXCxV1Af+7Zt4ySKE+y4QRzQCJyCemj1Nw8lKWu/GwAA";
+    internal string PresetNormal = "AH4_H4sIAAAAAAAACu1Z227jNhD9FYPPJkDdL29eN8kG9SZBnDQPi6KgyJFNRCa9FJVsGvjfC0qWbTl2LkVQwF2/KRzO4ZnhzCHNPKNBZdSQlqYc5hOUPqMTSbMCBkWBUqMr6CNrHAkJayNvTeccpW6c9NGVFkoL84RSp4/Oy5OfrKg48PWwnb9osL4pxaYWrP5w7VeNE8Z9dDa/mWoop6rgKHUI6SC/Dr2LWhJ1AMib3IbTarYnTt8h/hsEWxBVFMBMG5jvEGdzmvs2C6W5oEULEDp+B8BfTjsV5fTkCcqNhYIthkHQYRi2W0DvYTwVuflCRc3TDpTtwNhQdl+iNFhmMYxf4m6iJkvUK2oESAYbfMJtv7CbMbd11eJvGFLTFEa76ra3u5Vvb+l9M6WFoPflKX1Q2gJ0Btpw7PZ3DNfA1ANolDo2S7vqJ4xf7Pk2hy7HQaYeAKU5Lcp2M7+IyRmd1UkZyEkBumwJ2ULgKPUi4r+ItLNGvLD1/dNo2unRFVe7aTdq/Ejn59JUwgglz6iQbSqx00ejSsM3KEs6AZQi1EcXNSd0oSSgJcLTHFBqc7oDb6RK86/xrjSUsJshwmiPvVmxtq/5jOfAjKbFsNIapPmkKLdQPy3WnWwRlUr+9RUkm86o7OHeJQMqeyN4gELISa912srLTo51dpqqGhs1t4Ig5GRsYF4L8TrCZeUN9OcEtgn3YgfHj2KWUWFORVGUr9ivK1leVi3CrRQ/KrDMUORlThTTHGfcAeznAcFxlHGc+CzPYsI4yUO06KORKM1lblmWKP3+XPO1KVhJSBI50f4o/wBdUiMK6NkZFvBC6Rktvip1byFaObsDer9uOmstwdhA2vZbDjWp8p3I6mHrPDZayclH3Im34T6CCUhO9dOHEX5TVVasuC9nrHSjFqgtRzdMVn5r2h/17DDeMetGi/kHeUWB6608P8is4/sKt+U820WD3IAe0moyNSMxs+ej0xi226u+GFW6OYDtRyvsXivsQfLyyvDK6b/oo5X8tVV4DT8qoYGPDTWVPZTtNemwS/O2hKZWmhibicd6Pch6bcV8qCppNv366FIWT7cl3E1BXqj6rj94oKKw0bebviH6DvF4FHqAacZ87JMkxknAMxznNPEpdRNGHLTo71Z5f7/KX9PJo9Kzt+X9fa3y7o44avIvrsn/QT0dhfT/U2SfJqSEOhBFXoz9BHzsczfEceLHmCRJlpOQcxJHe4U02C+kv2tRFEcZPVb4UUaPRfYL3EeDmAVZnOE4JhT7PMtwwpwIOwAOcyjLc3e/jIb7ZfSqqGbz3t27rqSH9bPu2DEH2TFHWT4W2eHIchYkJCAhxYEXhNgPOMOUM4b9xHGDkPKYkBwt/mwfh5f/a/y+GmiU2v7dPEkvVXn/c3yj0N0Has/LQ4fFEQ4hYdgnnofjkHEcMRo5bhwmlBO0+Af0uqCDWx0AAA==";
+    internal string PresetNormalName = "anon_Henchman - Ocean Leveling Normal";
+    internal string PresetSpectral = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZTvr7dOFxi0HUAUlofRauU4N61FandsB4ZB/e8rN0nbtA0MK6Sd1eatte89Pvfm5Nh1X9Co0mJMlFbjYobSF3TKSVbCqCxRqmUFFjKTE8bBTF7MuJDwRQg6R2lBSgVWk5C34Rc5St04sdC1ZEIy/YxSx0IX6vQ7Lasc8u2wiV/V+A3iC1p/cLc8urBhbKHz5e1cgpqLMkepY9udhV5f6RhkEnUA7DepjufVYt2KHKW+Y/tvMGqzRFkC1TuJzm6Y+/ayQuaMlD2dCR2/g+c3WWdMzU+fQe2sG+wRDoIO4bB9IuQBpnNW6E+ErWmbAdUOTDWhDwqlwebBHOLuoiYN6jXRDDiFnjJ8x3b3YNy9frotkmQ/YEx0LZuWRPhGttdk385JyciDOiOPQhqAzkBbnWd1x2+AikeQKHVMz44L9EAQXodA295PbHZOFus+jPisBKnaRY0UTFpk+wfVdKDilZH0dy1J583dEDLP6VZMn8jyguuKaSb4OWG8bRd2LDSpJHwBpcgMUIqQhS7XnNCl4IAahOcloNT07QjeRCj9j/GuJSg4zhBh1DNfr7ie3/KZLoFqScpxJSVw/UFV7qF+WK1H2R5UfHR1RLjgf30GTucLwk/wyRUFwk8m8Agl47OTSyEXpERWo6mpFkvjAIzPphqWayPe1tfobiQ/pqxduMNqntgiI0yfsbJUr8zfVFxdVS3CHWffKjDMUJ5nDrghxeAHMfZDSnCcU4IpEOpmnuNkuYdWFpowpa8Kw1Kh9OvLmq9pwcYkksiJ+qv8A6QimpVwYiIMYN3Sz0I8GIjWv+6BPGxfOTOrQJtC2pevGapb5TuRMcA2eaql4LP3pNveTvoEZsBzIp/fjXCn4DdRNfFtYD3SFtSkbayk2eM7aG5oqqnztrX0hnT4Hom6lWz5TgJR4HqbzD4KnaBXSDRx5mUZFRrkmFSzuZ6whdn3nHpi/y1an4kqWW+s5sPOllG7d5Acngxe2eRXFtp4XCu2G/hWMQn5VBNdmc3WHH/2FfhzQvtpPQ2y+a/JprXOsai43s2z0BUvn+8U3M+BX4r1yXr0SFhpWtQ+xh2Lje3YcyAmOAfXwb4TBziJgwJTN/LCJI5JSBK0so57qt/vqTdk9iTk4m0zHaT8P5fy4ICDbP5NBwygICQPzKkycbGfhSHOIA9xEpIw9jybJnnc64BBvwP+LllZDv43CHnwv0E2v7D/+WGQ0SBLcJCbH9m0oDihQYahoEVSeHZOAtLrf2G//12X1WJ5cj8cAgc1DyY4yOYXN8E4C7PEznAeRC72vdzFJHRsTNw4pHaROXaUoNWf7VVj88/V181A7Yvme33B2Xhg/6Vte9PbvfAMczdyfXCxV1Af+7Zt4ySKE+y4QRzQCJyCemj1Nw8lKWu/GwAA";
     internal string PresetSpectralName = "anon_Henchman - Ocean Leveling Spectral";
 
     internal uint RepairId = 720915;
-    internal uint ShopId   = 263015;
+    internal uint ShopId = 263015;
 
-    private        bool           spectralActiveCache;
+    private bool spectralActiveCache;
     private static Configuration? Configuration => GetFeatureConfig<OnABoatUI, Configuration>();
 
     public unsafe IKDRoute CurrentRoute => Svc.Data.GetExcelSheet<IKDRoute>()
@@ -112,8 +112,8 @@ internal class OnABoat : Feature
 
     public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
 
-    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
-    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
+    internal bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0 && DateTime.UtcNow.Minute <= 13;
+    private unsafe bool IsInTitleScreen => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
 
     public override void RunTask() => EnqueueTask(new TaskRecord(Start, "On A Boat", onDone: () => UnsubscribeEvents(), onAbort: UnsubscribeEvents, onError: OnError));
 
@@ -121,7 +121,7 @@ internal class OnABoat : Feature
     {
         Vector3 left = new((float)(7 + (Rng.NextDouble() * 0.25)), 6.711f, Rng.Next(2) == 0
                                                                                    ? (Rng.NextSingle() * 10f) + -14f
-                                                                                   : (Rng.NextSingle() * 7f)  + -2f);
+                                                                                   : (Rng.NextSingle() * 7f) + -2f);
         Vector3 right = new((float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
         return Rng.Next(2) == 0
                        ? left
@@ -189,7 +189,7 @@ internal class OnABoat : Feature
                 AskARforAccess = true;
 
                 await WaitUntilAsync(() => InPostProcess || (!AutoRetainer.IsBusy() && !Lifestream.IsBusy() && IsInTitleScreen), "Waiting for AR PostProccess", token);
-                AskARforAccess  = false;
+                AskARforAccess = false;
                 CachedMultiMode = AutoRetainer.GetMultiModeEnabled();
                 StopAutoRetainer();
 
@@ -279,7 +279,7 @@ internal class OnABoat : Feature
         }
         else
         {
-            var ragAmount   = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
+            var ragAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
             var krillAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Krill);
             var plumpAmount = InventoryHelper.GetInventoryItemCount((int)Bait.PlumpWorm);
 
@@ -443,6 +443,13 @@ internal class OnABoat : Feature
 
         await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
 
+        if (Configuration!.SellAfterVoyage && Configuration!.SellAtLocalVendor && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+            Chat.ExecuteCommand("/ays itemsell");
+            await WaitWhileAsync(AutoRetainer.IsBusy, "Wait until selling finished", token);
+        }
+
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
 
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
@@ -519,29 +526,29 @@ internal class OnABoat : Feature
     {
         if (EventsSubscribed) return;
         PluginLog.Log("Subscribe");
-        AutoRetainer.ARAPI.OnCharacterPostprocessStep    += OnCharacterPostProcessStep;
+        AutoRetainer.ARAPI.OnCharacterPostprocessStep += OnCharacterPostProcessStep;
         AutoRetainer.ARAPI.OnCharacterReadyToPostProcess += OnCharacterReadyToPostProcess;
-        Svc.DutyState.DutyStarted                        += DutyStarted;
-        Svc.DutyState.DutyCompleted                      += DutyCompleted;
-        EventsSubscribed                                 =  true;
+        Svc.DutyState.DutyStarted += DutyStarted;
+        Svc.DutyState.DutyCompleted += DutyCompleted;
+        EventsSubscribed = true;
     }
 
     internal void UnsubscribeEvents()
     {
         if (!EventsSubscribed) return;
         PluginLog.Log("Unsubscribe");
-        AutoRetainer.OnCharacterPostprocessStep    -= OnCharacterPostProcessStep;
-        AutoRetainer.OnCharacterReadyToPostProcess -= OnCharacterReadyToPostProcess;
-        Svc.DutyState.DutyStarted                  -= DutyStarted;
-        Svc.DutyState.DutyCompleted                -= DutyCompleted;
+        AutoRetainer.ARAPI.OnCharacterPostprocessStep -= OnCharacterPostProcessStep;
+        AutoRetainer.ARAPI.OnCharacterReadyToPostProcess -= OnCharacterReadyToPostProcess;
+        Svc.DutyState.DutyStarted -= DutyStarted;
+        Svc.DutyState.DutyCompleted -= DutyCompleted;
         AutoHook.DeleteAllAnonymousPresets();
-        AskARforAccess   = false;
-        dutyStarted      = false;
-        InPostProcess    = false;
+        AskARforAccess = false;
+        dutyStarted = false;
+        InPostProcess = false;
         EventsSubscribed = false;
     }
 
-    private void DutyStarted(IDutyStateEventArgs   args) => dutyStarted = true;
+    private void DutyStarted(IDutyStateEventArgs args) => dutyStarted = true;
     private void DutyCompleted(IDutyStateEventArgs args) => dutyStarted = false;
 
     internal async Task OnError()

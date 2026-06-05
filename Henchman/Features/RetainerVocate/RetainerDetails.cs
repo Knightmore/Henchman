@@ -4,8 +4,8 @@ public class RetainerDetails
 {
     public enum RetainerGender
     {
-        Male   = 0,
-        Female = 10
+        Male = 0,
+        Female = 9
     }
 
     public enum RetainerPersonality
@@ -20,7 +20,7 @@ public class RetainerDetails
 
     public enum RetainerRace
     {
-        Hyur = 0,
+        Hyur = 10,
         Elezen,
         Lalafell,
         Miqote,

@@ -57,62 +57,89 @@ public class MultiboxClient(
                                          return;
                                  }
                              }
-                             catch { }
+                             catch (OperationCanceledException)
+                             {
+                                 VerboseSpecific("MessageReader", "Client message queue canceled.");
+                             }
+                             catch (Exception ex)
+                             {
+                                 VerboseSpecific("MessageReader", $"Client message queue failed: {ex}");
+                             }
+                             finally
+                             {
+                                 incomingChannel.Writer.TryComplete();
+                             }
                          }, linkedToken);
 
-            while (!token.IsCancellationRequested)
+            try
             {
-                var message = await incomingChannel.Reader.ReadAsync(token);
-
-                if (message.type == CommandType.ServerRequest)
+                while (!token.IsCancellationRequested)
                 {
-                    var generalCommand = JsonSerializer.Deserialize<string>(message.data);
+                    var message = await incomingChannel.Reader.ReadAsync(token);
 
-                    if (Enum.TryParse<ServerRequest>(generalCommand, out var result))
+                    if (message.type == CommandType.ServerRequest)
                     {
-                        switch (result)
+                        var generalCommand = JsonSerializer.Deserialize<string>(message.data);
+
+                        if (Enum.TryParse<ServerRequest>(generalCommand, out var result))
                         {
-                            case ServerRequest.ServerFull:
-                                Debug("Server full. Disconnecting client.");
-                                return;
-                            case ServerRequest.Turn:
+                            switch (result)
                             {
-                                ErrorThrowIf(characters.Count == 0,
-                                             "Multiboxing RoundRobin mode requires a character list!");
-
-                                if (characters.TryGetFirst(out var nextCharacter))
+                                case ServerRequest.ServerFull:
+                                    Debug("Server full. Disconnecting client.");
+                                    return;
+                                case ServerRequest.Disconnect:
+                                    Debug("Server requested disconnect.");
+                                    return;
+                                case ServerRequest.Turn:
                                 {
-                                    messagingCts   = new CancellationTokenSource();
-                                    messagingToken = messagingCts.Token;
-                                    linkedCts      = CancellationTokenSource.CreateLinkedTokenSource(token, messagingToken);
-                                    linkedToken    = linkedCts.Token;
+                                    ErrorThrowIf(characters.Count == 0,
+                                                 "Multiboxing RoundRobin mode requires a character list!");
 
-                                    await MessageHandler.WriteMessageAsync(
-                                                                           stream,
-                                                                           CommandType.RoundRobinResponse,
-                                                                           RoundRobinResponse.Available.ToJson(),
-                                                                           token);
-
-                                    if (Lifestream.IsBusy())
+                                    if (characters.TryGetFirst(out var nextCharacter))
                                     {
-                                        await WaitUntilAsync(() => !Lifestream.IsBusy(),
-                                                             "Waiting until Lifestream is done",
-                                                             token);
-                                    }
+                                        messagingCts   = new CancellationTokenSource();
+                                        messagingToken = messagingCts.Token;
+                                        linkedCts      = CancellationTokenSource.CreateLinkedTokenSource(token, messagingToken);
+                                        linkedToken    = linkedCts.Token;
 
-                                    await Lifestream.SwitchToChar(nextCharacter.Name, nextCharacter.World, token);
-
-                                    await sessionHandler.Invoke(stream, incomingChannel, token);
-
-                                    characters.RemoveAt(0);
-
-                                    if (characters.Count > 0)
-                                    {
                                         await MessageHandler.WriteMessageAsync(
                                                                                stream,
                                                                                CommandType.RoundRobinResponse,
-                                                                               RoundRobinResponse.TurnDone.ToJson(),
+                                                                               RoundRobinResponse.Available.ToJson(),
                                                                                token);
+
+                                        if (Lifestream.IsBusy())
+                                        {
+                                            await WaitUntilAsync(() => !Lifestream.IsBusy(),
+                                                                 "Waiting until Lifestream is done",
+                                                                 token);
+                                        }
+
+                                        await Lifestream.SwitchToChar(nextCharacter.Name, nextCharacter.World, token);
+
+                                        await sessionHandler.Invoke(stream, incomingChannel, token);
+
+                                        characters.RemoveAt(0);
+
+                                        if (characters.Count > 0)
+                                        {
+                                            await MessageHandler.WriteMessageAsync(
+                                                                                   stream,
+                                                                                   CommandType.RoundRobinResponse,
+                                                                                   RoundRobinResponse.TurnDone.ToJson(),
+                                                                                   token);
+                                        }
+                                        else
+                                        {
+                                            await MessageHandler.WriteMessageAsync(
+                                                                                   stream,
+                                                                                   CommandType.RoundRobinResponse,
+                                                                                   RoundRobinResponse.Finished.ToJson(),
+                                                                                   token);
+
+                                            return;
+                                        }
                                     }
                                     else
                                     {
@@ -124,28 +151,22 @@ public class MultiboxClient(
 
                                         return;
                                     }
-                                }
-                                else
-                                {
-                                    await MessageHandler.WriteMessageAsync(
-                                                                           stream,
-                                                                           CommandType.RoundRobinResponse,
-                                                                           RoundRobinResponse.Finished.ToJson(),
-                                                                           token);
 
+                                    break;
+                                }
+                                case ServerRequest.StartParallel:
+                                {
+                                    await sessionHandler.Invoke(stream, incomingChannel, token);
                                     return;
                                 }
-
-                                break;
-                            }
-                            case ServerRequest.StartParallel:
-                            {
-                                await sessionHandler.Invoke(stream, incomingChannel, token);
-                                return;
                             }
                         }
                     }
                 }
+            }
+            catch (ChannelClosedException)
+            {
+                VerboseSpecific("MessageReader", "Client message queue closed.");
             }
         } finally
         {

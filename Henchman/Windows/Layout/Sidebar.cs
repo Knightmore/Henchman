@@ -1,8 +1,8 @@
+using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using System.Linq;
 
 namespace Henchman.Windows.Layout;
 
@@ -16,14 +16,16 @@ public record NavItem(string Name, FontAwesomeIcon Icon, Action OnClick);
 public class Sidebar(ImTextureID logoTextureHandle = default)
 {
     private readonly List<KeyValuePair<string, NavCategory>> categories = [];
-    public string? ActiveItemName;
+    public           string?                                 ActiveItemName;
 
     public static float GlobalFontScale => ImGui.GetIO()
                                                 .FontGlobalScale;
 
-    private float expandedWidth => 200f * GlobalFontScale;
-    private float collapsedWidth => 50f * GlobalFontScale;
-    public bool IsCollapsed { get; set; }
+    private float expandedWidth  => 200f * GlobalFontScale;
+    private float collapsedWidth => 50f  * GlobalFontScale;
+    public  bool  IsCollapsed    { get; set; }
+
+    public void Clear() => categories.Clear();
 
     public KeyValuePair<string, NavCategory> AddCategory(string name, FontAwesomeIcon icon)
     {
@@ -62,9 +64,9 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
             DrawCategories();
 
             var oldCursorPos = ImGui.GetCursorPos();
-            var buttonSize = new Vector2(24 * GlobalFontScale, 40 * GlobalFontScale);
+            var buttonSize   = new Vector2(24 * GlobalFontScale, 40 * GlobalFontScale);
             var windowHeight = ImGui.GetWindowHeight();
-            var buttonY = (windowHeight / 2) - (buttonSize.Y / 2);
+            var buttonY      = (windowHeight / 2) - (buttonSize.Y / 2);
             var posX = oldCursorPos.X +
                        ImGui.GetContentRegionAvail()
                             .X +
@@ -118,7 +120,7 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                     {
                         using (ImRaii.PushColor(ImGuiCol.Border, Theme.AccentPink))
                         {
-                            var style = ImGui.GetStyle();
+                            var style     = ImGui.GetStyle();
                             var oldBorder = style.FrameBorderSize;
                             style.FrameBorderSize = 2f;
 
@@ -206,7 +208,7 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                 using (var headerChild = ImRaii.Child($"##CategoryHeader_{categoryName}", new Vector2(0, 30 * GlobalFontScale), true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     if (!headerChild.Success) return;
-                    var textHeight = ImGui.GetTextLineHeight();
+                    var textHeight      = ImGui.GetTextLineHeight();
                     var verticalPadding = (headerHeight - textHeight) / 2f;
 
                     ImGui.SetCursorPosY(verticalPadding);
@@ -224,7 +226,7 @@ public class Sidebar(ImTextureID logoTextureHandle = default)
                                        ? FontAwesomeIcon.ChevronRight
                                        : FontAwesomeIcon.ChevronDown;
                     var collapableIconString = icon.ToIconString();
-                    var iconSize = ImGui.CalcTextSize(collapableIconString);
+                    var iconSize             = ImGui.CalcTextSize(collapableIconString);
 
                     ImGui.SetCursorPos(new Vector2(
                                                    headerWidth - iconSize.X - (10f * GlobalFontScale),

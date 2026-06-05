@@ -1,4 +1,3 @@
-using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.Automation.UIInput;
@@ -12,6 +11,7 @@ using Henchman.Data;
 using Henchman.Helpers;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace Henchman.Features.IntoTheLight;
@@ -97,7 +97,7 @@ public class IntoTheLight : Feature
             {
                 await WaitUntilAsync(() => SelectName(Configuration!.LightCharacters[index].FirstName, Configuration!.LightCharacters[index].LastName), "Select Name", token);
 
-                using var namingTokenSrc  = new CancellationTokenSource();
+                using var namingTokenSrc = new CancellationTokenSource();
                 using var linkedNamingCts = CancellationTokenSource.CreateLinkedTokenSource(token, namingTokenSrc.Token);
 
                 var charConfirmation = WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesnoNewGame), "Checking for New Game Yesno.", linkedNamingCts.Token);
@@ -122,10 +122,10 @@ public class IntoTheLight : Feature
                 if (completedNamingTask == charConfirmation) break;
             }
 
-            using var loginTokenSrc  = new CancellationTokenSource();
+            using var loginTokenSrc = new CancellationTokenSource();
             using var linkedLoginCts = CancellationTokenSource.CreateLinkedTokenSource(token, loginTokenSrc.Token);
 
-            var loginQueue  = WaitUntilAsync(async () => !Configuration!.LightNoLoginSkip && await ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
+            var loginQueue = WaitUntilAsync(async () => !Configuration!.LightNoLoginSkip && await ConfirmSpecificSelectOk(Lang.SelectOkCongested), "Checking for login queue.", linkedLoginCts.Token);
             var directLogin = WaitUntilAsync(() => Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent], "Checking for first Cutscene", linkedLoginCts.Token);
 
             var completedLoginTask = await Task.WhenAny(loginQueue, directLogin);
@@ -230,10 +230,10 @@ public class IntoTheLight : Feature
             {
                 if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgressAddon) && IsAddonReady(charaMakeProgressAddon))
                 {
-                    var raceGenderEvt  = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                    var raceGenderEvt = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                     var raceGenderData = new AtkEventData();
                     charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, genderId, &raceGenderEvt, &raceGenderData);
-                    var confirmEvt  = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                    var confirmEvt = new AtkEvent { Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                     var confirmData = new AtkEventData();
                     charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, 28, &confirmEvt, &confirmData);
                     return true;
@@ -248,7 +248,7 @@ public class IntoTheLight : Feature
     {
         if (TryGetAddonByName<AtkUnitBase>("_CharaMakeTribe", out var charaMakeTribe) && IsAddonReady(charaMakeTribe))
         {
-            var evt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+            var evt = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
             var data = new AtkEventData();
             charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, 3, &evt, &data);
             return true;
@@ -289,7 +289,7 @@ public class IntoTheLight : Feature
         {
             var dropDown = charaMakeBirthDayAddon->GetNodeById(3)->GetAsAtkComponentDropdownList();
             dropDown->SelectItem(Random.Shared.Next(11));
-            var evt  = new AtkEvent { Listener = &charaMakeBirthDayAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+            var evt = new AtkEvent { Listener = &charaMakeBirthDayAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
             var data = new AtkEventData();
             charaMakeBirthDayAddon->ReceiveEvent(AtkEventType.ButtonClick, Random.Shared.Next(2, 33), &evt, &data);
             charaMakeBirthDayAddon->ReceiveEvent(AtkEventType.ButtonClick, 0, &evt, &data);
@@ -303,7 +303,7 @@ public class IntoTheLight : Feature
     {
         if (TryGetAddonByName<AtkUnitBase>("_CharaMakeGuardian", out var charaMakeGuardianAddon) && IsAddonReady(charaMakeGuardianAddon))
         {
-            var evt  = new AtkEvent { Listener = &charaMakeGuardianAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+            var evt = new AtkEvent { Listener = &charaMakeGuardianAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
             var data = new AtkEventData();
             charaMakeGuardianAddon->ReceiveEvent(AtkEventType.ButtonClick, Random.Shared.Next(2, 13), &evt, &data);
             charaMakeGuardianAddon->ReceiveEvent(AtkEventType.ButtonClick, 0, &evt, &data);
@@ -320,7 +320,7 @@ public class IntoTheLight : Feature
             Callback.Fire(charaMakeProgressAddon, true, 5, classJobId, -1, 0, string.Empty, 0);
             if (TryGetAddonByName<AtkUnitBase>("_CharaMakeClassSelector", out var charaMakeClassSelectorAddon) && IsAddonReady(charaMakeClassSelectorAddon))
             {
-                var evt  = new AtkEvent { Listener = &charaMakeClassSelectorAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                var evt = new AtkEvent { Listener = &charaMakeClassSelectorAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                 var data = new AtkEventData();
                 charaMakeClassSelectorAddon->ReceiveEvent(AtkEventType.ButtonClick, 2, &evt, &data);
                 return true;
@@ -340,15 +340,15 @@ public class IntoTheLight : Feature
             {
                 if (nodeEvt->State.EventType == AtkEventType.ButtonClick)
                 {
-                    var evt  = new AtkEvent { Listener = &charaMakeSelectYesNo->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                    var evt = new AtkEvent { Listener = &charaMakeSelectYesNo->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                     var data = new AtkEventData();
                     charaMakeSelectYesNo->ReceiveEvent(AtkEventType.ButtonClick, (int)nodeEvt->Param, &evt, &data);
                     if (TryGetAddonByName<AtkUnitBase>("_CharaMakeWorldServer", out var charaMakeWorldServer) && IsAddonReady(charaMakeWorldServer))
                     {
-                        var list       = charaMakeWorldServer->GetComponentListById(10);
-                        var listener   = list->GetAtkResNode()->AtkEventManager.Event->Listener;
-                        var target     = list->GetAtkResNode()->AtkEventManager.Event->Target;
-                        var scrollEvt  = new AtkEvent { Listener = listener, Target = target };
+                        var list = charaMakeWorldServer->GetComponentListById(10);
+                        var listener = list->GetAtkResNode()->AtkEventManager.Event->Listener;
+                        var target = list->GetAtkResNode()->AtkEventManager.Event->Target;
+                        var scrollEvt = new AtkEvent { Listener = listener, Target = target };
                         var scrollData = new AtkEventData();
                         listener->ReceiveEvent(AtkEventType.MouseWheel, 0, &scrollEvt, &scrollData);
                         listener->ReceiveEvent(AtkEventType.MouseWheel, 0, &scrollEvt, &scrollData);
@@ -402,7 +402,7 @@ public class IntoTheLight : Feature
                         {
                             if (nodeEvt->State.EventType == AtkEventType.ButtonClick)
                             {
-                                var evt  = new AtkEvent { Listener = &charaMakeWorldServer->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                                var evt = new AtkEvent { Listener = &charaMakeWorldServer->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                                 var data = new AtkEventData();
                                 charaMakeWorldServer->ReceiveEvent(AtkEventType.ButtonClick, (int)nodeEvt->Param, &evt, &data);
 
@@ -449,7 +449,7 @@ public class IntoTheLight : Feature
             {
                 if (nodeEvt->State.EventType == AtkEventType.ButtonClick)
                 {
-                    var evt  = new AtkEvent { Listener = &charaMakeCharaName->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
+                    var evt = new AtkEvent { Listener = &charaMakeCharaName->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
                     var data = new AtkEventData();
                     charaMakeCharaName->ReceiveEvent(AtkEventType.ButtonClick, (int)nodeEvt->Param, &evt, &data);
 

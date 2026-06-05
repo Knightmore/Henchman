@@ -91,11 +91,19 @@ public class MainWindow : Window, IDisposable
                 continue;
             }
 
-            var category = layout.Sidebar.AddCategory(feature.Category.ToString(), foundCategory);
-            category.Value.Items.Add(new NavItem(feature.Name, feature.Icon, () => selectedFeatureName = selectedFeatureName != feature.Name
-                                                                                                                 ? feature.Name
-                                                                                                                 : string.Empty));
+            var category = layout.Sidebar.AddCategory(Loc.G($"Category.{feature.Category}"), foundCategory);
+            category.Value.Items.Add(new NavItem(feature.DisplayName, feature.Icon, () => selectedFeatureName = selectedFeatureName != feature.Name
+                                                                                                                      ? feature.Name
+                                                                                                                      : string.Empty));
         }
+    }
+
+    internal void RebuildSidebar()
+    {
+        if (layout == null) return;
+        layout.Sidebar.Clear();
+        layout.Sidebar.ActiveItemName = string.Empty;
+        SetupSidebar();
     }
 
     public override void Draw()
@@ -119,21 +127,14 @@ public class MainWindow : Window, IDisposable
             {
                 layout.Draw(() =>
                             {
-                                ImGuiEx.TextCentered(Theme.ErrorRed, "ATTENTION");
-                                ImGuiEx.TextCentered("""
-                                                     The included features work within the limitations of vnavmesh and your unlocked ingame progress!
-                                                     There is no 'intelligent' pathing included (yet!?). 
-                                                     If you haven't unlocked all needed Territories/Aetherytes, certain features may stop at that task.
-                                                     """);
+                                ImGuiEx.TextCentered(Theme.ErrorRed, Loc.G("Splash.Attention"));
+                                ImGuiEx.TextCentered(Loc.G("Splash.AttentionBody"));
                                 ImGui.NewLine();
                                 ImGui.Separator();
                                 ImGui.NewLine();
 
-                                ImGuiEx.TextCentered(Theme.ErrorRed, "Positional Mob Data");
-                                ImGuiEx.TextCentered("""
-                                                     Due to the amount of positional data, it can happen, that not all positions are correct.
-                                                     If you want to report a problematic position, please also send the corrected position if possible.
-                                                     """);
+                                ImGuiEx.TextCentered(Theme.ErrorRed, Loc.G("Splash.PositionalData"));
+                                ImGuiEx.TextCentered(Loc.G("Splash.PositionalDataBody"));
                             });
             }
 

@@ -1,0 +1,22 @@
+{
+  "HelpText":             "Klicke den \"Start\"-Knopf für das gewünschte Jagdprotokoll.\nBumpOnALog schließt alle aktuellen Monstereinträge für deinen Rang ab.\n\nWenn dein Charakter genug Gesellschaftssiegel und das entsprechende Level hat,\nwird 'Bump On A Log' deine Gesellschaftsränge bis zum Unterleutnant aufsteigen.\n\nÄndere deine Einstellungen, wenn du früher stoppen möchtest.\n\nWenn du Multiboxing (High-Level-Begleitung) für GC-Protokolle nutzen möchtest,\nprüfe und passe deine allgemeinen Multiboxing-Einstellungen an.",
+  "TabClass":             "Klasse",
+  "TabGrandCompany":      "Staatliche Gesellschaft",
+  "TabSettings":          "Einstellungen",
+  "NoHuntLogForClass":    "Für deine Klasse gibt es kein Jagdprotokoll!",
+  "NotInGrandCompany":    "Du bist in keiner staatlichen Gesellschaft!",
+  "FinishedAllGCRanks":   "Du hast alle Jagdprotokoll-Ränge deiner staatlichen Gesellschaft abgeschlossen!",
+  "GCRankNotUnlocked":    "Der erforderliche Rang der staatlichen Gesellschaft wurde noch nicht freigeschaltet!",
+  "FinishedAllRanks":     "Du hast alle Jagdprotokoll-Ränge abgeschlossen!",
+  "CurrentDifficultyFmt": "- Aktuelle Schwierigkeit: {0}",
+  "CurrentRankFmt":       "- Aktueller Rang: {0} {1} - Schwierigkeit: {2}",
+  "ColName":              "Name",
+  "ColKills":             "Abschüsse",
+  "ColFinished":          "Fertig",
+  "StopAfterJobRank":     "Nach Klassenrang stoppen",
+  "StopAfterGCRank":      "Nach GC-Rang stoppen",
+  "OrderByTerritory":     "Monster nach Gebiet sortieren",
+  "SkipDutyMarks":        "Duty-Markierungen überspringen",
+  "SoloUnsyncDuty":       "Duty solo (unsync)",
+  "RankUpGC":             "GC-Rang aufsteigen"
+}

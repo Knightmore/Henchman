@@ -101,6 +101,9 @@ public static class Utils
     public static string ToTitleCaseExtended(in ReadOnlySeString s, ClientLanguage language) => string.Intern(s.ExtractTextExtended()
                                                                                                                .ToUpper(true, true, false, language));
 
+    /*public static Regex ToRegex(this ReadOnlySeString seString) => new(string.Join("", seString.Select(payload => payload.Type == ReadOnlySePayloadType.Text
+                                                                                                                          ? Regex.Escape(payload.ToString())
+                                                                                                                          : "(.*?)\\s*")));*/
     public static Regex ToRegex(this ReadOnlySeString seString)
     {
         var parts = new List<string>();
@@ -292,6 +295,19 @@ public static class Utils
 
         return (IConfig?)config;
     }
+
+
+    /*public static TConfig? GetFeatureConfig<TFeature, TConfig>()
+            where TFeature : FeatureUI<TConfig>
+            where TConfig : IConfig
+    {
+        if (TryGetFeature<TFeature>(out var feature))
+            return feature.Configuration;
+
+        FullError($"{typeof(TFeature).Name} not loaded. Can't get config!");
+        return default;
+    }*/
+
     public static string ToText(this Category c) => c switch
     {
         Category.Combat => "Combat",
@@ -309,5 +325,16 @@ public static class Utils
             WriteIndented = false,
             NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
+    }
+
+    internal static void DrawLine(Vector3 pos)
+    {
+        if (Svc.GameGui.WorldToScreen(pos, out Vector2 screenPos))
+        {
+            ImGui.GetForegroundDrawList()
+                 .AddLine(ImGui.GetMousePos(), screenPos, 0xFF9900FF);
+            ImGui.GetForegroundDrawList()
+                 .AddCircleFilled(screenPos, 3f, 0xFF9900FF);
+        }
     }
 }

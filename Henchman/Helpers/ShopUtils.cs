@@ -11,8 +11,8 @@ internal static unsafe class ShopUtils
         var agent = AgentShop.Instance();
         if (agent == null || agent->EventReceiver == null)
             return false;
-        AtkValue res = default, arg = default;
-        var proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
+        AtkValue res   = default, arg = default;
+        var      proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
         proxy->Handler->CancelInteraction();
         arg.SetInt(-1);
         agent->ReceiveEvent(&res, &arg, 1, 0);
@@ -31,6 +31,19 @@ internal static unsafe class ShopUtils
         var proxy = (ShopEventHandler.AgentProxy*)agent->EventReceiver;
         return proxy->Handler == eh->Value;
     }
+
+    /*public static bool IsSpecialShopOpen(uint shopId = 0)
+    {
+        var agent = AgentShop.Instance();
+        if (agent == null || !agent->IsAgentActive() || agent->EventReceiver == null || !agent->IsAddonReady())
+            return false;
+        if (shopId == 0)
+            return true;
+        if (!EventFramework.Instance()->EventHandlerModule.EventHandlerMap.TryGetValuePointer(shopId, out var eh) || eh == null || eh->Value == null)
+            return false;
+        var proxy = (SpecialShopEventHandler.AgentProxy*)agent->EventReceiver;
+        return proxy->Handler == eh->Value;
+    }*/
 
     public static bool ShopTransactionInProgress(uint shopId)
     {
@@ -94,6 +107,19 @@ internal static unsafe class ShopUtils
             FullError($"{shopId:X} is not a special shop");
             return false;
         }
+
+        /*var shop = (SpecialShopEventHandler*)eh->Value;
+        for (uint i = 0; i < shop->ItemCount; ++i)
+        {
+            if (shop->Items[i].ItemReceive.Contains(itemId))
+            {
+                TaskLog($"Buying {count}x {itemId} from {shopId:X}");
+                shop->BuyItemIndex = i;
+                shop->BuyItemAmount = count;
+                shop->ExecuteBuy(i, count);
+                return true;
+            }
+        }*/
 
         FullError($"Did not find item {itemId} in shop {shopId:X}");
         return false;

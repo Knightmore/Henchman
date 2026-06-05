@@ -37,27 +37,22 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
 
     public override Action Help => () =>
                                    {
-                                       ImGui.Text("""
-                                                  Tick the Enable checkboxes for your wanted bills and click the 'Start' button.
-                                                  OnYourMark will gather all enabled Hunt Bills and finish all marks.
-
-                                                  Bill colors:
-                                                  """);
-                                       ImGuiEx.Text(ImGuiColors.DalamudGrey, "Grey");
+                                       ImGui.Text(T("HelpText"));
+                                       ImGuiEx.Text(ImGuiColors.DalamudGrey, T("ColorGrey"));
                                        ImGui.SameLine(90);
-                                       ImGui.Text("-   Not unlocked.");
-                                       ImGuiEx.Text(ImGuiColors.DalamudRed, "Red");
+                                       ImGui.Text(T("ColorGreyDesc"));
+                                       ImGuiEx.Text(ImGuiColors.DalamudRed, T("ColorRed"));
                                        ImGui.SameLine(90);
-                                       ImGui.Text("-   Not obtained.");
-                                       ImGuiEx.Text(ImGuiColors.DalamudYellow, "Yellow");
+                                       ImGui.Text(T("ColorRedDesc"));
+                                       ImGuiEx.Text(ImGuiColors.DalamudYellow, T("ColorYellow"));
                                        ImGui.SameLine(90);
-                                       ImGui.Text("-   Obtained uncompleted.");
-                                       ImGuiEx.Text(ImGuiColors.DalamudOrange, "Orange");
+                                       ImGui.Text(T("ColorYellowDesc"));
+                                       ImGuiEx.Text(ImGuiColors.DalamudOrange, T("ColorOrange"));
                                        ImGui.SameLine(90);
-                                       ImGui.Text("-   Obtained uncompleted old mark.");
-                                       ImGuiEx.Text(ImGuiColors.HealerGreen, "Green");
+                                       ImGui.Text(T("ColorOrangeDesc"));
+                                       ImGuiEx.Text(ImGuiColors.HealerGreen, T("ColorGreen"));
                                        ImGui.SameLine(90);
-                                       ImGui.Text("-   Completed.");
+                                       ImGui.Text(T("ColorGreenDesc"));
 
                                        DrawRequirements(Requirements);
                                    };
@@ -157,7 +152,7 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
                             ImGui.Spacing();
 
                             var enabled = Configuration.EnableHuntBills[key];
-                            if (ImGui.Checkbox($"Enable##{key}", ref enabled))
+                            if (ImGui.Checkbox($"{T("Enable")}##{key}", ref enabled))
                             {
                                 Configuration.EnableHuntBills[key] = enabled;
                                 configChanged = true;
@@ -176,9 +171,9 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
 
                             using (var table = ImRaii.Table($"###{key}BillTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
                             {
-                                ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
-                                ImGui.TableSetupColumn("Amount", ImGuiTableColumnFlags.WidthFixed);
-                                ImGui.TableSetupColumn("Finished", ImGuiTableColumnFlags.WidthFixed);
+                                ImGui.TableSetupColumn(T("ColName"), ImGuiTableColumnFlags.WidthStretch);
+                                ImGui.TableSetupColumn(T("ColAmount"), ImGuiTableColumnFlags.WidthFixed);
+                                ImGui.TableSetupColumn(T("ColFinished"), ImGuiTableColumnFlags.WidthFixed);
                                 ImGui.TableHeadersRow();
 
                                 foreach (var mark in mobHuntTargets)
@@ -211,7 +206,7 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
                 }
             }
 
-            using (var tab = ImRaii.TabItem("Settings"))
+            using (var tab = ImRaii.TabItem(T("TabSettings")))
             {
                 if (tab)
                     DrawSettings();
@@ -249,19 +244,15 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
     private void DrawSettings()
     {
         var configChanged = false;
-        ImGui.Text("Discard old Hunt Bills");
+        ImGui.Text(T("DiscardOldBills"));
         ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##oldHuntBills", ref C.DiscardOldBills);
-        ImGui.Text("Detour if an A-Rank is nearby");
+        ImGui.Text(T("DetourForARanks"));
         ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##ABDetour", ref C.DetourForARanks);
         ImGui.SameLine();
-        ImGuiEx.HelpMarker("""
-                           Will only try a detour once per Mark.
-                           If your char dies while taking a detour, it will resume to find the original mark.
-                           As a safety measure, this will only work up until Stormblood.
-                           """);
-        ImGui.Text("Skip Fate Marks");
+        ImGuiEx.HelpMarker(T("DetourHelp"));
+        ImGui.Text(T("SkipFateMarks"));
         ImGui.SameLine(250 * GlobalFontScale);
         configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
 
@@ -491,8 +482,17 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
             if (hasObtainedBill && obtainedMarkOffset > 0)
                 AddBillRewards(pendingRewards, mobHuntOrderType, obtainedMarkOffset, currencyItemId, true);
 
-            if ((!hasObtainedBill || obtainedMarkId != availableMarkId) && availableMarkOffset > 0)
-                AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, false);
+            if (availableMarkOffset > 0)
+            {
+                if (!hasObtainedBill && obtainedMarkId != availableMarkId)
+                {
+                    AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, false);
+                }
+                else if (!hasObtainedBill && !IsBillCompleted(mobHuntOrderType, availableMarkOffset))
+                {
+                    AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, true);
+                }
+            }
         }
 
         return HuntCurrencies.Select(currency =>
@@ -502,6 +502,18 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
                                      })
                              .Where(projection => projection.Current > 0 || projection.PendingReward > 0)
                              .ToList();
+    }
+
+    private unsafe bool IsBillCompleted(byte mobHuntOrderType, uint markOffset)
+    {
+        var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()
+                [Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                    .GetRow(mobHuntOrderType)
+                    .OrderStart.Value.RowId +
+                 (markOffset - 1)];
+
+        return mobHuntTargets.All(mark =>
+                                          MobHunt.Instance()->GetKillCount(mobHuntOrderType, (byte)mark.SubrowId) >= mark.NeededKills);
     }
 
     private unsafe void AddBillRewards(Dictionary<uint, uint> pendingRewards, byte mobHuntOrderType, uint markOffset, uint currencyItemId, bool onlyOpenMarks)
@@ -514,6 +526,9 @@ public class OnYourMarkUI : FeatureUI<OnYourMark, Configuration>
 
         foreach (var mark in mobHuntTargets)
         {
+            if (mark.Target.Value.FATE.IsValid && mark.Target.Value.FATE.Value.RowId > 0 && C.SkipFateMarks)
+                continue;
+
             if (onlyOpenMarks && MobHunt.Instance()->GetKillCount(mobHuntOrderType, (byte)mark.SubrowId) >= mark.NeededKills)
                 continue;
 

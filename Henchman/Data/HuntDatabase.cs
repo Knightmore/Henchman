@@ -1,18 +1,18 @@
-using System.Linq;
-using System.Threading.Tasks;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Henchman.Data;
 
 internal static class HuntDatabase
 {
-    internal static Dictionary<uint, HuntMark> HuntMarks = new();
-    internal static Dictionary<uint, HuntMark> BRanks    = new();
+    internal static List<HuntMark> HuntMarks = [];
+    internal static List<HuntMark> BRanks = [];
 
-    internal static IEnumerable<ClassJob>     HuntLogClasses;
+    internal static IEnumerable<ClassJob> HuntLogClasses;
     internal static Dictionary<uint, HuntLog> ClassHuntRanks = new();
-    internal static Dictionary<uint, HuntLog> GcHuntRanks    = new();
+    internal static Dictionary<uint, HuntLog> GcHuntRanks = new();
 
     internal static Dictionary<GrandCompany, Location> ArrHuntBoardLocations = new()
                                                                                {
@@ -89,7 +89,7 @@ internal static class HuntDatabase
 
     internal static readonly Dictionary<string, string> BillCategories = new()
                                                                          {
-                                                                                 { HuntBoardOptions[0], "Mark Bill" },
+                                                                                 /*{ HuntBoardOptions[0], "Mark Bill" },
                                                                                  { HuntBoardOptions[1], "Elite Mark Bill" },
                                                                                  { HuntBoardOptions[2], "Level 1 Clan Bill" },
                                                                                  { HuntBoardOptions[3], "Level 2 Clan Bill" },
@@ -110,7 +110,29 @@ internal static class HuntDatabase
                                                                                  { HuntBoardOptions[18], "Beginner Dawn Hunt Bill" },
                                                                                  { HuntBoardOptions[19], "Intermediate Dawn Hunt Bill" },
                                                                                  { HuntBoardOptions[20], "Advanced Dawn Hunt Bill" },
-                                                                                 { HuntBoardOptions[21], "Elite Dawn Hunt Bill" }
+                                                                                 { HuntBoardOptions[21], "Elite Dawn Hunt Bill" }*/
+                                                                                 { HuntBoardOptions[0], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001361).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[1], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001362).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[2], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001700).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[3], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001701).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[4], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001702).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[5], Svc.Data.GetExcelSheet<EventItem>().GetRow(2001703).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[6], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002113).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[7], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002114).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[8], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002115).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[9], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002116).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[10], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002628).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[11], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002629).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[12], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002630).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[13], Svc.Data.GetExcelSheet<EventItem>().GetRow(2002631).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[14], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003090).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[15], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003091).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[16], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003092).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[17], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003093).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[18], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003509).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[19], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003510).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[20], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003511).Name.ExtractText() },
+                                                                                 { HuntBoardOptions[21], Svc.Data.GetExcelSheet<EventItem>().GetRow(2003512).Name.ExtractText() }
                                                                          };
 
     internal static readonly Dictionary<string, string> HuntBoardSelect = new()
@@ -185,20 +207,98 @@ internal static class HuntDatabase
         }
     }
 
-    internal static void ProcessHuntMarkJson(string filePath, Dictionary<uint, HuntMark> marksDict)
+    internal static IEnumerable<HuntMark> GetHuntMarksByName(uint bnpcNameRowId) => HuntMarks.Where(x => x.BNpcNameRowId == bnpcNameRowId);
+
+    internal static IEnumerable<HuntMark> GetHuntMarksByNameAndLevel(uint bnpcNameRowId, byte level) => HuntMarks.Where(x => x.BNpcNameRowId == bnpcNameRowId && x.Level == level);
+
+    internal static HuntMark? GetHuntMark(uint bnpcNameRowId, uint territoryId, uint fateId = 0) => HuntMarks.FirstOrDefault(x => x.BNpcNameRowId == bnpcNameRowId && x.TerritoryId == territoryId && x.FateId == fateId);
+
+    internal static HuntMark? GetHuntMarkForExpansion(uint bnpcNameRowId, uint exVersionRowId) =>
+            GetHuntMarksByName(bnpcNameRowId)
+                   .FirstOrDefault(x => Svc.Data.GetExcelSheet<TerritoryType>()
+                                          .GetRow(x.TerritoryId)
+                                          .ExVersion.RowId ==
+                                        exVersionRowId);
+
+    internal static HuntMark ResolveBestLevelVariant(HuntMark source, int playerLevel, bool useLowest = true, bool preferOverworldNonFate = false)
+    {
+        var candidates = GetHuntMarksByName(source.BNpcNameRowId)
+                        .Where(x => Svc.Data.GetExcelSheet<TerritoryType>()
+                                       .GetRow(x.TerritoryId)
+                                       .ExVersion.RowId ==
+                                    Svc.Data.GetExcelSheet<TerritoryType>()
+                                       .GetRow(source.TerritoryId)
+                                       .ExVersion.RowId)
+                        .ToList();
+
+        var preferredCandidates = preferOverworldNonFate
+                                          ? candidates.Where(x => !x.IsDuty && x.FateId == 0).ToList()
+                                          : candidates.Where(x => x.IsDuty == source.IsDuty &&
+                                                                 (source.FateId > 0 ? x.FateId > 0 : x.FateId == 0))
+                                                      .ToList();
+
+        var best = SelectBestLevelVariant(preferredCandidates, playerLevel, useLowest) ??
+                   SelectBestLevelVariant(candidates, playerLevel, useLowest) ??
+                   candidates.FirstOrDefault() ??
+                   source;
+
+        return new HuntMark(best)
+        {
+                TargetStateSource = source,
+                NeededKills = source.NeededKills,
+                MobHuntRowId = source.MobHuntRowId,
+                MobHuntSubRowId = source.MobHuntSubRowId,
+                MonsterNoteId = source.MonsterNoteId,
+                MonsterNoteSubRank = source.MonsterNoteSubRank,
+                MonsterNoteCount = source.MonsterNoteCount,
+                IsCurrentTarget = source.IsCurrentTarget
+        };
+    }
+
+    private static HuntMark? SelectBestLevelVariant(List<HuntMark> candidates, int playerLevel, bool useLowest)
+    {
+        var leveledCandidates = candidates.Where(x => x.Level != null)
+                                          .ToList();
+        return (useLowest
+                       ? leveledCandidates.OrderBy(x => x.Level).FirstOrDefault()
+                       : leveledCandidates.Where(x => x.Level <= playerLevel)
+                                          .OrderByDescending(x => x.Level)
+                                          .FirstOrDefault() ??
+                         leveledCandidates.OrderBy(x => Math.Abs(x.Level!.Value - playerLevel))
+                                          .FirstOrDefault()) ??
+               candidates.FirstOrDefault();
+    }
+
+    internal static HuntMark? GetBRank(uint bnpcNameRowId) => BRanks.FirstOrDefault(x => x.BNpcNameRowId == bnpcNameRowId);
+
+    internal static void ProcessHuntMarkJson(string filePath, List<HuntMark> marks)
     {
         try
         {
-            var marks = ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
+            var jsonMarks = ReadLocalJsonFile<List<JsonHuntMark>>(filePath);
 
-            if (marks != null)
+            if (jsonMarks != null)
             {
-                foreach (var jsonMark in marks)
+                foreach (var jsonMark in jsonMarks)
                 {
-                    if (!marksDict.TryGetValue(jsonMark.BnpcName, out var huntMark))
-                        marksDict[jsonMark.BnpcName] = new HuntMark(jsonMark.BnpcName, jsonMark.X, jsonMark.Y, jsonMark.Z, jsonMark.TerritoryId, jsonMark.FateId);
-                    else if (huntMark.TerritoryId == jsonMark.TerritoryId)
-                        huntMark.Positions.Add(new Vector3(jsonMark.X, jsonMark.Y, jsonMark.Z));
+                    var matchingMarks = marks.Where(x => x.BNpcNameRowId == jsonMark.BnpcName &&
+                                                         x.TerritoryId == jsonMark.TerritoryId &&
+                                                         x.FateId == jsonMark.FateId);
+                    var huntMark = jsonMark.Level == null
+                                           ? matchingMarks.FirstOrDefault()
+                                           : matchingMarks.FirstOrDefault(x => x.Level == jsonMark.Level) ??
+                                             matchingMarks.FirstOrDefault(x => x.Level == null);
+                    if (huntMark == null)
+                    {
+                        marks.Add(new HuntMark(jsonMark.BnpcName, jsonMark.X, jsonMark.Y, jsonMark.Z, jsonMark.TerritoryId, jsonMark.FateId, jsonMark.Level));
+                        continue;
+                    }
+
+                    if (huntMark.Level == null)
+                        huntMark.Level = jsonMark.Level;
+
+                    var position = new Vector3(jsonMark.X, jsonMark.Y, jsonMark.Z);
+                    if (!huntMark.Positions.Contains(position)) huntMark.Positions.Add(position);
                 }
             }
         }
@@ -212,10 +312,10 @@ internal static class HuntDatabase
     {
         try
         {
-            HuntMarks      = new Dictionary<uint, HuntMark>();
-            BRanks         = new Dictionary<uint, HuntMark>();
+            HuntMarks = [];
+            BRanks = [];
             ClassHuntRanks = new Dictionary<uint, HuntLog>();
-            GcHuntRanks    = new Dictionary<uint, HuntLog>();
+            GcHuntRanks = new Dictionary<uint, HuntLog>();
 
             ProcessHuntMarkJson("ARRHunt.json", HuntMarks);
             ProcessHuntMarkJson("HWHunt.json", HuntMarks);
@@ -242,13 +342,13 @@ internal static class HuntDatabase
         foreach (var huntClass in HuntLogClasses)
         {
             var classHuntLog = new HuntLog();
-            var rowBase      = (int)huntClass.RowId * 10000;
+            var rowBase = (int)huntClass.RowId * 10000;
 
             for (var rankNumber = 0; rankNumber < 5; rankNumber++)
             {
                 var entryBase = rowBase + (rankNumber * 10) + 1;
-                var count     = 0;
-                var subRank   = 0;
+                var count = 0;
+                var subRank = 0;
                 for (var rankEntry = entryBase; rankEntry <= entryBase + 9; rankEntry++)
                 {
                     var rankEntryRow = Svc.Data.GetExcelSheet<MonsterNote>()
@@ -256,15 +356,15 @@ internal static class HuntDatabase
                     for (var i = 0; i < 4; i++)
                     {
                         var monsterTarget = rankEntryRow.MonsterNoteTarget[i].Value;
-                        if (HuntMarks.TryGetValue(monsterTarget.BNpcName.Value.RowId, out var huntMark))
+                        if (GetHuntMarkForExpansion(monsterTarget.BNpcName.Value.RowId, 0) is { } huntMark)
                         {
                             var newHuntMark = new HuntMark(huntMark)
-                                              {
-                                                      NeededKills        = rankEntryRow.Count[i],
-                                                      MonsterNoteId      = (int)huntClass.MonsterNote.RowId,
-                                                      MonsterNoteSubRank = subRank,
-                                                      MonsterNoteCount   = i
-                                              };
+                            {
+                                NeededKills = rankEntryRow.Count[i],
+                                MonsterNoteId = (int)huntClass.MonsterNote.RowId,
+                                MonsterNoteSubRank = subRank,
+                                MonsterNoteCount = i
+                            };
 
                             classHuntLog.HuntMarks[rankNumber, count] = newHuntMark;
                         }
@@ -290,12 +390,12 @@ internal static class HuntDatabase
         foreach (var gc in grandCompanies)
         {
             var gcHuntLog = new HuntLog();
-            var rowBase   = gc.RowId * 1000000;
+            var rowBase = gc.RowId * 1000000;
             for (uint rankNumber = 0; rankNumber < 5; rankNumber++)
             {
                 var entryBase = rowBase + (rankNumber * 10) + 1;
-                var count     = 0;
-                var subRank   = 0;
+                var count = 0;
+                var subRank = 0;
                 for (var rankEntry = entryBase; rankEntry <= entryBase + 9; rankEntry++)
                 {
                     var rankEntryRow = Svc.Data.GetExcelSheet<MonsterNote>()
@@ -303,15 +403,15 @@ internal static class HuntDatabase
                     for (var i = 0; i < 4; i++)
                     {
                         var monsterTarget = rankEntryRow.MonsterNoteTarget[i].Value;
-                        if (HuntMarks.TryGetValue(monsterTarget.BNpcName.Value.RowId, out var huntMark))
+                        if (GetHuntMarkForExpansion(monsterTarget.BNpcName.Value.RowId, 0) is { } huntMark)
                         {
                             var newHuntMark = new HuntMark(huntMark)
-                                              {
-                                                      NeededKills        = rankEntryRow.Count[i],
-                                                      MonsterNoteId      = (int)gc.MonsterNote.RowId,
-                                                      MonsterNoteSubRank = subRank,
-                                                      MonsterNoteCount   = i
-                                              };
+                            {
+                                NeededKills = rankEntryRow.Count[i],
+                                MonsterNoteId = (int)gc.MonsterNote.RowId,
+                                MonsterNoteSubRank = subRank,
+                                MonsterNoteCount = i
+                            };
 
                             gcHuntLog.HuntMarks[rankNumber, count] = newHuntMark;
                         }
@@ -338,9 +438,9 @@ internal static class HuntDatabase
 
     internal static void ResetCurrentTarget()
     {
-        foreach (var huntMarksValue in HuntMarks.Values) huntMarksValue.IsCurrentTarget = false;
+        foreach (var huntMarksValue in HuntMarks) huntMarksValue.IsCurrentTarget = false;
 
-        foreach (var bRanksValue in BRanks.Values) bRanksValue.IsCurrentTarget = false;
+        foreach (var bRanksValue in BRanks) bRanksValue.IsCurrentTarget = false;
 
         foreach (var huntLog in ClassHuntRanks.Values)
         {

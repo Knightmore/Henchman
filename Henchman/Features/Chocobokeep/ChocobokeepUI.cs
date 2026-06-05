@@ -23,13 +23,7 @@ internal class ChocobokeepUI : FeatureUI
 
     public override Action Help => () =>
                                    {
-                                       ImGui.Text("""
-                                                  This only exists because a certain completionist *cough* Kawaii *cough* asked for a Chocobokeep Unlocker.
-                                                  Hit "Start" and it will unlock all missing ChocoboTaxiStands.
-                                                  """
-                                                 );
-
-
+                                       ImGui.Text(T("HelpText"));
                                        DrawRequirements(Requirements);
                                    };
 
@@ -48,7 +42,7 @@ internal class ChocobokeepUI : FeatureUI
                                                                      if (StartButton() && !IsTaskEnqueued(Name))
                                                                          feature.RunTask();
                                                                  }));
-        ImGuiEx.LineCentered("###HideUnlocked", () => { ImGui.Checkbox("Hide Unlocked", ref hideUnlocked); });
+        ImGuiEx.LineCentered("###HideUnlocked", () => { ImGui.Checkbox(T("HideUnlocked"), ref hideUnlocked); });
         DrawCentered("##ChocoboKeepTable", () => { DrawChocoboTable(); });
     }
 
@@ -61,14 +55,14 @@ internal class ChocobokeepUI : FeatureUI
                                                "##KeepsTable",
                                                new List<TableColumn<ChocobokeepData>>
                                                {
-                                                       new("KeepId", h => h.ChocoboTaxiStandId.ToString()),
-                                                       new("Territory", h => Svc.Data.GetExcelSheet<TerritoryType>()
+                                                       new(T("ColKeepId"), h => h.ChocoboTaxiStandId.ToString()),
+                                                       new(T("ColTerritory"), h => Svc.Data.GetExcelSheet<TerritoryType>()
                                                                                 .GetRow(h.TerritoryId)
                                                                                 .PlaceName.Value.Name.ExtractText(), 200, Alignment: ColumnAlignment.Center),
-                                                       new("Place Name", h => Svc.Data.GetExcelSheet<ChocoboTaxiStand>()
+                                                       new(T("ColPlaceName"), h => Svc.Data.GetExcelSheet<ChocoboTaxiStand>()
                                                                                  .GetRow(h.ChocoboTaxiStandId)
                                                                                  .PlaceName.ExtractText(), 200, Alignment: ColumnAlignment.Center),
-                                                       new("Unlocked", h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
+                                                       new(T("ColUnlocked"), h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
                                                                                     ? FontAwesomeIcon.Check.ToIconString()
                                                                                     : FontAwesomeIcon.Times.ToIconString(), 50, Alignment: ColumnAlignment.Center,
                                                            GetTextColor: h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)

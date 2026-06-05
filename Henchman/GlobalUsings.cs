@@ -21,3 +21,4 @@ global using static Henchman.Tasks.InventoryTasks;
 global using static Henchman.Tasks.MovementTasks;
 global using static Henchman.Tasks.WorldTasks;
 global using static Henchman.Helpers.Utils;
+global using Henchman;

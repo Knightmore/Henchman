@@ -12,6 +12,19 @@ public abstract class FeatureUI : Feature
     public abstract FontAwesomeIcon                           Icon         { get; }
     public abstract Action?                                   Help         { get; }
     public abstract bool                                      LoginNeeded  { get; }
+
+    public virtual string DisplayName
+    {
+        get
+        {
+            var key = $"_name.{GetType().Name}";
+            var val = Loc.G(key);
+            return val != key ? val : Name;
+        }
+    }
+
+    protected string T(string key) => Loc.F(GetType().Name, key);
+
     public virtual  List<(string pluginName, bool mandatory)> Requirements { get; } = new();
     public abstract void                                      Draw();
 

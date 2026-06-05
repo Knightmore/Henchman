@@ -7,6 +7,7 @@ using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Abstractions;
+using Henchman.Data;
 using Henchman.Models;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
@@ -37,20 +38,7 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
 
     public override Action Help => () =>
                                    {
-                                       ImGui.Text(
-                                                  """
-                                                  Click the "Start" button for your wanted Hunt Log.
-                                                  BumpOnALog will complete all current mob entries for your rank. 
-
-                                                  If your character has enough GrandCompany seals and the appropriate level,
-                                                  'Bump On A Log' will progress through your GrankCompany ranks up until 2nd Lieutenant.
-
-                                                  Change your settings if you want it to stop earlier.
-
-                                                  If you want to use multiboxing (high level carry) for GC logs,
-                                                  please check and adjust your general Multiboxing settings.
-                                                  """);
-
+                                       ImGui.Text(T("HelpText"));
                                        DrawRequirements(Requirements);
                                    };
 
@@ -74,20 +62,20 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
-            using (var tab = ImRaii.TabItem("Class"))
+            using (var tab = ImRaii.TabItem(T("TabClass")))
             {
                 if (tab)
                     DrawJobHuntLog();
             }
 
-            using (var tab = ImRaii.TabItem("Grand Company"))
+            using (var tab = ImRaii.TabItem(T("TabGrandCompany")))
             {
                 if (tab)
                     DrawGcHuntLog();
             }
 
 
-            using (var tab = ImRaii.TabItem("Settings"))
+            using (var tab = ImRaii.TabItem(T("TabSettings")))
             {
                 if (tab)
                     DrawSettings();
@@ -104,7 +92,7 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
 
         if (classMonsterNoteId is -1 or 127)
         {
-            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, "There is no hunt log for your class!");
+            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, T("NoHuntLogForClass"));
             return;
         }
 
@@ -133,7 +121,7 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
                                ImGui.Text(classJobRow.NameEnglish.ExtractText());
                                ImGui.SameLine();
 
-                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Difficulty: {currentClassLogRank + 1}");
+                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentDifficultyFmt"), currentClassLogRank + 1));
                            });
 
         ImGui.Spacing();
@@ -149,7 +137,7 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
 
         if (gcMonsterNoteId == 127)
         {
-            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, "You are not in any GrandCompany!");
+            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, T("NotInGrandCompany"));
             return;
         }
 
@@ -161,7 +149,7 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
 
         Layout.DrawInfoBox(() =>
                            {
-                               if (StartButton() && !IsTaskEnqueued(Name))
+                               if (Feature.server == null && StartButton() && !IsTaskEnqueued(Name))
                                {
                                    EnqueueTask(new TaskRecord(token => Feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: () =>
                                                                                                                                      {
@@ -175,25 +163,65 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
                                                                                                                                                      ResetCurrentTarget();
                                                                                                                                                  }));
                                }
+                               /*else if (Feature.server != null && StartButton())
+                               {
+                                   if (!Feature.server!.StartRequested)
+                                       Feature.server.StartRequested = true;
+
+                               }*/
                            }, () =>
                               {
                                   ImGui.Text(gcRow.Name.ExtractText());
                                   ImGui.SameLine();
 
-                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text($"- Current Rank: {GetGrandCompanyRank()} {GetGCRankTitle()} - Difficulty: {currentGcLogRank}");
-                              });
+                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentRankFmt"), GetGrandCompanyRank(), GetGCRankTitle(), currentGcLogRank));
+                              }, () =>
+                                 {
+                                     /*if (AdditionalButton("Connect") && !IsTaskEnqueued(Name))
+                                     {
+                                         EnqueueTask(new TaskRecord(token => Feature.Client(token), "Bump On A Log - Client",
+                                                                    onDone: () =>
+                                                                            {
+                                                                                Bossmod.DisableAI();
+                                                                                AutoRotation.Disable();
+                                                                                ResetCurrentTarget();
+                                                                            },
+                                                                    onAbort: () =>
+                                                                             {
+                                                                                 Bossmod.DisableAI();
+                                                                                 AutoRotation.Disable();
+                                                                                 ResetCurrentTarget();
+                                                                             }));
+                                     }
+                                     if (AdditionalButton("Host") && !IsTaskEnqueued(Name))
+                                     {
+                                         EnqueueTask(new TaskRecord(token => Feature.Server(token), "Bump On A Log - Server",
+                                                                    onDone: () =>
+                                                                            {
+                                                                                Bossmod.DisableAI();
+                                                                                AutoRotation.Disable();
+                                                                                ResetCurrentTarget();
+                                                                            },
+                                                                    onAbort: () =>
+                                                                             {
+                                                                                 Bossmod.DisableAI();
+                                                                                 AutoRotation.Disable();
+                                                                                 ResetCurrentTarget();
+                                                                             }));
+                                     }*/
+                                 });
 
         ImGui.Spacing();
 
         if (currentGcLogRank > 2)
         {
-            ImGuiEx.TextCentered(ImGuiColors.HealerGreen, "You finished all hunt log ranks for your grand company!");
+            ImGuiEx.TextCentered(ImGuiColors.HealerGreen, T("FinishedAllGCRanks"));
             return;
         }
 
         if ((currentGcLogRank == 1 && GetGrandCompanyRank() < 5) || (currentGcLogRank == 2 && GetGrandCompanyRank() < 9))
         {
-            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, "The required Grand Company rank has not yet been unlocked!");
+            ImGuiEx.TextCentered(ImGuiColors.DalamudRed, T("GCRankNotUnlocked"));
             return;
         }
 
@@ -204,13 +232,14 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
     {
         if (rankInfo.Rank > huntMarks.GetLength(0) - 1)
         {
-            ImGuiEx.TextCentered(ImGuiColors.HealerGreen, "You finished all hunt log ranks!");
+            ImGuiEx.TextCentered(ImGuiColors.HealerGreen, T("FinishedAllRanks"));
             return;
         }
 
         var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
                                        .Select(col => huntMarks[rankInfo.Rank, col])
                                        .Where(mark => mark != null)
+                                       .Select(mark => HuntDatabase.ResolveBestLevelVariant(mark!, Svc.PlayerState.Level, preferOverworldNonFate: !gcLog))
                                        .ToArray();
 
         DrawHuntTable(huntMarksArray);
@@ -222,9 +251,10 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
                                         "##HuntTable",
                                         new List<TableColumn<HuntMark>>
                                         {
-                                                new("Name", h => ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
-                                                new("Kills", h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
-                                                new("Finished", h => h.GetOpenMonsterNoteKills == 0
+                                                new(T("ColName"), h => ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
+                                                new("Level", h => h.Level?.ToString() ?? "-", 70, Alignment: ColumnAlignment.Center),
+                                                new(T("ColKills"), h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
+                                                new(T("ColFinished"), h => h.GetOpenMonsterNoteKills == 0
                                                                              ? FontAwesomeIcon.Check.ToIconString()
                                                                              : FontAwesomeIcon.Times.ToIconString(), 100, Alignment: ColumnAlignment.Center,
                                                     GetTextColor: h => h.GetOpenMonsterNoteKills == 0
@@ -243,34 +273,34 @@ public class BumpOnALogUI : FeatureUI<BumpOnALog, Configuration>
         var configChanged = false;
 
         DrawCentered(() => { });
-        ImGui.Text("Stop after Job Log Rank");
-        ImGui.SameLine(200);
+        ImGui.Text(T("StopAfterJobRank"));
+        ImGui.SameLine(250);
         ImGui.SetNextItemWidth(120f);
         configChanged |= ImGui.Combo("##jobRank", ref Configuration.StopAfterJobRank, Enumerable.Range(1, 5)
                                                                                                 .Select(x => x.ToString())
                                                                                                 .ToArray(), 5);
 
-        ImGui.Text("Stop after GC Rank");
-        ImGui.SameLine(200);
+        ImGui.Text(T("StopAfterGCRank"));
+        ImGui.SameLine(250);
         ImGui.SetNextItemWidth(120f);
         configChanged |= ImGui.Combo("##gcRank", ref Configuration.StopAfterGCRank, Enumerable.Range(1, 9)
                                                                                               .Select(x => x.ToString())
                                                                                               .ToArray(), 9);
 
-        ImGui.Text("Order Mobs by Territory");
-        ImGui.SameLine(200);
+        ImGui.Text(T("OrderByTerritory"));
+        ImGui.SameLine(250);
         configChanged |= ImGui.Checkbox("##orderByTerritory", ref Configuration.OrderByTerritory);
 
-        ImGui.Text("Skip Duty Marks");
-        ImGui.SameLine(200);
+        ImGui.Text(T("SkipDutyMarks"));
+        ImGui.SameLine(250);
         configChanged |= ImGui.Checkbox("##skipDutyMarks", ref Configuration.SkipDutyMarks);
 
-        ImGui.Text("Solo Unsync Duty");
-        ImGui.SameLine(200);
+        ImGui.Text(T("SoloUnsyncDuty"));
+        ImGui.SameLine(250);
         configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
 
-        ImGui.Text("Rank Up GC");
-        ImGui.SameLine(200);
+        ImGui.Text(T("RankUpGC"));
+        ImGui.SameLine(250);
         configChanged |= ImGui.Checkbox("##autoGCRankUp", ref Configuration.AutoGCRankUp);
 
 

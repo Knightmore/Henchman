@@ -13,7 +13,7 @@ using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 
 namespace Henchman.Features.BumpOnALog;
 
-public class BumpOnALog : Feature
+public partial class BumpOnALog : Feature
 {
     private static readonly (uint Quest, uint Duty)[] DzemaelDataRank7 =
     [
@@ -45,7 +45,7 @@ public class BumpOnALog : Feature
     {
         if (!IsCombat(Player.ClassJob.RowId))
         {
-            FullError("You do not have equipped a combat class!");
+            ChatPrintWarning("You do not have equipped a combat class!");
             return;
         }
 
@@ -81,6 +81,16 @@ public class BumpOnALog : Feature
                                .OrderBy(x => x.TerritoryId)
                                .ToList();
 
+                if (overworldMarks.Count == 0)
+                {
+                    var openMarks = huntMarks.Where(x => x.GetOpenMonsterNoteKills > 0)
+                                             .ToList();
+                    if (openMarks.Count > 0)
+                    {
+                        FullWarning($"No actionable class hunt log marks for rank {rank + 1}. Open marks after level resolving: {string.Join(", ", openMarks.Select(x => $"{x.Name} ({x.BNpcNameRowId}, lvl {x.Level?.ToString() ?? "?"}, territory {x.TerritoryId}, fate {x.FateId}, duty {x.IsDuty})"))}");
+                        break;
+                    }
+                }
 
                 await ProcessAllMarks(overworldMarks, dutyMarks, gcLog, doDutyMarks, token);
                 await Task.Delay(GeneralDelayMs, token);
@@ -89,7 +99,7 @@ public class BumpOnALog : Feature
         else
         {
             Verbose($"GrandCompanyRank {GetGrandCompanyRank()} | {Configuration.StopAfterGCRank + 1}");
-            while (GetGrandCompanyRank() < Configuration!.StopAfterGCRank + 1)
+            while (GetGrandCompanyRank() <= Configuration!.StopAfterGCRank + 1)
             {
                 Log($"{Configuration!.StopAfterGCRank + 1} -> {GetRankInfo(gcLog)} | {GetGrandCompanyRank() < Configuration!.StopAfterGCRank + 1}");
                 Verbose("Below second threshold");
@@ -114,6 +124,12 @@ public class BumpOnALog : Feature
                     if (handled)
                         break;
                 }
+
+                /*if (gcRank > 8)
+                {
+                    await ProcessAllMarks(overworldMarks, dutyMarks, gcLog, doDutyMarks, token);
+                    break;
+                }*/
             }
         }
 
@@ -128,7 +144,7 @@ public class BumpOnALog : Feature
             bool doDutyMarks,
             CancellationToken token)
     {
-        Verbose($"Handle GC Rank {GetCurrentGcLogRank()}");
+        Verbose($"Handle current GC Rank {GetGrandCompanyRank()} - Log {GetCurrentGcLogRank()}");
 
         var currentGcLogRank = GetCurrentGcLogRank();
 
@@ -168,7 +184,9 @@ public class BumpOnALog : Feature
                                                                                       .MonsterNote.RowId.ToInt()]
                                                                    .HuntMarks[currentRank, col];
 
-                                     return original ?? null;
+                                     return original == null
+                                                    ? null
+                                                    : HuntDatabase.ResolveBestLevelVariant(original, Svc.PlayerState.Level, preferOverworldNonFate: !gcLog);
                                  })
                          .Where(mark => mark != null)
                          .OfType<HuntMark>()

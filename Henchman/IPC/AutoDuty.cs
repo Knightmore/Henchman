@@ -22,14 +22,14 @@ public static class AutoDuty
     [EzIPC]
     public static Action<string, object> SetConfig;
 
-    public static void RunDutySupport(uint territoryType, int loops = 0, bool bareMode = true)
+    public static void RunDutySupport(uint territoryType, int loops = 1, bool bareMode = true)
     {
         SetConfig("dutyModeEnum", "Support");
         Run(territoryType, loops, bareMode);
     }
 
     [Command]
-    public static void RunDutyUsync(uint territoryType, int loops = 0, bool bareMode = true)
+    public static void RunDutyUsync(uint territoryType, int loops = 1, bool bareMode = true)
     {
         SetConfig("dutyModeEnum", "Regular");
         SetConfig("Unsynced", "true");

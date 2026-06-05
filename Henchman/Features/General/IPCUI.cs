@@ -14,7 +14,7 @@ internal class IPCUI : FeatureUI
     public override string                       Name        => "IPC";
     public override Category                     Category    => Category.System;
     public override FontAwesomeIcon              Icon        => FontAwesomeIcon.Plug;
-    public override Action?                      Help        => () => { ImGui.Text("List of currently provided IPCs"); };
+    public override Action?                      Help        => () => { ImGui.Text(T("HelpText")); };
     public override bool                         LoginNeeded => false;
 
     public override void Draw()
@@ -23,9 +23,9 @@ internal class IPCUI : FeatureUI
                                                      "ipc_table",
                                                      new List<TableColumn<IPCProvider.IpcEntry>>
                                                      {
-                                                             new("Return", x => x.ReturnType, 120),
-                                                             new("Function", x => x.Signature, 250),
-                                                             new("Description", x => x.Description, 400)
+                                                             new(T("ColReturn"), x => x.ReturnType, 120),
+                                                             new(T("ColFunction"), x => x.Signature, 250),
+                                                             new(T("ColDescription"), x => x.Description, 400)
                                                      },
                                                      () => IPCProvider.BuildIpcList(typeof(IPCProvider))
                                                     );

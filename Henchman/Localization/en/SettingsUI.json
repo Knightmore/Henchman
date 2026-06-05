@@ -1,0 +1,13 @@
+{
+  "HelpText":              "General Setting used through all implemented features.",
+  "UseMount":              "Use Mount",
+  "UseMountRoulette":      "Use Mount Roulette",
+  "Mount":                 "Mount",
+  "MountDistance":         "Mount when distance greater than:",
+  "RunDistance":           "Run when distance greater than:",
+  "ReturnOnceDone":        "Return to once feature is finished:",
+  "AutoRotationPlugin":    "Auto Rotation Plugin:",
+  "UseChocoboCompanion":   "Use Chocobo Companion",
+  "ChocoboCompanionHelp":  "Summon your Chocobo Companion or feed it if the remaining time is less than 5 minutes.",
+  "UILanguage":            "UI Language:"
+}

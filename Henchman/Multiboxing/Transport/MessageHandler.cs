@@ -1,8 +1,8 @@
+using Henchman.Multiboxing.Command;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Henchman.Multiboxing.Command;
 
 namespace Henchman.Multiboxing.Transport;
 
@@ -12,11 +12,11 @@ public static class MessageHandler
     internal static int sentMessages;
 
     public static async Task<(CommandType header, string json)?> ReadMessageAsync(
-            Stream            stream,
+            Stream stream,
             CancellationToken token)
     {
-        var headerBuffer    = new byte[2];
-        var lengthBuffer    = new byte[4];
+        var headerBuffer = new byte[2];
+        var lengthBuffer = new byte[4];
         var timestampBuffer = new byte[8];
 
         try
@@ -61,6 +61,16 @@ public static class MessageHandler
             VerboseSpecific("MessageReader", $"Read canceled. Token state: {token.IsCancellationRequested}");
             return null;
         }
+        catch (IOException ex) when (ex.Message == "Stream closed during read")
+        {
+            VerboseSpecific("MessageReader", "Remote closed stream during read.");
+            return null;
+        }
+        catch (IOException ex)
+        {
+            VerboseSpecific("MessageReader", $"Stream I/O error while reading: {ex.Message}");
+            return null;
+        }
         catch (Exception ex)
         {
             VerboseSpecific("MessageReader", $"ReadMessageAsync failed: {ex}");
@@ -69,25 +79,25 @@ public static class MessageHandler
     }
 
     public static async Task WriteMessageAsync(
-            Stream            stream,
-            CommandType       commandType,
-            string            json,
+            Stream stream,
+            CommandType commandType,
+            string json,
             CancellationToken token)
     {
         try
         {
             VerboseSpecific("MessageWriter", "Starting WriteMessageAsync");
 
-            var timestamp      = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var timestampBytes = BitConverter.GetBytes(timestamp);
 
             var headerBytes = BitConverter.GetBytes((ushort)commandType);
-            var jsonBytes   = Encoding.UTF8.GetBytes(json);
+            var jsonBytes = Encoding.UTF8.GetBytes(json);
             var lengthBytes = BitConverter.GetBytes(jsonBytes.Length);
 
             var totalLength = timestampBytes.Length +
-                              headerBytes.Length    +
-                              lengthBytes.Length    +
+                              headerBytes.Length +
+                              lengthBytes.Length +
                               jsonBytes.Length;
 
             var messageBytes = new byte[totalLength];
@@ -124,7 +134,7 @@ public static class MessageHandler
 
     private static async Task ReadExactAsync(Stream stream, byte[] buffer, CancellationToken token)
     {
-        var offset    = 0;
+        var offset = 0;
         var remaining = buffer.Length;
 
         while (remaining > 0)
@@ -133,7 +143,7 @@ public static class MessageHandler
             if (read == 0)
                 throw new IOException("Stream closed during read");
 
-            offset    += read;
+            offset += read;
             remaining -= read;
         }
     }

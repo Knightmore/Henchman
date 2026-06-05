@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A:\nDrücke einfach \"Start\" und er durchstreift alle verfügbaren A-Rang-Ziele bis Stormblood.\n\nB:\nWähle das Gebiet, das du durchsuchen möchtest, und klicke \"Start\".\nEs farmt jeden B-Rang, den es finden kann, bis du es stoppst.",
+  "TabARank":            "A-Rang",
+  "TabBRank":            "B-Rang",
+  "SelectAll":           "Alle auswählen",
+  "DeselectAll":         "Alle abwählen",
+  "SelectExpansion":     "Erweiterung auswählen",
+  "DeselectExpansion":   "Erweiterung abwählen",
+  "SelectZone":          "Zone auswählen",
+  "DeselectZone":        "Zone abwählen",
+  "BRankToFarm":         "B-Rang zum Farmen:",
+  "TrackFoundSpots":     "Gefundene B-Rang-Positionen verfolgen",
+  "WritePositions":      "Positionen ins Log schreiben",
+  "PrintSpawnLocations": "Spawn-Positionen im Chat ausgeben",
+  "ColWorld":            "Welt",
+  "ColMap":              "Karte",
+  "ColTerritory":        "Gebiet",
+  "LeftPositions":		 "Übrige mögliche Positionen",
+  "RegisteredPositions": "Registrierte Positionen"
+}

@@ -1,0 +1,14 @@
+{
+  "HelpText":                      "This section has real hacks! Use at your own risk. Don't come crying if you get banned.",
+  "Confirmation":                  "I hereby confirm, that I am solely responsible for any consequences and use these Tweaks/Hacks at my own risk!\n\nNone of these hacks are persistent!\n\nUSE IT AS IT IS, THERE WILL BE NO SUPPORT (NEITHER IN DMs NOR IN DISCORD SERVERS)",
+  "Section.On Your Mark":          "On Your Mark",
+  "Section.Movement":              "Movement",
+  "Section.Grand Company":         "Grand Company",
+  "HacksUI_AcceptanceHack":        "Accept hunt bills remotely",
+  "HacksUI_AcceptanceHack_Help":   "This will skip all teleporting and walking to each hunt board.\nAll enabled Hunt bills will be accepted from anywhere you are.",
+  "GetFlightAllowedStatus":        "Unlock Flying",
+  "GetFlightAllowedStatus_Help":   "This unlocks flying in ALL areas where mounting is allowed.\nEven if you don't have progressed the MSQ or collected all Aether Currents for that zone",
+  "NoFallDamage":                  "No Fall Damage",
+  "GetGrandCompanyRank":           "Enforce Expert Delivery",
+  "GetGrandCompanyRank_Help":      "Forces the expert delivery window to show regardless of rank.\nOnly in effect if you do not have expert delivery unlocked.\n(Restored from CBT)"
+}

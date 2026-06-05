@@ -59,7 +59,13 @@ public static class Bossmod
     public static void EnableRotation()
     {
         if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
-            SetActive("VBM Default");
+        {
+            Verbose("Activate VBM Default");
+            SetActiveList([
+                                  "VBM Default",
+                                  "VBM AI"
+                          ]);
+        }
     }
 
     public static void DisableRotation()
@@ -70,9 +76,13 @@ public static class Bossmod
 
     public static void EnableAI()
     {
-        if (SubscriptionManager.IsInitialized(IPCNames.BossMod) && GetActive() != "VBM Default")
+        if (SubscriptionManager.IsInitialized(IPCNames.BossMod))
         {
-            SetActive("VBM AI");
+            if (!GetActiveList().Contains("VBM AI"))
+            {
+                Verbose("Activate VBM AI");
+                SetActive("VBM AI");
+            }
             return;
         }
 

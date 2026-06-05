@@ -1,30 +1,45 @@
-using System.Linq;
-using System.Text.Json.Serialization;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Henchman.Models;
 
 public class HuntMark
 {
-    public bool IsCurrentTarget = false;
+    private bool isCurrentTarget = false;
+    internal HuntMark? TargetStateSource { get; set; }
 
-    public HuntMark(uint bnpcNameRowId, float x, float y, float z, uint territoryId, uint fateId)
+    public bool IsCurrentTarget
+    {
+        get => TargetStateSource?.IsCurrentTarget ?? isCurrentTarget;
+        set
+        {
+            if (TargetStateSource != null)
+                TargetStateSource.IsCurrentTarget = value;
+            else
+                isCurrentTarget = value;
+        }
+    }
+
+    public HuntMark(uint bnpcNameRowId, float x, float y, float z, uint territoryId, uint fateId, byte? level = null)
     {
         BNpcNameRowId = bnpcNameRowId;
         Positions.Add(new Vector3(x, y, z));
         TerritoryId = territoryId;
-        FateId      = fateId;
+        FateId = fateId;
+        Level = level;
     }
 
     public HuntMark(HuntMark original)
     {
         BNpcNameRowId = original.BNpcNameRowId;
-        Positions     = new List<Vector3>(original.Positions);
-        TerritoryId   = original.TerritoryId;
-        FateId        = original.FateId;
-        NeededKills   = original.NeededKills;
+        Positions = new List<Vector3>(original.Positions);
+        TerritoryId = original.TerritoryId;
+        FateId = original.FateId;
+        Level = original.Level;
+        NeededKills = original.NeededKills;
     }
 
     public uint BNpcNameRowId { get; private set; }
@@ -32,6 +47,8 @@ public class HuntMark
     public uint FateId { get; private set; }
 
     public uint TerritoryId { get; private set; }
+
+    public byte? Level { get; set; }
 
     public List<Vector3> Positions { get; } = [];
 
@@ -42,17 +59,17 @@ public class HuntMark
                              .ExclusiveType ==
                           2;
 
-    public        byte MobHuntRowId           { get; set; }
-    public        byte MobHuntSubRowId        { get; set; }
-    public unsafe int  GetCurrentMobHuntKills => MobHunt.Instance()->GetKillCount(MobHuntRowId, MobHuntSubRowId);
+    public byte MobHuntRowId { get; set; }
+    public byte MobHuntSubRowId { get; set; }
+    public unsafe int GetCurrentMobHuntKills => MobHunt.Instance()->GetKillCount(MobHuntRowId, MobHuntSubRowId);
 
     public int GetOpenMobHuntKills => NeededKills - GetCurrentMobHuntKills > 0
                                               ? NeededKills - GetCurrentMobHuntKills
                                               : 0;
 
-    public int MonsterNoteId      { get; set; }
+    public int MonsterNoteId { get; set; }
     public int MonsterNoteSubRank { get; set; }
-    public int MonsterNoteCount   { get; set; }
+    public int MonsterNoteCount { get; set; }
 
     public unsafe int GetCurrentMonsterNoteKills => MonsterNoteManager.Instance()->RankData[MonsterNoteId]
                                                    .RankData[MonsterNoteSubRank]
@@ -101,4 +118,7 @@ public class JsonHuntMark
 
     [JsonPropertyName("FateId")]
     public uint FateId { get; set; }
+
+    [JsonPropertyName("Level")]
+    public byte? Level { get; set; }
 }

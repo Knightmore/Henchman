@@ -1,0 +1,8 @@
+{
+  "HelpText":     "Das hier existiert nur, weil ein gewisser Completionist *hust* Kawaii *hust* um einen Chocobokeep-Unlocker gebeten hat.\nDrücke \"Start\" und es schaltet alle fehlenden Chocobo-Taxistände frei.",
+  "HideUnlocked": "Freigeschaltete ausblenden",
+  "ColKeepId":    "StandID",
+  "ColTerritory": "Gebiet",
+  "ColPlaceName": "Ortsname",
+  "ColUnlocked":  "Freigeschaltet"
+}

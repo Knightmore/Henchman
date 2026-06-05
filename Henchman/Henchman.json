@@ -4,5 +4,6 @@
   "Punchline": "What's my next mission, boss?",
   "Description": "Your personal Henchman doing all the heavy lifting for you!",
   "ApplicableVersion": "any",
-  "Tags": [ ]
+  "Tags": [ ],
+  "IconUrl": "https://puni.sh/api/plugins/icon/85"
 }

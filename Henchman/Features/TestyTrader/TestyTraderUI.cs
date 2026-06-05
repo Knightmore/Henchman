@@ -1,4 +1,3 @@
-using System.Linq;
 using AutoRetainerAPI.Configuration;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
@@ -13,6 +12,7 @@ using Henchman.Multiboxing;
 using Henchman.TaskManager;
 using Henchman.Windows.Layout;
 using Lumina.Excel.Sheets;
+using System.Linq;
 using Action = System.Action;
 
 namespace Henchman.Features.TestyTrader;
@@ -26,7 +26,7 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                       .ToArray();
 
     private static readonly TestyTrader Feature = new();
-    private static          bool        ConfigChanged;
+    private static bool ConfigChanged;
 
     private static readonly Dictionary<string, World> Worlds =
             Svc.Data.GetExcelSheet<World>()
@@ -58,8 +58,8 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
 
     private TestyTraderCharacterData newCharacter = new();
 
-    internal string              Search = string.Empty;
-    private  ItemSearchCategory? selectedSearchCategory;
+    internal string Search = string.Empty;
+    private ItemSearchCategory? selectedSearchCategory;
 
     public TestyTraderUI()
     {
@@ -101,30 +101,14 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                  );
     }
 
-    public sealed override required Configuration   Configuration { get; init; }
-    public override                 string          Name          => "Testy Trader";
-    public override                 Category        Category      => Category.Economy;
-    public override                 FontAwesomeIcon Icon          => FontAwesomeIcon.Handshake;
+    public sealed override required Configuration Configuration { get; init; }
+    public override string Name => "Testy Trader";
+    public override Category Category => Category.Economy;
+    public override FontAwesomeIcon Icon => FontAwesomeIcon.Handshake;
 
     public override Action? Help => () =>
                                     {
-                                        ImGui.Text("""
-                                                   Boss Mode:
-                                                        - Single character to which all Henchmen will travel to and trade with.
-                                                        - Make sure, that your Henchmen can get to the boss. (e.g. won't work in housing areas)
-                                                        
-                                                   Henchman Mode:
-                                                        - Selected characters will travel each to the Boss and give/ask for configured items.
-                                                        - If set up in System -> Settings, your char will teleport back to your given Home.
-                                                        
-                                                   Trading Modes:
-                                                        - Give:         Will give the specified amount to the Boss.
-                                                        - Keep:         Will keep the specified amount and give the rest to the Boss.
-                                                        - Ask For:      Will ask the Boss for the specified amount.
-                                                        - Ask Until:    Will ask the Boss for items until the specified amount is reached.
-                                                        - PAR Level:    Will try to stay on the specified amount, regardless if it has to ask for or give away.
-                                                   """);
-
+                                        ImGui.Text(T("HelpText"));
                                         DrawRequirements(Requirements);
                                     };
 
@@ -159,13 +143,13 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
             using var tabs = ImRaii.TabBar("Tabs");
             if (tabs)
             {
-                using (var tab = ImRaii.TabItem("Characters"))
+                using (var tab = ImRaii.TabItem(T("TabCharacters")))
                 {
                     if (tab)
                         DrawCharacterTab();
                 }
 
-                using (var tab = ImRaii.TabItem("Items"))
+                using (var tab = ImRaii.TabItem(T("TabItems")))
                 {
                     if (tab)
                         DrawItemTab();
@@ -175,20 +159,12 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
         else
         {
             //TODO: Move to release after tests
-            DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox("Use AR ItemSell", ref Configuration.UseARItemSell));
+            DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.UseARItemSell));
             DrawCentered("##BossToHenchmanWorld", () =>
                                                   {
-                                                      ConfigChanged |= ImGui.Checkbox("Transfer Boss to Henchman World", ref Configuration.MoveBossToHenchman);
+                                                      ConfigChanged |= ImGui.Checkbox(T("TransferBossToHenchman"), ref Configuration.MoveBossToHenchman);
                                                       ImGui.SameLine();
-                                                      HelpMarker(() => ImGui.Text("""
-                                                                                  If your next henchman is on another world, your boss will transfer to it and move back to exact same position where he started.
-                                                                                  It won't check if you can travel to another datacenter!
-
-                                                                                  Example:  
-                                                                                  Started on Shiva in Western La Noscea at the Shop in Aleport.
-                                                                                  Second Henchman on Alpha.
-                                                                                  Your boss will travel and then move to the exact same position on Alpha.
-                                                                                  """));
+                                                      HelpMarker(() => ImGui.Text(T("TransferBossHelp")));
                                                   });
         }
 
@@ -219,16 +195,17 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
 
                                                                                                                       if (isEnabled) ImGui.PopStyleColor();
                                                                                                                   }),
-                                       new("Name", x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
-                                       new("Data Center", x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
+                                       new(T("ColName"), x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
+                                       new(T("ColDataCenter"), x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
                                                                   .GetRow(x.DataCenterId)
                                                                   .Name.ExtractText(), 100, FilterType.MultiSelect, ColumnAlignment.Center),
-                                       new("World", x => Svc.Data.GetExcelSheet<World>()
+                                       new(T("ColWorld"), x => Svc.Data.GetExcelSheet<World>()
                                                             .GetRow(x.WorldId)
                                                             .Name.ExtractText(), 100, FilterType.MultiSelect, ColumnAlignment.Center),
                                        new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
                                                                                                                  {
                                                                                                                      if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) CharacterToRemove = x;
+                                                                                                                     ConfigChanged = true;
                                                                                                                  })
                                };
 
@@ -236,7 +213,7 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                         "##ManualTraderTable",
                                                         characterColumns,
                                                         () => Configuration.TestyTraderImportedCharacters,
-                                                        h => h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
+                                                        h => Svc.Objects.LocalPlayer != null && h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
                                                         new Vector2(450, 0),
                                                         () =>
                                                         {
@@ -280,6 +257,7 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                                                                         {
                                                                                                             Configuration.TestyTraderImportedCharacters.Add(newCharacter);
                                                                                                             newCharacter = new TestyTraderCharacterData();
+                                                                                                            ConfigChanged = true;
                                                                                                         }
                                                                                                     });
                                                         }
@@ -292,19 +270,19 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
     {
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox("AR Support", ref Configuration.TestyTraderARSupport));
+            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox(T("ARSupport"), ref Configuration.TestyTraderARSupport));
             if (Configuration.TestyTraderARSupport)
             {
                 DrawCentered("##TradeCharSelector", () =>
                                                     {
-                                                        if (ImGui.Button("Select All"))
+                                                        if (ImGui.Button(T("SelectAll")))
                                                         {
                                                             foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = true;
                                                             ConfigChanged = true;
                                                         }
 
                                                         ImGui.SameLine();
-                                                        if (ImGui.Button("Deselect All"))
+                                                        if (ImGui.Button(T("DeselectAll")))
                                                         {
                                                             foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = false;
                                                             ConfigChanged = true;
@@ -312,14 +290,14 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                     });
                 DrawCentered("##TradeFilteredCharSelector", () =>
                                                             {
-                                                                if (ImGui.Button("Select All Shown"))
+                                                                if (ImGui.Button(T("SelectAllShown")))
                                                                 {
                                                                     foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = true;
                                                                     ConfigChanged = true;
                                                                 }
 
                                                                 ImGui.SameLine();
-                                                                if (ImGui.Button("Deselect All Shown"))
+                                                                if (ImGui.Button(T("DeselectAllShown")))
                                                                 {
                                                                     foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = false;
                                                                     ConfigChanged = true;
@@ -335,19 +313,13 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
         {
             DrawCentered("##ImportTraders", () =>
                                             {
-                                                if (ImGui.Button("Import from Clipboard"))
+                                                if (ImGui.Button(T("ImportFromClipboard")))
                                                 {
                                                     var charString = ImGui.GetClipboardText();
                                                     ImportCharacters(charString, Configuration.TestyTraderImportedCharacters);
                                                 }
 
-                                                HelpMarker(() =>
-                                                           {
-                                                               ImGui.Text("""
-                                                                          Import multiple characters through the following format:
-                                                                          [Name1|World1,Name2|World2,Name3|World3]
-                                                                          """);
-                                                           }, sameLine: true);
+                                                HelpMarker(() => ImGui.Text(T("ImportHelp")), sameLine: true);
                                             });
 
             DrawCentered("##ManualTraderTable", () => DrawManualTable());
@@ -361,16 +333,16 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
         DrawCentered("##TraderItemSelector", () =>
                                              {
                                                  ImGui.SetNextItemWidth(500 * GlobalFontScale);
-                                                 if (ImGui.BeginCombo("##addItem", "Add Item", ImGuiComboFlags.HeightLarge))
+                                                 if (ImGui.BeginCombo("##addItem", T("AddItem"), ImGuiComboFlags.HeightLarge))
                                                  {
-                                                     ImGuiEx.InputWithRightButtonsArea(() => { ImGui.InputTextWithHint("##itemSearch", "Search...", ref Search, 100); },
+                                                     ImGuiEx.InputWithRightButtonsArea(() => { ImGui.InputTextWithHint("##itemSearch", T("SearchHint"), ref Search, 100); },
                                                                                        () =>
                                                                                        {
                                                                                            ImGui.SetNextItemWidth(200f);
                                                                                            if (ImGuiEx.SearchableCombo("##category", out var category,
                                                                                                                        selectedSearchCategory != null
                                                                                                                                ? selectedSearchCategory.Value.Name.GetText()
-                                                                                                                               : "All Categories",
+                                                                                                                               : T("AllCategories"),
                                                                                                                        searchCategories,
                                                                                                                        x => x.Name.ToString(),
                                                                                                                        (p, s) => p.Name.ToString()
@@ -378,17 +350,17 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                                                                selectedSearchCategory = category;
 
                                                                                            ImGui.SameLine();
-                                                                                           if (ImGui.Button("Reset"))
+                                                                                           if (ImGui.Button(T("Reset")))
                                                                                            {
                                                                                                selectedSearchCategory = null;
-                                                                                               Search                 = string.Empty;
+                                                                                               Search = string.Empty;
                                                                                            }
                                                                                        });
 
                                                      var filteredItems = expandedItems
                                                                         .Where(entry =>
                                                                                        (selectedSearchCategory == null || entry.Item.ItemSearchCategory.RowId == selectedSearchCategory.Value.RowId) &&
-                                                                                       (string.IsNullOrEmpty(Search)   || entry.DisplayName.Contains(Search, StringComparison.OrdinalIgnoreCase)))
+                                                                                       (string.IsNullOrEmpty(Search) || entry.DisplayName.Contains(Search, StringComparison.OrdinalIgnoreCase)))
                                                                         .ToList();
 
                                                      var clipper = new ImGuiListClipper();
@@ -413,12 +385,12 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                                  if (!cont.Contains(entry.RowId))
                                                                  {
                                                                      Configuration.TradeEntries.Add(new TradeEntry
-                                                                                                    {
-                                                                                                            Id      = entry.RowId,
-                                                                                                            Amount  = 0,
-                                                                                                            Mode    = TradeMode.Give,
-                                                                                                            Enabled = true
-                                                                                                    });
+                                                                     {
+                                                                         Id = entry.RowId,
+                                                                         Amount = 0,
+                                                                         Mode = TradeMode.Give,
+                                                                         Enabled = true
+                                                                     });
                                                                  }
 
                                                                  ConfigChanged = true;
@@ -443,7 +415,7 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                           new List<TableColumn<TradeEntry>>
                                           {
                                                   new("##Enable", Width: 25, DrawCustom: (x, index) => { ConfigChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
-                                                  new("Name", Width: 300, DrawCustom: (x, index) =>
+                                                  new(T("ColName"), Width: 300, DrawCustom: (x, index) =>
                                                                                       {
                                                                                           if (ThreadLoadImageHandler.TryGetIconTextureWrap(Svc.Data.GetExcelSheet<Item>()
                                                                                                                                               .GetRow(x.Id % 1_000_000)
@@ -462,12 +434,12 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
                                                                                                                 : "")
                                                                                                       );
                                                                                       }),
-                                                  new("Amount", Width: 120, DrawCustom: (x, index) =>
+                                                  new(T("ColAmount"), Width: 120, DrawCustom: (x, index) =>
                                                                                         {
                                                                                             ImGui.SetNextItemWidth(120);
                                                                                             ConfigChanged |= ImGui.InputUInt($"##{x.Id}Amount", ref x.Amount);
                                                                                         }),
-                                                  new("TradeType", Width: 120, DrawCustom: (x, index) =>
+                                                  new(T("ColTradeType"), Width: 120, DrawCustom: (x, index) =>
                                                                                            {
                                                                                                ImGui.SetNextItemWidth(120);
                                                                                                ConfigChanged |= ImGuiEx.EnumCombo($"##tradeType{x.Id}", ref x.Mode);
@@ -519,12 +491,12 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
             }
 
             var newItem = new TestyTraderCharacterData
-                          {
-                                  DataCenterId = worldRow.Value.DataCenter.Value.RowId,
-                                  Enabled      = true,
-                                  Name         = name,
-                                  WorldId      = worldRow.Value.RowId
-                          };
+            {
+                DataCenterId = worldRow.Value.DataCenter.Value.RowId,
+                Enabled = true,
+                Name = name,
+                WorldId = worldRow.Value.RowId
+            };
 
             if (!list.Contains(newItem))
                 list.Add(newItem);
@@ -534,10 +506,10 @@ public class TestyTraderUI : FeatureUI<TestyTrader, Configuration>
 
     public class TestyTraderCharacterData : IEquatable<TestyTraderCharacterData>
     {
-        public uint   DataCenterId = 7;
-        public bool   Enabled      = true;
-        public string Name         = "";
-        public uint   WorldId      = 66;
+        public uint DataCenterId = 7;
+        public bool Enabled = true;
+        public string Name = "";
+        public uint WorldId = 66;
 
         public bool Equals(TestyTraderCharacterData other) => string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && WorldId == other.WorldId;
 

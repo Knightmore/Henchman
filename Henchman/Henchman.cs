@@ -4,7 +4,9 @@ using Henchman.Features.Private.Hooking;
 #if LOCAL_CS
 using FFXIVClientStructs.Interop.Generated;
 using InteropGenerator.Runtime;
+using System.IO;
 #endif
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
@@ -26,6 +28,7 @@ using Henchman.Windows;
 using Lumina.Excel.Sheets;
 using System.Linq;
 using System.Reflection;
+using ECommons.EzHookManager;
 using Module = ECommons.Module;
 
 namespace Henchman;
@@ -108,6 +111,7 @@ public class Henchman : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.Draw -= DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         ECommonsMain.Dispose();
+        P = null;
     }
 
     private void Initialize()
@@ -117,6 +121,7 @@ public class Henchman : IDalamudPlugin
         AutoCutsceneSkipper.Disable();
         EzConfig.Migrate<Configuration>();
         Config = EzConfig.Init<Configuration>();
+        Loc.Load(MapLanguage(Config.UILanguage));
         Svc.Framework.Update += TaskManagerTick;
 
         EzIPC.Init(typeof(IPCProvider), "Henchman");
@@ -159,6 +164,14 @@ public class Henchman : IDalamudPlugin
 
         Svc.Framework.Update += Tick;
     }
+
+    internal static string MapLanguage(ClientLanguage lang) => lang switch
+    {
+        ClientLanguage.German => "de",
+        ClientLanguage.French => "fr",
+        ClientLanguage.Japanese => "jp",
+        _ => "en"
+    };
 
     private static void Tick(object _)
     {
@@ -279,6 +292,20 @@ public class Henchman : IDalamudPlugin
         {
             if (TryGetFeature<OnABoatUI>(out var onABoat) && !IsTaskEnqueued(onABoat.Name))
                 onABoat.Start();
+        }
+        else if (args.EqualsIgnoreCase("ToggleRender"))
+        {
+            var parameters = args.Split(" ");
+
+            GeneralTweaks.ActiveRenderFlag =
+                    (byte)(parameters.Length == 1
+                                   ? GeneralTweaks.ActiveRenderFlag ^ 1
+                                   : parameters[1] switch
+                                   {
+                                       var s when s.EqualsIgnoreCase("on") => 0,
+                                       var s when s.EqualsIgnoreCase("off") => 1,
+                                       _ => GeneralTweaks.ActiveRenderFlag ^ 1
+                                   });
         }
         else if (args.EqualsIgnoreCase("Stop"))
             CancelAllTasks();

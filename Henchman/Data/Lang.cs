@@ -171,4 +171,8 @@ internal static class Lang
                                                                                                                        ? row.ReadStringColumn(1)
                                                                                                                             .ExtractText()
                                                                                                                        : "";
+
+    internal static ReadOnlySeString Discard => Svc.Data.GetExcelSheet<Addon>()
+                                         .GetRow(91)
+                                         .Text;
 }

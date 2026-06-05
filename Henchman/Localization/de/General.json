@@ -1,0 +1,39 @@
+{
+  "_name.BringYourXGameUI": "Bring Your A/B Game",
+  "_name.BumpOnALogUI":     "Bump On A Log",
+  "_name.ChocobokeepUI":    "Chocobokeep",
+  "_name.IPCUI":            "IPC",
+  "_name.IntoTheLightUI":   "Into The Light",
+  "_name.MarkDatabaseUI":   "Mark Database",
+  "_name.MultiboxingUI":    "Multiboxing",
+  "_name.OnABoatUI":        "On A Boat",
+  "_name.RequirementsUI":   "Abhängigkeiten",
+  "_name.SettingsUI":       "Einstellungen",
+  "_name.GeneralTweaksUI":  "Allgemein",
+  "_name.OnYourMarkUI":     "On Your Mark",
+  "_name.TestyTraderUI":    "Testy Trader",
+  "_name.RetainerVocateUI": "Retainer Vocate",
+  "_name.HacksUI":          "Hacks",
+
+  "Category.Combat":      "KAMPF",
+  "Category.Exploration": "ERKUNDUNG",
+  "Category.Economy":     "WIRTSCHAFT",
+  "Category.Tweaks":      "TWEAKS",
+  "Category.System":      "SYSTEM",
+
+  "Splash.Attention":          "ACHTUNG",
+  "Splash.AttentionBody":      "Die enthaltenen Features arbeiten innerhalb der Grenzen von vnavmesh und deinem freigeschalteten Spielfortschritt!\nEs ist kein 'intelligentes' Routing enthalten (noch nicht!?).\nWenn du nicht alle benötigten Gebiete/Ätheryten freigeschaltet hast, können bestimmte Features unter Umständen stoppen.",
+  "Splash.PositionalData":     "Positionsdaten der Monster",
+  "Splash.PositionalDataBody": "Aufgrund der Menge an Positionsdaten kann es vorkommen, dass nicht alle Positionen korrekt sind.\nWenn du eine fehlerhafte Position melden möchtest, sende bitte auch die korrigierte Position mit.",
+
+  "Requirements.Header":      "VORAUSSETZUNGEN",
+  "Requirements.HeaderText":  "Für einige optionale Plugins wie Auto-Rotation kannst du deine bevorzugte Option in den Plugin-Einstellungen wählen.\nWenn keine Einstellungen verfügbar sind, musst du Alternativen manuell konfigurieren.\n\nWenn BossMod optional ist, kannst du auch BossModReborn für KI nutzen (nicht die Auto-Rotation).\nHabe nicht beide gleichzeitig aktiviert. Henchman hindert dich nicht daran, dumm zu sein!",
+  "Requirements.Mandatory":   "(erforderlich)",
+  "Requirements.Optional":    "(optional)",
+  "Requirements.Enabled":     "aktiv",
+  "Requirements.Disabled":    "inaktiv",
+  "Requirements.MissingPlugins": "Fehlende Plugins",
+
+  "UI.ToggleStatus": "Plugin-Status umschalten",
+  "UI.Confirm":      "Bestätigen"
+}

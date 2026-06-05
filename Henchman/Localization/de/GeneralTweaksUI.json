@@ -1,0 +1,8 @@
+{
+    "HelpText": "Einfach ein paar allgemeine Spiel-Tweaks um dein Spielerlebnis besser/einfacher zu machen.\nFür mehr Informationen, lies den Tooltip jedes Tweaks.",
+    "SectionPerformance": "Leistung",
+    "DisableRender": "Rendering deaktivieren",
+    "DisableRenderHelp": "Deaktiviert das 3D‑Rendering, um die GPU‑Last zu reduzieren, lässt aber die Benutzeroberfläche vollständig bestehen. Für beste Ergebnisse setze ein Framerate‑Limit von 30 FPS.\n\nAndere Plugins können diesen Zustand erzwingen. Wenn der Wert also anders gesetzt ist, als du erwartest, liegt das nicht an mir.\nWenn du nicht möchtest, dass andere Plugins ihren Zustand bei dir erzwingen, aktiviere die Checkbox unten.\n\nDIES IST NICHT DAUERHAFT UND WIRD BEI SPIELENDE ODER BEI PLUGIN‑DEAKTIVIERUNG ZURÜCKGESETZT!",
+    "ForceRender": "Renderstatus erzwingen",
+    "ForceRenderHelp": "Aktiviere dies, wenn es dir scheissegal ist, dass andere Plugins versuchen wollen den Renderstatus zu ändern und somit Henchman als das allein verantwortliche Plugin dafür zu machen!"
+}

@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>2.0.4.6</Version>
+        <Version>2.0.6.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -10,6 +10,7 @@
         <Product>Henchman</Product>
         <Company>Knightmore</Company>
         <Authors>Knightmore</Authors>
+        <IconUrl>https://s3.puni.sh/media/plugin/85/icon-vlex66k1ins.png</IconUrl>
         <PackageId>Henchman</PackageId>
         <Configurations>Debug;Release;Private</Configurations>
         <LocalCS>false</LocalCS>
@@ -48,12 +49,15 @@
         <Content Include="Images\Henchman.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
+        <None Include="Localization\**\*.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup Condition="'$(LocalCS)'=='true'">
-        <Reference Include="..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll" Private="true" />
-        <Reference Include="..\..\FFXIVClientStructs\InteropGenerator.Runtime\bin\Debug\net10.0\InteropGenerator.Runtime.dll" Private="true" />
-        <ProjectReference Include="..\..\FFXIVClientStructs\InteropGenerator\InteropGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <Reference Include="..\..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll" Private="true" />
+        <Reference Include="..\..\..\FFXIVClientStructs\InteropGenerator.Runtime\bin\Debug\net10.0\InteropGenerator.Runtime.dll" Private="true" />
+        <ProjectReference Include="..\..\..\FFXIVClientStructs\InteropGenerator\InteropGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(LocalCS)'=='true'">
@@ -65,6 +69,10 @@
         <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <Compile Remove="Features\Private\**\*.cs" />
+    </ItemGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\AutoRetainerAPI\AutoRetainerAPI\AutoRetainerAPI.csproj" />
     </ItemGroup>
@@ -75,5 +83,9 @@
 
     <ItemGroup>
         <PackageReference Update="DotNet.ReproducibleBuilds" Version="2.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Generated\" />
     </ItemGroup>
 </Project>

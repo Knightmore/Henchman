@@ -1,0 +1,13 @@
+{
+  "HelpText":             "Allgemeine Einstellungen für alle implementierten Features.",
+  "UseMount":             "Reittier verwenden",
+  "UseMountRoulette":     "Reittier-Roulette verwenden",
+  "Mount":                "Reittier",
+  "MountDistance":        "Reittier ab Entfernung größer als:",
+  "RunDistance":          "Rennen ab Entfernung größer als:",
+  "ReturnOnceDone":       "Nach Abschluss zurückkehren zu:",
+  "AutoRotationPlugin":   "Auto-Rotations-Plugin:",
+  "UseChocoboCompanion":  "Chocobo-Begleiter verwenden",
+  "ChocoboCompanionHelp": "Ruft deinen Chocobo-Begleiter herbei oder füttert ihn, wenn die verbleibende Zeit unter 5 Minuten liegt.",
+  "UILanguage":           "UI-Sprache:"
+}

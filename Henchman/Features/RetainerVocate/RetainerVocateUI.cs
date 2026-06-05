@@ -28,14 +28,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
 
     public override Action Help => () =>
                                    {
-                                       ImGui.Text("""
-                                                  Set up how you want your retainer to be and click 'Create Retainers'
-                                                  If you haven't already done the Venture Quest, it will run after creating retainers.
-
-                                                  If any task fails or you somehow messed up midway, 
-                                                  you can try to continue through one of the 'Single Backup Tasks' 
-                                                  """);
-
+                                       ImGui.Text(T("HelpText"));
                                        DrawRequirements(Requirements);
                                    };
 
@@ -53,7 +46,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
         configChanged = false;
 
         if (!QuestManager.IsQuestComplete(66196))
-            ImGuiEx.Text(EzColor.Red, "Retainers are not unlocked. Proceed with MSQ and finish \"The Scions of the Seventh Dawn\".");
+            ImGuiEx.Text(EzColor.Red, T("RetainersLocked"));
         else
         {
             DrawCentered("###StartRetainerVocate", () => Layout.DrawButton(() =>
@@ -72,32 +65,32 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                 {
                     DrawCentered("##RetainerVocateNoEntitlement", () =>
                                                                   {
-                                                                      ImGui.Text("Fill all retainer slots");
+                                                                      ImGui.Text(T("FillAllSlots"));
                                                                       ImGui.SameLine(150 * GlobalFontScale);
                                                                       configChanged |= ImGui.Checkbox("##fillAllSlots", ref Configuration.UseMaxRetainerAmount);
-                                                                      ImGuiEx.Text(EzColor.Red, "Could not read the maximum allowed amount of retainers on your account.");
-                                                                      ImGuiEx.Text(EzColor.Red, "Please interact with a \"Retainer Vocate\" to progress.");
+                                                                      ImGuiEx.Text(EzColor.Red, T("CantReadMaxRetainers"));
+                                                                      ImGuiEx.Text(EzColor.Red, T("InteractWithVocate"));
                                                                   });
                 }
                 else
                 {
                     DrawCentered("##RetainerVocateSlots", () =>
                                                           {
-                                                              ImGui.Text("Fill all retainer slots");
+                                                              ImGui.Text(T("FillAllSlots"));
                                                               ImGui.SameLine(150 * GlobalFontScale);
                                                               configChanged |= ImGui.Checkbox("##fillAllSlots", ref Configuration.UseMaxRetainerAmount);
-                                                              ImGui.Text("Retainer amount");
+                                                              ImGui.Text(T("RetainerAmount"));
                                                               ImGui.SameLine(150 * GlobalFontScale);
                                                               ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                               configChanged |= ImGui.Combo("##retainerAmount", ref Configuration.RetainerAmount, Enumerable.Range(1, 10)
                                                                                                                                                            .Select(x => x.ToString())
                                                                                                                                                            .ToArray(), 10);
-                                                              ImGui.Text("City");
+                                                              ImGui.Text(T("City"));
                                                               ImGui.SameLine(150 * GlobalFontScale);
                                                               ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                               configChanged |= ImGuiEx.EnumCombo("##retainerCity", ref Configuration.RetainerCity);
 
-                                                              ImGui.Text("Retainer Class");
+                                                              ImGui.Text(T("RetainerClass"));
                                                               ImGui.SameLine(150 * GlobalFontScale);
                                                               ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                               if (ImGuiEx.ExcelSheetCombo<ClassJob>("##retainerJob", out var selected, s => s.GetRowOrDefault(Configuration.RetainerClass) is { } row
@@ -110,7 +103,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                                   configChanged = true;
                                                               }
 
-                                                              ImGui.Text("Assign Exploration");
+                                                              ImGui.Text(T("AssignExploration"));
                                                               ImGui.SameLine(150 * GlobalFontScale);
                                                               configChanged |= ImGui.Checkbox("##firstExploration", ref Configuration.SendOnFirstExploration);
                                                           });
@@ -122,26 +115,26 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
             {
                 DrawCentered("##RetainerVocateRandomizeDetails", () =>
                                                                  {
-                                                                     ImGui.Text("Fill all retainer slots");
+                                                                     ImGui.Text(T("FillAllSlots"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      configChanged |= ImGui.Checkbox("##fillAllSlots", ref Configuration.UseMaxRetainerAmount);
-                                                                     ImGui.Text("Race");
+                                                                     ImGui.Text(T("Race"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                                      configChanged |= ImGuiEx.EnumCombo("##retainerRace", ref Configuration.RetainerRace);
-                                                                     ImGui.Text("Gender");
+                                                                     ImGui.Text(T("Gender"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                                      configChanged |= ImGuiEx.EnumCombo("##retainerGender", ref Configuration.RetainerGender);
-                                                                     ImGui.Text("Personality");
+                                                                     ImGui.Text(T("Personality"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                                      configChanged |= ImGuiEx.EnumCombo("##retainerPersonality", ref Configuration.RetainerPersonality);
-                                                                     ImGui.Text("City");
+                                                                     ImGui.Text(T("City"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                                      configChanged |= ImGuiEx.EnumCombo("##retainerCity", ref Configuration.RetainerCity);
-                                                                     ImGui.Text("Retainer Class");
+                                                                     ImGui.Text(T("RetainerClass"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                                      if (ImGuiEx.ExcelSheetCombo<ClassJob>("##retainerJob", out var selected, s => s.GetRowOrDefault(Configuration.RetainerClass) is { } row
@@ -154,7 +147,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                                          configChanged = true;
                                                                      }
 
-                                                                     ImGui.Text("Assign Exploration");
+                                                                     ImGui.Text(T("AssignExploration"));
                                                                      ImGui.SameLine(150 * GlobalFontScale);
                                                                      configChanged |= ImGui.Checkbox("##firstExploration", ref Configuration.SendOnFirstExploration);
                                                                  });
@@ -166,7 +159,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
 
             DrawCentered("##RetainerVocateQstClass", () =>
                                                      {
-                                                         ImGui.Text("Class/Job for Quest:");
+                                                         ImGui.Text(T("ClassJobForQuest"));
                                                          ImGui.SameLine(150 * GlobalFontScale);
                                                          ImGui.SetNextItemWidth(120f * GlobalFontScale);
                                                          if (ImGuiEx.ExcelSheetCombo<ClassJob>("##qstCombatJob", out var classJobSheet, s => s.GetRowOrDefault(Configuration.QstClassJob) is { } row
@@ -180,13 +173,13 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                          }
                                                      });
 
-            if (ImGui.CollapsingHeader("Single Backup Tasks##singleTasks"))
+            if (ImGui.CollapsingHeader($"{T("SingleBackupTasks")}##singleTasks"))
             {
                 if (RetainerManager.Instance()->MaxRetainerEntitlement == 0 ||
                     RetainerManager.Instance()->MaxRetainerEntitlement - RetainerManager.Instance()->GetRetainerCount() > 0)
                 {
-                    if (ImGui.Button(Configuration.UseMaxRetainerAmount ? "Create Retainers" :
-                                     RetainerManager.Instance()->MaxRetainerEntitlement == 0 ? "Go To Vocate" : "Create Retainers") &&
+                    if (ImGui.Button(Configuration.UseMaxRetainerAmount ? T("CreateRetainers") :
+                                     RetainerManager.Instance()->MaxRetainerEntitlement == 0 ? T("GoToVocate") : T("CreateRetainers")) &&
                         !IsPluginBusy)
                     {
                         EnqueueTask(new TaskRecord(Feature.GoToRetainerVocate, "Go to Retainer Vocate"));
@@ -199,7 +192,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                     }
                 }
                 else
-                    ImGuiEx.Text(EzColor.Red, "You can not create more Retainers on this character!");
+                    ImGuiEx.Text(EzColor.Red, T("CannotCreateMoreRetainers"));
 
                 if (!QuestManager.IsQuestComplete(66968) && !QuestManager.IsQuestComplete(66969) && !QuestManager.IsQuestComplete(66970))
                 {
@@ -207,11 +200,11 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                       .GetRow(Configuration.QstClassJob);
                     var gearset = GetFirstGearsetForClassJob(classJob);
                     ImGui.NewLine();
-                    ImGui.Text("Questionable:");
-                    ImGui.Text("An Ill-conceived Venture");
+                    ImGui.Text(T("Questionable"));
+                    ImGui.Text(T("IllConceivedVenture"));
                     if (gearset == null)
-                        ImGuiEx.Text(EzColor.Red, "You have no gearset registered for your chosen class.");
-                    else if (ImGui.Button("Run Quest") && !Questionable.IsRunning() && !IsPluginBusy)
+                        ImGuiEx.Text(EzColor.Red, T("NoGearsetForClass"));
+                    else if (ImGui.Button(T("RunQuest")) && !Questionable.IsRunning() && !IsPluginBusy)
                     {
                         ErrorIf(!ChangeToHighestGearsetForClassJobId(Configuration.QstClassJob), $"No gearset for {Configuration.QstClassJob} found!");
                         if (!SubscriptionManager.IsInitialized(IPCNames.Questionable))
@@ -224,7 +217,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                     }
                 }
 
-                if (ImGui.Button("Assign Class"))
+                if (ImGui.Button(T("AssignClass")))
                 {
                     if (RetainerManager.Instance()->MaxRetainerEntitlement == 0)
                         EnqueueTask(new TaskRecord(Feature.GoToRetainerVocate, "Go to Retainer Vocate"));
@@ -246,7 +239,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                  "##RetainerVocateTable",
                                                  new List<TableColumn<RetainerCharacter>>
                                                  {
-                                                         new("Name", Width: 160, DrawCustom: (retainer, index) =>
+                                                         new(T("ColName"), Width: 160, DrawCustom: (retainer, index) =>
                                                                                              {
                                                                                                  if (index > Configuration.RetainerAmount) return;
                                                                                                  var oldName = retainer.Name;
@@ -262,27 +255,27 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                                                                          configChanged = true;
                                                                                                  }
                                                                                              }),
-                                                         new("Race", Width: 110, DrawCustom: (retainer, index) =>
+                                                         new(T("ColRace"), Width: 110, DrawCustom: (retainer, index) =>
                                                                                              {
                                                                                                  ImGui.SetNextItemWidth(110f);
                                                                                                  configChanged |= ImGuiEx.EnumCombo($"##retainerRace{index}", ref retainer.Race);
                                                                                              }),
-                                                         new("Gender", Width: 110, DrawCustom: (retainer, index) =>
+                                                         new(T("ColGender"), Width: 110, DrawCustom: (retainer, index) =>
                                                                                                {
                                                                                                    ImGui.SetNextItemWidth(110f);
                                                                                                    configChanged |= ImGuiEx.EnumCombo($"##retainerGender{index}", ref retainer.Gender);
                                                                                                }),
-                                                         new("Clan", Width: 150, DrawCustom: (retainer, index) =>
+                                                         new(T("ColClan"), Width: 150, DrawCustom: (retainer, index) =>
                                                                                              {
                                                                                                  ImGui.SetNextItemWidth(150f);
-                                                                                                 configChanged |= ClanCombo($"##retainerTribe{index}", retainer.Race, ref retainer.Clan);
+                                                                                                 configChanged |= ClanCombo($"##retainerTribe{index}", retainer.Race - 10, ref retainer.Clan);
                                                                                              }),
-                                                         new("Personality", Width: 110, DrawCustom: (retainer, index) =>
+                                                         new(T("ColPersonality"), Width: 110, DrawCustom: (retainer, index) =>
                                                                                                     {
                                                                                                         ImGui.SetNextItemWidth(110f);
                                                                                                         configChanged |= ImGuiEx.EnumCombo($"##retainerPersonality{index}", ref retainer.Personality);
                                                                                                     }),
-                                                         new("Preset", Width: 130, DrawCustom: (retainer, index) =>
+                                                         new(T("ColPreset"), Width: 130, DrawCustom: (retainer, index) =>
                                                                                                {
                                                                                                    var presetId = retainer.PresetId;
 
@@ -306,7 +299,7 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
                                                                                                        denseToReal[i] = realIndices[i];
 
                                                                                                    var names = new Dictionary<byte, string>();
-                                                                                                   names[255] = "None";
+                                                                                                   names[255] = T("None");
                                                                                                    for (byte i = 0; i < realIndices.Length; i++)
                                                                                                    {
                                                                                                        var real = realIndices[i];
@@ -331,7 +324,44 @@ public class RetainerVocateUI : FeatureUI<RetainerVocate, Configuration>
 
                                                                                                        configChanged = true;
                                                                                                    }
+
+
+                                                                                                   /*var presetId = retainer.PresetId;
+
+                                                                                                   var presets = Framework.Instance()->CharamakeAvatarSaveData->Release.Slots
+                                                                                                                                                                       .ToArray()
+                                                                                                                                                                       .Where(x => x.Timestamp > 0)
+                                                                                                                                                                       .ToArray();
+
+                                                                                                   var presetIds = new[] { (byte)255 }
+                                                                                                          .Concat(presets.Select(x => x.SlotIndex));
+
+                                                                                                   var names = presets.ToDictionary(
+                                                                                                                                    y => y.SlotIndex,
+                                                                                                                                    y => $"{y.SlotIndex} - {y.LabelString}"
+                                                                                                                                   );
+                                                                                                   names[255] = T("None");
+
+                                                                                                   ImGui.SetNextItemWidth(130f);
+                                                                                                   if (ImGuiEx.Combo($"##preset{index}", ref presetId.Item1, presetIds, names: names))
+                                                                                                   {
+                                                                                                       retainer.PresetId = presetId;
+                                                                                                       configChanged         = true;
+                                                                                                   }*/
                                                                                                })
+                                                         /*new("Class", Width: 70, DrawCustom: (retainer, index) =>
+                                                                                             {
+                                                                                                 ImGui.SetNextItemWidth(70f);
+                                                                                                 if (ImGuiEx.ExcelSheetCombo<ClassJob>($"##retainerJob{index}", out var selected, s => s.GetRowOrDefault(retainer.Class) is { } row
+                                                                                                                                                                                               ? s.GetRow(retainer.Class)
+                                                                                                                                                                                                  .Abbreviation.ExtractText()
+                                                                                                                                                                                               : string.Empty, x => x.Abbreviation.ExtractText(),
+                                                                                                                                       x => x.RowId is >= 1 and <= 7 or >= 16 and <= 18 or 26))
+                                                                                                 {
+                                                                                                     retainer.Class = selected.RowId;
+                                                                                                     configChanged  = true;
+                                                                                                 }
+                                                                                             })*/
                                                  },
                                                  () => Configuration.RetainerCharacters,
                                                  Configuration.RetainerAmount + 1,

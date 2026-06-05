@@ -1,0 +1,39 @@
+{
+  "_name.BringYourXGameUI": "Bring Your A/B Game",
+  "_name.BumpOnALogUI":     "Bump On A Log",
+  "_name.ChocobokeepUI":    "Chocobokeep",
+  "_name.IPCUI":            "IPC",
+  "_name.IntoTheLightUI":   "Into The Light",
+  "_name.MarkDatabaseUI":   "Mark Database",
+  "_name.MultiboxingUI":    "Multiboxing",
+  "_name.OnABoatUI":        "On A Boat",
+  "_name.RequirementsUI":   "Requirements",
+  "_name.SettingsUI":       "Settings",
+  "_name.GeneralTweaksUI":  "General",
+  "_name.OnYourMarkUI":     "On Your Mark",
+  "_name.TestyTraderUI":    "Testy Trader",
+  "_name.RetainerVocateUI": "Retainer Vocate",
+  "_name.HacksUI":          "Hacks",
+
+  "Category.Combat":      "COMBAT",
+  "Category.Exploration": "EXPLORATION",
+  "Category.Economy":     "ECONOMY",
+  "Category.Tweaks":      "TWEAKS",
+  "Category.System":      "SYSTEM",
+
+  "Splash.Attention":          "ATTENTION",
+  "Splash.AttentionBody":      "The included features work within the limitations of vnavmesh and your unlocked ingame progress!\nThere is no 'intelligent' pathing included (yet!?).\nIf you haven't unlocked all needed Territories/Aetherytes, certain features may stop at that task.",
+  "Splash.PositionalData":     "Positional Mob Data",
+  "Splash.PositionalDataBody": "Due to the amount of positional data, it can happen that not all positions are correct.\nIf you want to report a problematic position, please also send the corrected position if possible.",
+
+  "Requirements.Header":      "REQUIREMENTS",
+  "Requirements.HeaderText":  "For some optional plugins such as Auto Rotations, you can select your preferred option in the plugin settings.\nIf no settings are available, you'll need to manually configure alternatives for any optional plugins.\n\nIf BossMod is optional, you can also use BossModReborn for AI (not the autorotation).\nDon't have both enabled at the same time. Henchman is not actively preventing you from being stupid!",
+  "Requirements.Mandatory":   "(mandatory)",
+  "Requirements.Optional":    "(optional)",
+  "Requirements.Enabled":     "enabled",
+  "Requirements.Disabled":    "disabled",
+  "Requirements.MissingPlugins": "Missing Plugins",
+
+  "UI.ToggleStatus": "Toggle Plugin Status",
+  "UI.Confirm":      "Confirm"
+}

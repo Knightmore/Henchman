@@ -1,6 +1,7 @@
 using ECommons.EzIpcManager;
 using Henchman.Features.OnABoat;
 using Henchman.Features.OnYourMark;
+using Henchman.Tweaks;
 using System.Linq;
 using System.Reflection;
 
@@ -35,6 +36,41 @@ internal static class IPCProvider
     public static void StartOnYourMark()
     {
         if (TryGetFeature<OnYourMarkUI>(out var mark)) mark.Feature.RunTask();
+    }
+
+    /*
+     * Tweaks
+     */
+
+    [EzIPC]
+    [IPCDescription("Toggle Rendering")]
+    public static void SetRender(bool enabled)
+    {
+        GeneralTweaks.ActiveRenderFlag = enabled
+                                                   ? (byte)0
+                                                   : (byte)1;
+    }
+
+
+    [EzIPC]
+    [IPCDescription("Force Rendering")]
+    public static void ForceRender(bool enabled)
+    {
+        if (enabled)
+        {
+            GeneralTweaks.RenderDisableProcessed ??= Svc.PluginInterface.GetOrCreateData<uint[]>(
+                                                                                   "ECommons.RenderDisableProcessingFramecount",
+                                                                                   () => [0]
+                                                                                  );
+
+            Svc.Framework.Update += GeneralTweaks.ForceRender;
+            FullWarning("You enabled ForceRender. Henchman will overwrite ANY render setting from Plugins using ECommons with what you either set through UI OR IPC 'SetRender'! Don't forget to disable it afterwards!");
+        }
+        else
+        {
+            Svc.Framework.Update -= GeneralTweaks.ForceRender;
+            GeneralTweaks.ActiveRenderFlag = 0;
+        }
     }
 
     /*

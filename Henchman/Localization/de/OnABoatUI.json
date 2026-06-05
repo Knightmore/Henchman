@@ -1,0 +1,21 @@
+{
+    "HelpText": "AutoRetainer-Modus:\n- Aktiviere alle Charaktere, die du für Hochseefahrten verwenden möchtest.\n- On A Boat loggt immer in den Charakter mit dem niedrigsten Fischer-Level ein.\n- Wenn nicht genug Charaktere mit laufenden Verwaltern im PostProcess enden,\n  stelle AutoRetainer so ein, dass er am Titelbildschirm wartet.\n\nEinzelcharakter-Modus:\n- Gib einfach deinen Charakternamen ein, wähle die Welt und On A Boat levelt nur mit diesem Charakter.\n\nWenn du die Hochseefang-Quest noch nicht abgeschlossen hast, wird sie für dich erledigt. (Erfordert Questionable)\nUm weniger Reisezeit zu haben, wird es sich beim Ätheryten der Arkanen Akademie verbinden.",
+    "TabMain": "Haupt",
+    "TabSettings": "Einstellungen",
+    "RegistrationOpenFmt": "Anmeldung offen für {0:D2}:{1:D2} Minuten",
+    "NextVoyageFmt": "Nächste Reise in {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "Mit AutoRetainer-Multimodus verwenden:",
+    "StopAt100": "Stoppen wenn ausgewählte Chars Level 100:",
+    "SelectAll": "Alle auswählen",
+    "DeselectAll": "Alle abwählen",
+    "SelectAllShown": "Alle Angezeigten auswählen",
+    "DeselectAllShown": "Alle Angezeigten abwählen",
+    "CharacterName": "Charaktername:",
+    "World": "Welt:",
+    "UseOnlyVersatileLure": "Nur vielseitigen Köder verwenden",
+    "UseARItemSell": "AR-Itemverkauf nach Reise verwenden",
+    "UseARItemSellHelp": "Funktioniert nur, wenn du zu einem Ziel mit einer Verwalterglocke/Händler-NPC in der Nähe zurückkehrst.",
+    "UseARDiscard": "AR-Wegwerfen nach Reise verwenden",
+    "UseARLocalSell": "Verkaufe an den lokalen Händler",
+    "UseARLocalSellHelp": "Hiermit wird direkt an den lokalen Verkäufer am Hafen verkauft. Hohes Risiko, dass du mit anderen Bottern stackst!"
+}

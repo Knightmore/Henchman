@@ -1,5 +1,5 @@
-using System.Linq;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using System.Linq;
 
 namespace Henchman.Extensions;
 

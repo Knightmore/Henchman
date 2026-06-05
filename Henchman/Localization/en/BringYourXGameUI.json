@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A:\nJust hit \"Start\" and it will roam all available A-Rank destinations up to Stormblood.\n\nB:\nPick the territory you want to roam and click \"Start\" to begin.\nIt will farm any B-Rank that it can find until you stop it.",
+  "TabARank":            "A-Rank",
+  "TabBRank":            "B-Rank",
+  "SelectAll":           "Select All",
+  "DeselectAll":         "Deselect All",
+  "SelectExpansion":     "Select Expansion",
+  "DeselectExpansion":   "Deselect Expansion",
+  "SelectZone":          "Select Zone",
+  "DeselectZone":        "Deselect Zone",
+  "BRankToFarm":         "B-Rank to Farm:",
+  "TrackFoundSpots":     "Track found B-Rank spots",
+  "WritePositions":      "Write positions to log",
+  "PrintSpawnLocations": "Print spawn locations to chat",
+  "ColWorld":            "World",
+  "ColMap":              "Map",
+  "ColTerritory":        "Territory",
+  "LeftPositions":		 "Leftover possible positions",
+  "RegisteredPositions": "Registered spawn positions" 
+}

@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.GameHelpers;
 using Henchman.Data;
@@ -11,15 +8,18 @@ using Henchman.Multiboxing.Server;
 using Henchman.Multiboxing.Transport;
 using Henchman.TaskManager;
 using Lumina.Excel.Sheets;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Henchman.Features.TestyTrader;
 
 public partial class TestyTrader
 {
     internal static Dictionary<uint, int> ServerSideInventory = [];
-    internal static int                   ServerSideGil;
+    internal static int ServerSideGil;
     internal static Dictionary<uint, int> ServerSideTradingLog = [];
-    internal static uint                  charsTraded;
+    internal static uint charsTraded;
 
     private readonly List<uint> accessibleTerritories = Svc.Data.GetExcelSheet<TerritoryType>()
                                                            .Where(x => Svc.Data.GetExcelSheet<Aetheryte>()
@@ -48,13 +48,14 @@ public partial class TestyTrader
         try
         {
             await server.StartRoundRobinAsync();
-        } finally
+        }
+        finally
         {
             var result = $"Completed! You traded with {charsTraded} chars:" +
-                         Environment.NewLine                                +
+                         Environment.NewLine +
                          string.Join(Environment.NewLine, ServerSideTradingLog.Select(kvp => $"{Svc.Data.GetExcelSheet<Item>().GetRow(kvp.Key).Name.ExtractText()}: {kvp.Value:N0}"));
             ServerSideTradingLog = new Dictionary<uint, int>();
-            charsTraded          = 0;
+            charsTraded = 0;
 
             Info(result);
             server.Dispose();
@@ -63,13 +64,13 @@ public partial class TestyTrader
 
     internal async Task ServerSessionHandler(MultiboxServer.ClientSession client, CancellationToken token = default)
     {
-        using var              scope   = new TaskDescriptionScope("Boss Trade Session");
+        using var scope = new TaskDescriptionScope("Boss Trade Session");
         Dictionary<uint, uint> askDict = [];
 
         var statusMessage = new TestyTraderMessage
-                            {
-                                    Type = TestyTraderMessageType.ServerStatusCheck
-                            };
+        {
+            Type = TestyTraderMessageType.ServerStatusCheck
+        };
 
         await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, statusMessage.ToJson(), token);
 
@@ -82,77 +83,86 @@ public partial class TestyTrader
                     if (result.returnValue is false) return;
                     break;
                 case CommandType.Feature:
-                {
-                    var responseData = message.data.FromJson<TestyTraderMessage>();
-                    switch (responseData.Type)
                     {
-                        case TestyTraderMessageType.AskList:
+                        var responseData = message.data.FromJson<TestyTraderMessage>();
+                        switch (responseData.Type)
                         {
-                            askDict = responseData.TradeList;
-                            ProcessAskDict(ref askDict);
-                            var tradeDone = askDict.Count == 0;
+                            case TestyTraderMessageType.AskList:
+                                {
+                                    askDict = responseData.TradeList;
+                                    ProcessAskDict(ref askDict);
+                                    var tradeDone = askDict.Count == 0;
 
-                            if (tradeDone && responseData.IsTradeDone!.Value)
-                            {
-                                var finishedMessage = new TestyTraderMessage
-                                                      {
-                                                              Type = TestyTraderMessageType.ServerFinished
-                                                      };
-                                await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, finishedMessage.ToJson(), token);
+                                    if (tradeDone && responseData.IsTradeDone!.Value)
+                                    {
+                                        var finishedMessage = new TestyTraderMessage
+                                        {
+                                            Type = TestyTraderMessageType.ServerFinished
+                                        };
+                                        await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, finishedMessage.ToJson(), token);
+                                        return;
+                                    }
+
+                                    if (Configuration!.MoveBossToHenchman && responseData.TradingWorld != null && !responseData.TradingWorld.Equals(Player.CurrentWorldName, StringComparison.InvariantCultureIgnoreCase))
+                                    {
+                                        var currentPositon = Player.Position;
+                                        var closestAetheryte = GetAetheryte(Player.Territory.RowId, Player.Position);
+                                        Lifestream.ChangeWorld(responseData.TradingWorld);
+                                        await WaitWhileAsync(() => Lifestream.IsBusy(), "Waiting for world change", token);
+                                        await TeleportTo(closestAetheryte, token);
+                                        await MoveTo(currentPositon, true, token);
+                                        await Dismount(token);
+                                    }
+
+                                    await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPC_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
+                                    break;
+                                }
+                            case TestyTraderMessageType.Arrived:
+                                {
+                                    var clientEntityId = responseData.EntityID;
+                                    uint entityId;
+                                    unsafe
+                                    {
+                                        entityId = Player.BattleChara->EntityId;
+                                    }
+
+                                    var readyMessage = new TestyTraderMessage
+                                    {
+                                        Type = TestyTraderMessageType.ReadyForTrade,
+                                        EntityID = entityId
+                                    };
+                                    await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, readyMessage.ToJson(), token);
+
+                                    await ProcessServerTrade(client, clientEntityId, askDict, token);
+                                    await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, new TestyTraderMessage
+                                    {
+                                        Type = TestyTraderMessageType.ServerStatusCheck
+                                    }.ToJson(), token);
+                                    break;
+                                }
+                            case TestyTraderMessageType.ClientFinished:
+                                if (Configuration!.UseARItemSell)
+                                    await TryRunAutoRetainerItemSell(token);
+
                                 return;
-                            }
-
-                            if (Configuration!.MoveBossToHenchman && responseData.TradingWorld != null && !responseData.TradingWorld.Equals(Player.CurrentWorldName, StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                var currentPositon   = Player.Position;
-                                var closestAetheryte = GetAetheryte(Player.Territory.RowId, Player.Position);
-                                Lifestream.ChangeWorld(responseData.TradingWorld);
-                                await WaitWhileAsync(() => Lifestream.IsBusy(), "Waiting for world change", token);
-                                await TeleportTo(closestAetheryte, token);
-                                await MoveTo(currentPositon, true, token);
-                                await Dismount(token);
-                            }
-
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.RPC, CommandEnvelope.Create(nameof(CommandKey.MovementRPC_GoToPlayer), [Player.Territory.RowId, Player.Position, Player.CurrentWorldName, Player.CID]), token);
-                            break;
                         }
-                        case TestyTraderMessageType.Arrived:
-                        {
-                            var  clientEntityId = responseData.EntityID;
-                            uint entityId;
-                            unsafe
-                            {
-                                entityId = Player.BattleChara->EntityId;
-                            }
 
-                            var readyMessage = new TestyTraderMessage
-                                               {
-                                                       Type     = TestyTraderMessageType.ReadyForTrade,
-                                                       EntityID = entityId
-                                               };
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, readyMessage.ToJson(), token);
-
-                            await ProcessServerTrade(client, clientEntityId, askDict, token);
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, new TestyTraderMessage
-                                                                                                     {
-                                                                                                             Type = TestyTraderMessageType.ServerStatusCheck
-                                                                                                     }.ToJson(), token);
-                            break;
-                        }
-                        case TestyTraderMessageType.ClientFinished:
-                            if (Configuration!.UseARItemSell)
-                            {
-                                Svc.Commands.ProcessCommand("/ays itemsell");
-                                await WaitWhileAsync(() => AutoRetainer.IsBusy(), "Waiting for selling all items", token);
-                            }
-
-                            return;
+                        break;
                     }
-
-                    break;
-                }
             }
         }
+    }
+
+    private static async Task TryRunAutoRetainerItemSell(CancellationToken token = default)
+    {
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            Svc.Commands.ProcessCommand("/ays itemsell");
+            await WaitWhileAsync(() => AutoRetainer.IsBusy(), "Waiting for selling all items", token);
+            return;
+        }
+
+        Verbose($"AutoRetainer ItemSell failed or is unavailable. Skipping item sell.");
     }
 
     internal static async Task ProcessServerTrade(MultiboxServer.ClientSession client, ulong henchmanEID, Dictionary<uint, uint> askDict, CancellationToken token = default)
@@ -170,24 +180,24 @@ public partial class TestyTrader
                     switch (data.Type)
                     {
                         case TestyTraderMessageType.ClientStatusCheck:
-                        {
-                            var henchmanDone = data.IsTradeDone!.Value;
-                            var statusMessage = askDict.Count == 0
-                                                        ? new TestyTraderMessage { Type = TestyTraderMessageType.ServerStatusCheck, IsTradeDone = true }
-                                                        : new TestyTraderMessage { Type = TestyTraderMessageType.ServerStatusCheck, IsTradeDone = false, TradeList = askDict };
+                            {
+                                var henchmanDone = data.IsTradeDone!.Value;
+                                var statusMessage = askDict.Count == 0
+                                                            ? new TestyTraderMessage { Type = TestyTraderMessageType.ServerStatusCheck, IsTradeDone = true }
+                                                            : new TestyTraderMessage { Type = TestyTraderMessageType.ServerStatusCheck, IsTradeDone = false, TradeList = askDict };
 
-                            await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, statusMessage.ToJson(), token);
-                            if (henchmanDone && askDict.Count == 0)
-                                continue;
-                            break;
-                        }
+                                await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, statusMessage.ToJson(), token);
+                                if (henchmanDone && askDict.Count == 0)
+                                    continue;
+                                break;
+                            }
                         case TestyTraderMessageType.ConfirmTrade:
                             await WaitUntilAsync(() => TestyTraderTasks.ConfirmTrade(), "Waiting to confirm trade", token);
                             await Task.Delay(GeneralDelayMs, token);
                             await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, new TestyTraderMessage
-                                                                                                     {
-                                                                                                             Type = TestyTraderMessageType.ConfirmTrade
-                                                                                                     }.ToJson(), token);
+                            {
+                                Type = TestyTraderMessageType.ConfirmTrade
+                            }.ToJson(), token);
                             await WaitUntilAsync(() => RegexYesNo(true, Lang.TradeText), "Confirm Trade", token);
                             await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.TradeOpen], "Waiting for Trade to close", token);
                             TestyTraderTasks.CalculateInventoryDifference(ServerSideInventory, ServerSideTradingLog, ServerSideGil);
@@ -198,7 +208,7 @@ public partial class TestyTrader
                     }
 
                     ServerSideInventory = TestyTraderTasks.GetCurrentInventory();
-                    ServerSideGil       = InventoryHelper.GetInventoryItemCount(1);
+                    ServerSideGil = InventoryHelper.GetInventoryItemCount(1);
                     await WaitUntilAsync(() => Svc.Condition[ConditionFlag.TradeOpen] && TestyTraderTasks.CheckForTradePartner(henchmanEID), "Waiting for correct trade partner", token);
                     await Task.Delay(2 * GeneralDelayMs, token);
                     if (askDict.Count == 0) continue;
@@ -221,7 +231,7 @@ public partial class TestyTrader
         {
             var (isHq, baseId) = (kvp.Key >= 1_000_000, kvp.Key % 1_000_000);
             var requestedAmount = kvp.Value;
-            var currentAmount   = (uint)InventoryHelper.GetInventoryItemCount(baseId, isHq);
+            var currentAmount = (uint)InventoryHelper.GetInventoryItemCount(baseId, isHq);
 
             if (currentAmount == 0)
                 keysToRemove.Add(kvp.Key);

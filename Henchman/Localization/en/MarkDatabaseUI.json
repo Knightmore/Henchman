@@ -1,0 +1,12 @@
+{
+  "CurrentTerritory":      "Current Territory:",
+  "CurrentTargetId":       "Current Target Id:",
+  "CurrentTargetName":     "Current Target Name:",
+  "CurrentPosition":       "Current Position:",
+  "None":                  "None",
+  "CopyAreaMarker":        "Copy new area marker (current position)",
+  "OverlappingMarkAreas":  "Overlapping mark areas:",
+  "ColId":                 "Id",
+  "ColName":               "Name",
+  "ColPosition":           "Position"
+}

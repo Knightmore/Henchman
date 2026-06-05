@@ -9,6 +9,9 @@ public static class AutoHook
     public static Action<bool> SetPluginState;
 
     [EzIPC]
+    public static Func<bool> GetPluginState;
+
+    [EzIPC]
     public static Action<bool> SetAutoGigState;
 
     [EzIPC]

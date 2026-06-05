@@ -1,0 +1,22 @@
+{
+  "HelpText":          "Tick the Enable checkboxes for your wanted bills and click the 'Start' button.\nOnYourMark will gather all enabled Hunt Bills and finish all marks.\n\nBill colors:",
+  "ColorGrey":         "Grey",
+  "ColorGreyDesc":     "-   Not unlocked.",
+  "ColorRed":          "Red",
+  "ColorRedDesc":      "-   Not obtained.",
+  "ColorYellow":       "Yellow",
+  "ColorYellowDesc":   "-   Obtained uncompleted.",
+  "ColorOrange":       "Orange",
+  "ColorOrangeDesc":   "-   Obtained uncompleted old mark.",
+  "ColorGreen":        "Green",
+  "ColorGreenDesc":    "-   Completed.",
+  "Enable":            "Enable",
+  "TabSettings":       "Settings",
+  "ColName":           "Name",
+  "ColAmount":         "Amount",
+  "ColFinished":       "Finished",
+  "DiscardOldBills":   "Discard old Hunt Bills",
+  "DetourForARanks":   "Detour if an A-Rank is nearby",
+  "DetourHelp":        "Will only try a detour once per Mark.\nIf your char dies while taking a detour, it will resume to find the original mark.\nAs a safety measure, this will only work up until Stormblood.",
+  "SkipFateMarks":     "Skip Fate Marks"
+}

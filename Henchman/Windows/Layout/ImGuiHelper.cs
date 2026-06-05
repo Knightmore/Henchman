@@ -18,13 +18,7 @@ internal static class ImGuiHelper
     internal static float GlobalFontScale => ImGui.GetIO()
                                                   .FontGlobalScale;
 
-    private static string HeaderText => """
-                                        For some optional plugins such as Auto Rotations, you can select your preferred option in the plugin settings.
-                                        If no settings are available, you'll need to manually configure alternatives for any optional plugins.
-
-                                        If BossMod is optional, you can also use BossModReborn for AI (not the autorotation).
-                                        Don't have both enabled at the same time. Henchman is not actively preventing you from being stupid! 
-                                        """;
+    private static string HeaderText => Loc.G("Requirements.HeaderText");
 
     public static void HelpMarker(Action textAction, Vector4? color = null, string symbolOverride = null, bool sameLine = true, float xOffset = 0f)
     {
@@ -60,8 +54,8 @@ internal static class ImGuiHelper
         ImGui.Text(pluginName);
         ImGui.SameLine(ImGui.GetCursorPosX() + longestStringWidth + spacing);
         ImGui.Text(mandatory
-                           ? "(mandatory)"
-                           : "(optional)");
+                           ? Loc.G("Requirements.Mandatory")
+                           : Loc.G("Requirements.Optional"));
         ImGui.SameLine(ImGui.GetCursorPosX() + longestStringWidth + requirementWidth + (2 * spacing));
 
         var pluginActive = SubscriptionManager.IsInitialized(pluginName);
@@ -69,8 +63,8 @@ internal static class ImGuiHelper
                                   ? ImGuiColors.HealerGreen
                                   : ImGuiColors.DalamudRed,
                           pluginActive
-                                  ? "enabled"
-                                  : "disabled");
+                                  ? Loc.G("Requirements.Enabled")
+                                  : Loc.G("Requirements.Disabled"));
     }
 
     private static float GetLongestIPCNameWidth()
@@ -89,7 +83,7 @@ internal static class ImGuiHelper
         if (requirements.Count == 0) return;
 
         ImGui.Separator();
-        ImGuiEx.TextCentered("REQUIREMENTS");
+        ImGuiEx.TextCentered(Loc.G("Requirements.Header"));
         ImGui.Text(HeaderText);
         ImGui.NewLine();
 
