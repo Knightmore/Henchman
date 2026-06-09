@@ -146,7 +146,7 @@ public class Henchman : IDalamudPlugin
                                           /henchman RetainerVocate <1-10> <RetainerClassAbbr> <QuestClassAbbr> <FirstExploration> → Run retainer creation with selected parameters and random names
                                           /henchman SetupRetainer <Name> <PresetId> → Runs retainer setup for retainer fantasia. Keep presetId and/or name empty to randomize them.
                                           /henchman OnABoat → Run On A Boat (also works when you are already on a voyage)
-                                          /henchman ToggleRender [On|Off] → De-/activate 3D rendering (safes A LOT of GPU load).
+                                          /henchman ToggleRender [On|Off] → De-/activate 3D rendering (saves A LOT of GPU load).
                                           /henchman Stop
                                           """);
         EzCmd.Add("/knightman", OnCommand);
