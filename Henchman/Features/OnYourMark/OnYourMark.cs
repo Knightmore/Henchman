@@ -1,0 +1,345 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Dalamud.Game;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Henchman.Data;
+using Henchman.Models;
+using Lumina.Excel.Sheets;
+using Underlings.GameHelpers;
+using Underlings.TaskManager;
+using GrandCompany = Underlings.Helpers.GrandCompany;
+using Module = Underlings.Modules.Module;
+
+namespace Henchman.Features.OnYourMark;
+
+public class OnYourMark : Module
+{
+    public static  bool           AcceptanceHack = false;
+    private static Configuration? Configuration => GetFeatureConfig<OnYourMarkUI, Configuration>();
+
+    internal async Task Start(CancellationToken token = default)
+    {
+        if (!IsCombat(Player.ClassJob.RowId))
+        {
+            Chat.Warning("You do not have equipped a combat class!");
+            return;
+        }
+
+        var mobHuntOrderType = GetCorrectedMobHuntOrderTypes()
+               .ToList();
+
+        if (C.DiscardOldBills)
+        {
+            foreach (var bill in Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                                    .Select(x => x.EventItem))
+                await DiscardItem(bill.Value.RowId, token);
+
+            await Task.Delay(GeneralDelayMs * 12, token);
+        }
+        else
+            await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
+
+        if (AcceptanceHack)
+            await GetNewBillsHack(token);
+        else
+            await GetNewBills(mobHuntOrderType.GetEnumerator(), token);
+        await ProcessBills(mobHuntOrderType.GetEnumerator(), token);
+        await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
+    }
+
+    private async Task ProcessBills(List<MobHuntOrderType>.Enumerator mobHuntOrderTypeEnumerator, CancellationToken token = default)
+    {
+        TaskLog.Verbose("--------------- HUNT BILLs ---------------");
+        mobHuntOrderTypeEnumerator.MoveNext();
+        byte[] mobHuntOrderTypeOffset;
+        unsafe
+        {
+            mobHuntOrderTypeOffset = MobHunt.Instance()->ObtainedMarkId.ToArray();
+        }
+
+        var huntTargets = new List<HuntMark>();
+
+        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>(ClientLanguage.English))
+        {
+            TaskLog.Verbose($"############### {expansion.Name.ExtractText()} ###############");
+            TaskLog.Verbose($"InExpansion Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
+
+            TaskLog.Verbose($"Current mobHuntTypeOrder: {mobHuntOrderTypeEnumerator.Current.RowId}");
+            var enabledBillsSelectString = new List<string>();
+
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+
+            TaskLog.Verbose("--------------- BILLS ---------------");
+            foreach (var expansionCategory in configExpansionBills)
+            {
+                var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
+
+                if (!expansionCategory.Value)
+                {
+                    mobHuntOrderTypeEnumerator.MoveNext();
+                    TaskLog.Verbose($"--------------- SKIP {expansionCategory.Key} ---------------");
+                    continue;
+                }
+
+                bool isMarkBillObtained;
+                unsafe
+                {
+                    isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
+                }
+
+                TaskLog.Verbose($"Obtained {currentMobHuntType.RowId}: {isMarkBillObtained}");
+
+                if (!isMarkBillObtained)
+                {
+                    mobHuntOrderTypeEnumerator.MoveNext();
+                    continue;
+                }
+
+                var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()[Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                                                                                     .GetRow(currentMobHuntType.RowId)
+                                                                                     .OrderStart.Value.RowId +
+                                                                                  ((uint)mobHuntOrderTypeOffset[currentMobHuntType.RowId] - 1)];
+
+                TaskLog.Verbose($"MobHuntTargets Amount: {mobHuntTargets.Count}");
+
+                bool allMobsKilled;
+                unsafe
+                {
+                    allMobsKilled = mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)currentMobHuntType.RowId, (byte)x.SubrowId) == x.NeededKills);
+                }
+
+                TaskLog.Verbose($"All mobs killed: {allMobsKilled}");
+
+                if (!allMobsKilled)
+                {
+                    enabledBillsSelectString.Add(expansionCategory.Key);
+                    TaskLog.Verbose($"Adding: {HuntBoardSelect[expansionCategory.Key]}");
+                    foreach (var mob in mobHuntTargets)
+                    {
+                        TaskLog.Verbose($"Mob: {mob.Target.Value.Name.Value.RowId} {mob.Target.Value.Name.Value.Singular.ExtractText()}");
+                        if (GetHuntMarkForExpansion(mob.Target.Value.Name.Value.RowId, expansion.RowId) is { } tempMark)
+                        {
+                            tempMark.NeededKills     = mob.NeededKills;
+                            tempMark.MobHuntRowId    = (byte)currentMobHuntType.RowId;
+                            tempMark.MobHuntSubRowId = (byte)mob.SubrowId;
+                            TaskLog.Verbose($"Open Kills: {tempMark.GetOpenMobHuntKills.ToString()}");
+                            if (tempMark.GetOpenMobHuntKills == 0) continue;
+
+
+                            huntTargets.Add(tempMark);
+                            TaskLog.Verbose($"Adding: {tempMark.Name}");
+                        }
+                    }
+                }
+
+                mobHuntOrderTypeEnumerator.MoveNext();
+                TaskLog.Verbose("--------------- NEXT BILL ---------------");
+            }
+
+            TaskLog.Verbose($"Enabled Bill Count: {enabledBillsSelectString.Count()}");
+        }
+
+        var orderedMarks = huntTargets.OrderBy(x => x.FateId)
+                                      .ThenBy(x => x.TerritoryId)
+                                      .ToList();
+        await ProcessHuntMarks(orderedMarks, token: token);
+    }
+
+    private async Task GetNewBills(List<MobHuntOrderType>.Enumerator mobHuntOrderTypeEnumerator, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        mobHuntOrderTypeEnumerator.MoveNext();
+        byte[] mobHuntOrderTypeOffset;
+        unsafe
+        {
+            mobHuntOrderTypeOffset = MobHunt.Instance()->AvailableMarkId.ToArray();
+        }
+
+        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>())
+        {
+            TaskLog.Verbose($"############### {expansion.Name.ExtractText()} ###############");
+            var enabledBillsSelectString = new List<string>();
+
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+
+            TaskLog.Verbose("--------------- BILLS ---------------");
+            foreach (var expansionCategory in configExpansionBills)
+            {
+                if (!expansionCategory.Value)
+                {
+                    mobHuntOrderTypeEnumerator.MoveNext();
+                    TaskLog.Verbose("--------------- SKIP TO NEXT BILL ---------------");
+                    continue;
+                }
+
+                var  currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
+                bool isMarkBillUnlocked;
+                bool isMarkBillObtained;
+                int  availableMarkId;
+                int  obtainedMarkId;
+
+                unsafe
+                {
+                    isMarkBillUnlocked = MobHunt.Instance()->IsMarkBillUnlocked((byte)currentMobHuntType.RowId);
+                    isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained((int)currentMobHuntType.RowId);
+                    availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)currentMobHuntType.RowId);
+                    obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)currentMobHuntType.RowId);
+                }
+
+                if (!isMarkBillUnlocked)
+                    continue;
+
+                var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()[Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                                                                                     .GetRow(currentMobHuntType.RowId)
+                                                                                     .OrderStart.Value.RowId +
+                                                                                  ((uint)mobHuntOrderTypeOffset[currentMobHuntType.RowId] - 1)];
+
+                bool allMobsKilled;
+                unsafe
+                {
+                    allMobsKilled = mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)currentMobHuntType.RowId, (byte)x.SubrowId) == x.NeededKills);
+                }
+
+                if ((availableMarkId != obtainedMarkId && !isMarkBillObtained) || (!isMarkBillObtained && !allMobsKilled))
+                {
+                    enabledBillsSelectString.Add(expansionCategory.Key);
+                    TaskLog.Verbose($"Adding: {HuntBoardSelect[expansionCategory.Key]}");
+                }
+
+                mobHuntOrderTypeEnumerator.MoveNext();
+                TaskLog.Verbose("--------------- NEXT BILL ---------------");
+            }
+
+            TaskLog.Verbose($"EnabledBillSelectString Count: {enabledBillsSelectString.Count()}");
+            if (enabledBillsSelectString.Count == 0) continue;
+
+
+            Location location;
+            unsafe
+            {
+                location = expansion.Name.ExtractText() == "A Realm Reborn"
+                                   ? ArrHuntBoardLocations[(HuntDatabase.GrandCompany)PlayerState.Instance()->GrandCompany]
+                                   : ExpansionHuntBoardLocations[expansion.Name.ExtractText()];
+            }
+
+            await GoToHuntboard(location, expansion.Name.ExtractText(), enabledBillsSelectString, token);
+        }
+    }
+
+    private async Task GetNewBillsHack(CancellationToken token = default)
+    {
+        var bills = GetEnabledAcceptableBills();
+        Log.Information($"Acceptable bills: {bills.Count}");
+        foreach (var bill in bills)
+        {
+            GameMain.ExecuteCommand(428, bill.TypeRow, bill.Offset);
+
+            await Task.Delay(4 * GeneralDelayMs, token);
+        }
+    }
+
+    private static unsafe List<(byte TypeRow, byte Offset)> GetEnabledAcceptableBills()
+    {
+        var bills             = new List<(byte TypeRow, byte Offset)>();
+        var mobHuntOrderTypes = GetCorrectedMobHuntOrderTypes();
+
+        for (var i = 0; i < HuntBoardOptions.Count && i < mobHuntOrderTypes.Count; i++)
+        {
+            var key = HuntBoardOptions[i];
+            if (!Configuration!.EnableHuntBills.TryGetValue(key, out var enabled) || !enabled)
+            {
+                Log.Information($"{key}: {enabled}");
+                continue;
+            }
+
+            var typeRow = (byte)mobHuntOrderTypes[i].RowId;
+
+            if (!MobHunt.Instance()->IsMarkBillUnlocked(typeRow))
+                continue;
+
+            if (MobHunt.Instance()->IsMarkBillObtained(typeRow))
+                continue;
+
+            var offset = MobHunt.Instance()->AvailableMarkId[typeRow];
+            if (offset == 0)
+                continue;
+
+            bills.Add((typeRow, offset));
+        }
+
+        return bills;
+    }
+
+    private async Task GoToHuntboard(Location location, string expansion, List<string> billsSelectString, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (Player.TerritoryId != location.TerritoryId)
+        {
+            if (expansion == "A Realm Reborn" && Player.GrandCompany == (byte)GrandCompany.Maelstrom)
+            {
+                Lifestream.ExecuteCommand.Invoke("gc");
+                await WaitPulseConditionAsync(() => Lifestream.IsBusy.Invoke(), "Moving To GC", token);
+            }
+            else
+            {
+                TeleportInfo? huntboardTerritory;
+                unsafe
+                {
+                    Telepo.Instance()->UpdateAetheryteList();
+                    huntboardTerritory = Telepo.Instance()->TeleportList.FirstOrNull(x => x.TerritoryId == location.TerritoryId);
+                }
+
+                ErrorThrowIf(huntboardTerritory == null, "No aetheryte for huntboard found!");
+
+                var aetheryteId = huntboardTerritory!.Value.AetheryteId;
+                await TeleportTo(aetheryteId, token);
+                if (AethernetIdCloseToHuntboard.TryGetValue(expansion, out var aethernetId))
+                {
+                    Lifestream.AethernetTeleportById.Invoke(aethernetId);
+                    await WaitPulseConditionAsync(() => Lifestream.IsBusy.Invoke(), "Waiting for teleport", token);
+                }
+            }
+        }
+
+        uint huntBoardId;
+        if (expansion == "A Realm Reborn")
+        {
+            huntBoardId = (GrandCompany)Player.GrandCompany switch
+                          {
+                                  GrandCompany.Maelstrom      => GCHuntBoardIds[HuntDatabase.GrandCompany.Maelstrom],
+                                  GrandCompany.TwinAdder      => GCHuntBoardIds[HuntDatabase.GrandCompany.OrderOfTheTwinAdder],
+                                  GrandCompany.ImmortalFlames => GCHuntBoardIds[HuntDatabase.GrandCompany.ImmortalFlames]
+                          };
+        }
+        else
+            huntBoardId = HuntBoardIds[expansion];
+
+        var mobhuntNum = Svc.Data.GetExcelSheet<ExVersion>()
+                            .First(x => x.Name.ExtractText() == expansion)
+                            .RowId +
+                         1;
+        await MoveToStationaryObject(location.Position, huntBoardId, token: token);
+        foreach (var bill in billsSelectString)
+        {
+            var billSelect = HuntBoardSelect[bill];
+            await GatherHuntBills(huntBoardId, billSelect, mobhuntNum == 1
+                                                                   ? ""
+                                                                   : mobhuntNum.ToString(), token);
+        }
+    }
+
+    private async Task GatherHuntBills(uint huntBoardId, string billSelect, string num, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        await InteractWithByBaseId(huntBoardId, token);
+        await WaitUntilAsync(() => Svc.Targets.Target != null && Svc.Targets.Target.BaseId == huntBoardId, "Waiting for Huntboard Target", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(billSelect), $"SelectString {billSelect}", token);
+        await WaitUntilAsync(() => ClickAddonButton($"Mobhunt{num}", 21), "Click Accept", token);
+        await Task.Delay(GeneralDelayMs * 4, token)
+                  .ConfigureAwait(true);
+    }
+
+    public override void RunTask() => TryStartTask(new TaskRecord(Start, "On Your Mark", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+}

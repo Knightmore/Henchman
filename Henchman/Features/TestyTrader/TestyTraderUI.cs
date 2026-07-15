@@ -1,0 +1,643 @@
+using System.Linq;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using Dalamud.Interface.Components;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Utility.Raii;
+using Henchman.Models;
+using Henchman.Multiboxing;
+using Lumina.Excel.Sheets;
+using Underlings.GameHelpers;
+using Underlings.Keybinds;
+using Underlings.Modules;
+using Underlings.TaskManager;
+using Action = System.Action;
+
+namespace Henchman.Features.TestyTrader;
+
+[Module]
+public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
+{
+    private static readonly Item[] TradableItems = Svc.Data.GetExcelSheet<Item>()
+                                                      .Where(x => x is { IsUntradable: false, RowId: > 0 and < 20 or > 100 } && !string.IsNullOrEmpty(x.Name.ExtractText()))
+                                                      .OrderBy(x => x.Name.ExtractText())
+                                                      .ToArray();
+
+    private static readonly TestyTrader Feature = new();
+    private static          bool        ConfigChanged;
+
+    private static readonly Dictionary<string, World> Worlds =
+            Svc.Data.GetExcelSheet<World>()
+               .DistinctBy(x => x.Name.ExtractText())
+               .ToDictionary(x => x.Name.ExtractText(), x => x);
+
+    private readonly Table<OfflineCharacterData> ARTable;
+
+    private readonly List<(Item Item, uint RowId, string DisplayName)> expandedItems = TradableItems
+                                                                                      .SelectMany(x =>
+                                                                                                  {
+                                                                                                      var baseEntry = (Item: x, x.RowId, DisplayName: x.Name.ExtractText());
+                                                                                                      if (x.CanBeHq)
+                                                                                                      {
+                                                                                                          var hqEntry = (Item: x, RowId: x.RowId + 1_000_000, DisplayName: x.Name.ExtractText() + " (HQ)");
+                                                                                                          return [baseEntry, hqEntry];
+                                                                                                      }
+
+                                                                                                      return new[] { baseEntry };
+                                                                                                  })
+                                                                                      .ToList();
+
+    private readonly TableColumn<OfflineCharacterData> invColumn;
+
+    private readonly List<ItemSearchCategory> searchCategories = Svc.Data.GetExcelSheet<ItemSearchCategory>()
+                                                                    .Where(x => x.Category > 1)
+                                                                    .OrderBy(x => x.Category)
+                                                                    .ToList();
+
+    internal TestyTraderCharacterData? CharacterToRemove;
+
+    private TestyTraderCharacterData newCharacter = new();
+    private TradeList?               planToDelete;
+    private string                   newPlanName = string.Empty;
+
+    internal string              Search = string.Empty;
+    private  ItemSearchCategory? selectedSearchCategory;
+
+    public TestyTraderUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+        if (Configuration.TradeLists.Count == 0)
+        {
+            var migrated = new TradeList
+                           {
+                                   Name    = "Plan 1",
+                                   Entries = Configuration.TradeEntries
+                           };
+            Configuration.TradeEntries        = [];
+            Configuration.TradeLists.Add(migrated);
+            Configuration.SelectedTradeListId = migrated.Id;
+            SaveConfig(Configuration);
+        }
+
+        invColumn = new TableColumn<OfflineCharacterData>("Inv.", Width: 90, Alignment: ColumnAlignment.Center, Modes:
+                                                          [
+                                                                  new ColumnModeOption<OfflineCharacterData>("Inv.", x => x.InventorySpace.ToString()),
+                                                                  new ColumnModeOption<OfflineCharacterData>("Tanks", x => x.Ceruleum.ToString()),
+                                                                  new ColumnModeOption<OfflineCharacterData>("Repair", x => x.RepairKits.ToString())
+                                                          ])
+                    {
+                            SelectedModeIndex = (int)Configuration.TestyTraderInvColumnMode
+                    };
+
+        ARTable = new Table<OfflineCharacterData>(
+                                                  "##ARTraderTable",
+                                                  new List<TableColumn<OfflineCharacterData>>
+                                                  {
+                                                          new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                                     {
+                                                                                                                                         if (!Configuration.EnableCharacterForTrade.TryAdd(x.CID, false))
+                                                                                                                                         {
+                                                                                                                                             var isEnabled = Configuration.EnableCharacterForTrade[x.CID];
+                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                                             if (IconButton($"\uf021###{x.CID}"))
+                                                                                                                                             {
+                                                                                                                                                 Configuration.EnableCharacterForTrade[x.CID] = !isEnabled;
+                                                                                                                                                 ConfigChanged                                = true;
+                                                                                                                                             }
+
+                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                                         }
+                                                                                                                                         else
+                                                                                                                                             ConfigChanged = true;
+                                                                                                                                     }),
+                                                          new("Name", x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
+                                                          new("World", x => x.World, 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          new("DataCenter", x => Worlds[x.World]
+                                                                                .DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          new("Subs", x => x.OfflineSubmarineData.Count.ToString(), 35, Alignment: ColumnAlignment.Center),
+                                                          new("AR active", x => x.WorkshopEnabled.ToString(), 75, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          invColumn
+                                                  },
+                                                  () => Feature.GetCurrentARCharacterData(),
+                                                  x => x.CID == Player.CID,
+                                                  new Vector2(585, 0)
+                                                 );
+    }
+
+    public sealed override required Configuration   Configuration { get; init; }
+
+    private TradeList ActivePlan => Configuration.GetActivePlan()!;
+
+    public override                 string          Name          => "Testy Trader";
+    public override                 Enum            Category      => Henchman.Category.Economy;
+    public override                 FontAwesomeIcon Icon          => FontAwesomeIcon.Handshake;
+
+    public override Action? Help => () =>
+                                    {
+                                        ImGui.Text(T("HelpText"));
+                                        DrawRequirements(Requirements);
+                                    };
+
+    public override bool LoginNeeded => false;
+
+    [Keybind("Testy Trader - Start")]
+    private void StartTask()
+    {
+        if (IsTaskRunning(Name)) return;
+        TryStartTask(Configuration.TradeSession == SessionType.Boss
+                             ? new TaskRecord(Feature.Server, "Testy Trader - Boss Mode")
+                             : new TaskRecord(Feature.Client, "Testy Trader - Henchman Mode"));
+    }
+
+    [Keybind("Testy Trader - Start (Boss Mode)")]
+    private void StartBossMode()
+    {
+        if (IsTaskRunning(Name)) return;
+        TryStartTask(new TaskRecord(Feature.Server, "Testy Trader - Boss Mode"));
+    }
+
+    [Keybind("Testy Trader - Start (Henchman Mode)")]
+    private void StartHenchmanMode()
+    {
+        if (IsTaskRunning(Name)) return;
+        TryStartTask(new TaskRecord(Feature.Client, "Testy Trader - Henchman Mode"));
+    }
+
+    public override List<(string pluginName, bool mandatory)> Requirements =>
+    [
+            (IPCNames.vnavmesh, true),
+            (IPCNames.Lifestream, true)
+    ];
+
+    public override void Draw()
+    {
+        ConfigChanged = false;
+        DrawCentered("###TraderStart", () => Layout.DrawButton(() =>
+                                                               {
+                                                                   if (StartButton()) StartTask();
+                                                               }));
+        DrawCentered("###TradeSessionType", () =>
+                                            {
+                                                ImGui.SetNextItemWidth(150f * GlobalFontScale);
+                                                ConfigChanged |= EnumCombo("##tradeSession", ref Configuration.TradeSession);
+                                            });
+
+        if (Configuration.TradeSession == SessionType.Henchman)
+        {
+            using var tabs = ImRaii.TabBar("Tabs");
+            if (tabs)
+            {
+                using (var tab = ImRaii.TabItem(T("TabCharacters")))
+                {
+                    if (tab)
+                        DrawCharacterTab();
+                }
+
+                using (var tab = ImRaii.TabItem(T("TabItems")))
+                {
+                    if (tab)
+                        DrawItemTab();
+                }
+            }
+        }
+        else
+        {
+            DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.UseARItemSell));
+            DrawCentered("##BossToHenchmanWorld", () =>
+                                                  {
+                                                      ConfigChanged |= ImGui.Checkbox(T("TransferBossToHenchman"), ref Configuration.MoveBossToHenchman);
+                                                      ImGui.SameLine();
+                                                      HelpMarker(() => ImGui.Text(T("TransferBossHelp")));
+                                                  });
+            DrawCentered("##BossIncludeArmory", () => ConfigChanged |= ImGui.Checkbox(T("IncludeArmory"), ref Configuration.IncludeArmory));
+        }
+
+        if (CharacterToRemove != null)
+            Configuration.TestyTraderImportedCharacters.Remove(CharacterToRemove);
+        if (planToDelete != null)
+        {
+            Configuration.TradeLists.Remove(planToDelete);
+            if (Configuration.SelectedTradeListId == planToDelete.Id)
+                Configuration.SelectedTradeListId = Configuration.TradeLists[0].Id;
+            planToDelete  = null;
+            ConfigChanged = true;
+        }
+
+        if (ConfigChanged) SaveConfig(Configuration);
+    }
+
+    private void DrawARTable()
+    {
+        ARTable.Draw();
+
+        if ((int)Configuration.TestyTraderInvColumnMode != invColumn.SelectedModeIndex)
+        {
+            Configuration.TestyTraderInvColumnMode = (TestyTraderInvColumnMode)invColumn.SelectedModeIndex;
+            ConfigChanged                          = true;
+        }
+    }
+
+    private void DrawManualTable()
+    {
+        var characterColumns = new List<TableColumn<TestyTraderCharacterData>>
+                               {
+                                       new("##Enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
+                                                                                                                  {
+                                                                                                                      var isEnabled = x.Enabled;
+                                                                                                                      if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
+
+                                                                                                                      if (IconButton($"\uf021###{x.Name + x.WorldId}"))
+                                                                                                                      {
+                                                                                                                          x.Enabled     = !isEnabled;
+                                                                                                                          ConfigChanged = true;
+                                                                                                                      }
+
+                                                                                                                      if (isEnabled) ImGui.PopStyleColor();
+                                                                                                                  }),
+                                       new(T("ColName"), x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
+                                       new(T("ColDataCenter"), x => Svc.Data.GetExcelSheet<WorldDCGroupType>()
+                                                                       .GetRow(x.DataCenterId)
+                                                                       .Name.ExtractText(), 100, FilterType.MultiSelect, ColumnAlignment.Center),
+                                       new(T("ColWorld"), x => Svc.Data.GetExcelSheet<World>()
+                                                                  .GetRow(x.WorldId)
+                                                                  .Name.ExtractText(), 100, FilterType.MultiSelect, ColumnAlignment.Center),
+                                       new("##Remove", Width: 75, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
+                                                                                                                 {
+                                                                                                                     if (ImGuiComponents.IconButton($"##Remove{x.Name + x.WorldId}", FontAwesomeIcon.Trash)) CharacterToRemove = x;
+                                                                                                                     ConfigChanged = true;
+                                                                                                                 })
+                               };
+
+        var table = new Table<TestyTraderCharacterData>(
+                                                        "##ManualTraderTable",
+                                                        characterColumns,
+                                                        () => Configuration.TestyTraderImportedCharacters,
+                                                        h => Svc.Objects.LocalPlayer != null && h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
+                                                        new Vector2(450, 0),
+                                                        () =>
+                                                        {
+                                                            ImGui.TableNextRow();
+                                                            using var row = new ColumnScope(characterColumns.Count);
+                                                            row.TableNextColumn();
+                                                            row.TableNextColumn();
+                                                            DrawCentered("##TraderNewCharacterName", () =>
+                                                                                                     {
+                                                                                                         ImGui.SetNextItemWidth(135f * GlobalFontScale);
+                                                                                                         ImGui.InputText("##newName", ref newCharacter.Name);
+                                                                                                     });
+                                                            row.TableNextColumn();
+                                                            DrawCentered("##TraderNewCharacterDC", () =>
+                                                                                                   {
+                                                                                                       ImGui.SetNextItemWidth(100f * GlobalFontScale);
+                                                                                                       if (ExcelSheetCombo<WorldDCGroupType>("##newdc", out var selectedDC, s => s.GetRowOrDefault(newCharacter.DataCenterId) is { } row
+                                                                                                                                                                                         ? row.Name.ExtractText()
+                                                                                                                                                                                         : string.Empty, x => x.Name.ExtractText(), x => x.RowId is > 0 and < 12))
+                                                                                                       {
+                                                                                                           newCharacter.DataCenterId = selectedDC.RowId;
+                                                                                                           newCharacter.WorldId = Svc.Data
+                                                                                                                                     .GetExcelSheet<World>()
+                                                                                                                                     .First(x => x.DataCenter.Value.RowId == selectedDC.RowId && x.IsPublic)
+                                                                                                                                     .RowId;
+                                                                                                       }
+                                                                                                   });
+                                                            row.TableNextColumn();
+                                                            DrawCentered("##TraderNewCharacterWorld", () =>
+                                                                                                      {
+                                                                                                          ImGui.SetNextItemWidth(110f * GlobalFontScale);
+                                                                                                          if (ExcelSheetCombo<World>("##world", out var selectedCharacterWorld, s => s.GetRowOrDefault(newCharacter.WorldId) is { } row
+                                                                                                                                                                                             ? row.Name.ExtractText()
+                                                                                                                                                                                             : string.Empty, x => x.Name.ExtractText(), x => x.IsPublic && x.RowId != 3000 && x.RowId != 3001))
+                                                                                                              newCharacter.WorldId = selectedCharacterWorld.RowId;
+                                                                                                      });
+                                                            row.TableNextColumn();
+                                                            DrawCentered("##TraderNewCharacterAdd", () =>
+                                                                                                    {
+                                                                                                        if (ImGuiComponents.IconButton("##LightAdd", FontAwesomeIcon.Plus))
+                                                                                                        {
+                                                                                                            Configuration.TestyTraderImportedCharacters.Add(newCharacter);
+                                                                                                            newCharacter  = new TestyTraderCharacterData();
+                                                                                                            ConfigChanged = true;
+                                                                                                        }
+                                                                                                    });
+                                                        }
+                                                       );
+
+        table.Draw();
+    }
+
+    private void DrawCharacterTab()
+    {
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox(T("ARSupport"), ref Configuration.TestyTraderARSupport));
+            if (Configuration.TestyTraderARSupport)
+            {
+                DrawCentered("##TradeCharSelector", () =>
+                                                    {
+                                                        if (ImGui.Button(T("SelectAll")))
+                                                        {
+                                                            foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = true;
+                                                            ConfigChanged = true;
+                                                        }
+
+                                                        ImGui.SameLine();
+                                                        if (ImGui.Button(T("DeselectAll")))
+                                                        {
+                                                            foreach (var keyValuePair in Configuration.EnableCharacterForTrade) Configuration.EnableCharacterForTrade[keyValuePair.Key] = false;
+                                                            ConfigChanged = true;
+                                                        }
+                                                    });
+                DrawCentered("##TradeFilteredCharSelector", () =>
+                                                            {
+                                                                if (ImGui.Button(T("SelectAllShown")))
+                                                                {
+                                                                    foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = true;
+                                                                    ConfigChanged = true;
+                                                                }
+
+                                                                ImGui.SameLine();
+                                                                if (ImGui.Button(T("DeselectAllShown")))
+                                                                {
+                                                                    foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForTrade[character.CID] = false;
+                                                                    ConfigChanged = true;
+                                                                }
+                                                            });
+                DrawCentered("##CenteredARTraderTable", () => DrawARTable());
+            }
+        }
+        else
+            Configuration.TestyTraderARSupport = false;
+
+        if (!Configuration.TestyTraderARSupport)
+        {
+            DrawCentered("##ImportTraders", () =>
+                                            {
+                                                if (ImGui.Button(T("ImportFromClipboard")))
+                                                {
+                                                    var charString = ImGui.GetClipboardText();
+                                                    ImportCharacters(charString, Configuration.TestyTraderImportedCharacters);
+                                                }
+
+                                                HelpMarker(() => ImGui.Text(T("ImportHelp")), sameLine: true);
+                                            });
+
+            DrawCentered("##ManualTraderTable", () => DrawManualTable());
+        }
+
+        if (ConfigChanged) SaveConfig(Configuration);
+    }
+
+    private void DrawItemTab()
+    {
+        DrawCentered("##HenchmanIncludeArmory", () => ConfigChanged |= ImGui.Checkbox(T("IncludeArmory"), ref Configuration.IncludeArmory));
+        DrawCentered("##TraderPlanSelector", () => DrawPlanSelector());
+        DrawCentered("##TraderItemSelector", () =>
+                                             {
+                                                 ImGui.SetNextItemWidth(500 * GlobalFontScale);
+                                                 if (ImGui.BeginCombo("##addItem", T("AddItem"), ImGuiComboFlags.HeightLarge))
+                                                 {
+                                                     InputWithRightButtonsArea("##itemSearchArea", () => { ImGui.InputTextWithHint("##itemSearch", T("SearchHint"), ref Search, 100); },
+                                                                               () =>
+                                                                               {
+                                                                                   ImGui.SetNextItemWidth(200f * GlobalFontScale);
+                                                                                   if (SearchableCombo("##category", out var category,
+                                                                                                       selectedSearchCategory != null
+                                                                                                               ? selectedSearchCategory.Value.Name.ExtractText()
+                                                                                                               : T("AllCategories"),
+                                                                                                       searchCategories,
+                                                                                                       x => x.Name.ToString(),
+                                                                                                       (p, s) => p.Name.ToString()
+                                                                                                                  .Contains(s, StringComparison.InvariantCultureIgnoreCase)))
+                                                                                       selectedSearchCategory = category;
+
+                                                                                   ImGui.SameLine();
+                                                                                   if (ImGui.Button(T("Reset")))
+                                                                                   {
+                                                                                       selectedSearchCategory = null;
+                                                                                       Search                 = string.Empty;
+                                                                                   }
+                                                                               });
+
+                                                     var filteredItems = expandedItems
+                                                                        .Where(entry =>
+                                                                                       (selectedSearchCategory == null || entry.Item.ItemSearchCategory.RowId == selectedSearchCategory.Value.RowId) &&
+                                                                                       (string.IsNullOrEmpty(Search)   || entry.DisplayName.Contains(Search, StringComparison.OrdinalIgnoreCase)))
+                                                                        .ToList();
+
+                                                     var clipper = new ImGuiListClipper();
+                                                     clipper.Begin(filteredItems.Count);
+
+                                                     while (clipper.Step())
+                                                     {
+                                                         for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                                                         {
+                                                             var entry = filteredItems[i];
+                                                             var cont = ActivePlan.Entries.Select(s => s.Id)
+                                                                                  .ToArray();
+
+                                                             if (Svc.Texture.GetFromGameIcon(new GameIconLookup(entry.Item.Icon, hiRes: false))
+                                                                    .TryGetWrap(out var texture, out _))
+                                                             {
+                                                                 ImGui.Image(texture.Handle, new Vector2(ImGui.GetTextLineHeight()));
+                                                                 ImGui.SameLine();
+                                                             }
+
+                                                             if (ImGui.Selectable($"{entry.DisplayName}##{entry.RowId}", cont.Contains(entry.RowId), ImGuiSelectableFlags.DontClosePopups))
+                                                             {
+                                                                 if (!cont.Contains(entry.RowId))
+                                                                 {
+                                                                     ActivePlan.Entries.Add(new TradeEntry
+                                                                                            {
+                                                                                                    Id      = entry.RowId,
+                                                                                                    Amount  = 0,
+                                                                                                    Mode    = TradeMode.Give,
+                                                                                                    Enabled = true
+                                                                                            });
+                                                                 }
+
+                                                                 ConfigChanged = true;
+                                                             }
+                                                         }
+                                                     }
+
+                                                     clipper.End();
+
+                                                     ImGui.EndCombo();
+                                                 }
+                                             });
+
+        DrawCentered("##TraderItemTable", () => DrawItemTable());
+    }
+
+    private void DrawPlanSelector()
+    {
+        var rowWidth    = 320 * GlobalFontScale;
+        var renameWidth = 150 * GlobalFontScale;
+        var deleteWidth = ImGui.GetFrameHeight();
+        var spacing     = ImGui.GetStyle().ItemSpacing.X;
+
+        ImGui.SetNextItemWidth(rowWidth);
+        if (ImGui.BeginCombo("##planSelector", ActivePlan.Name))
+        {
+            foreach (var plan in Configuration.TradeLists)
+            {
+                ImGui.PushID(plan.Id.ToString());
+
+                var isActive = plan.Id == Configuration.SelectedTradeListId;
+                if (ImGui.Selectable($"{plan.Name}##pick", isActive, ImGuiSelectableFlags.None, new Vector2(rowWidth - renameWidth - deleteWidth - spacing * 2, 0)))
+                {
+                    Configuration.SelectedTradeListId = plan.Id;
+                    ConfigChanged                      = true;
+                }
+
+                ImGui.SetItemAllowOverlap();
+                ImGui.SameLine(rowWidth - renameWidth - deleteWidth - spacing);
+                ImGui.SetNextItemWidth(renameWidth);
+                ConfigChanged |= ImGui.InputText("##rename", ref plan.Name, 100);
+
+                ImGui.SameLine(rowWidth - deleteWidth);
+                using (ImRaii.Disabled(Configuration.TradeLists.Count <= 1))
+                {
+                    if (ImGuiComponents.IconButton("##deletePlan", FontAwesomeIcon.Trash))
+                        planToDelete = plan;
+                }
+
+                ImGui.PopID();
+            }
+
+            ImGui.Separator();
+            ImGui.SetNextItemWidth(150 * GlobalFontScale);
+            ImGui.InputTextWithHint("##newPlanName", T("NewPlanNameHint"), ref newPlanName, 100);
+            ImGui.SameLine();
+            if (ImGuiComponents.IconButton("##addPlan", FontAwesomeIcon.Plus))
+            {
+                var plan = new TradeList
+                          {
+                                  Name = string.IsNullOrWhiteSpace(newPlanName)
+                                                 ? $"Plan {Configuration.TradeLists.Count + 1}"
+                                                 : newPlanName
+                          };
+                Configuration.TradeLists.Add(plan);
+                Configuration.SelectedTradeListId = plan.Id;
+                newPlanName                        = string.Empty;
+                ConfigChanged                      = true;
+            }
+
+            ImGui.EndCombo();
+        }
+    }
+
+    private void DrawItemTable()
+    {
+        TradeEntry? itemToDelete = null;
+        var table = new Table<TradeEntry>(
+                                          "##TraderItemTable",
+                                          new List<TableColumn<TradeEntry>>
+                                          {
+                                                  new("##Enable", Width: 25, DrawCustom: (x, index) => { ConfigChanged |= ImGui.Checkbox($"##enable{x.Id}", ref x.Enabled); }),
+                                                  new(T("ColName"), Width: 300, DrawCustom: (x, index) =>
+                                                                                            {
+                                                                                                if (Svc.Texture.GetFromGameIcon(new GameIconLookup(Svc.Data.GetExcelSheet<Item>()
+                                                                                                                                                      .GetRow(x.Id % 1_000_000)
+                                                                                                                                                      .Icon, hiRes: false))
+                                                                                                       .TryGetWrap(out var texture, out _))
+                                                                                                {
+                                                                                                    ImGui.Image(texture.Handle, new Vector2(ImGui.GetTextLineHeight()));
+                                                                                                    ImGui.SameLine();
+                                                                                                }
+
+                                                                                                Text(
+                                                                                                     Svc.Data.GetExcelSheet<Item>()
+                                                                                                        .GetRow(x.Id % 1_000_000)
+                                                                                                        .GetName() +
+                                                                                                     (x.Id > 1_000_000
+                                                                                                              ? " (HQ)"
+                                                                                                              : "")
+                                                                                                    );
+                                                                                            }),
+                                                  new(T("ColAmount"), Width: 120, DrawCustom: (x, index) =>
+                                                                                              {
+                                                                                                  ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                                                  ConfigChanged |= ImGui.InputUInt($"##{x.Id}Amount", ref x.Amount);
+                                                                                              }),
+                                                  new(T("ColTradeType"), Width: 120, DrawCustom: (x, index) =>
+                                                                                                 {
+                                                                                                     ImGui.SetNextItemWidth(120f * GlobalFontScale);
+                                                                                                     ConfigChanged |= EnumCombo($"##tradeType{x.Id}", ref x.Mode);
+                                                                                                 }),
+                                                  new("##Controls", Width: 45, Alignment: ColumnAlignment.Center, DrawCustom: (x, index) =>
+                                                                                                                              {
+                                                                                                                                  if (IconButton(FontAwesomeIcon.Trash, x.Id.ToString())) itemToDelete = x;
+                                                                                                                              })
+                                          },
+                                          () => ActivePlan.Entries,
+                                          size: new Vector2(635, 0)
+                                         );
+
+        table.Draw();
+
+        if (itemToDelete != null)
+        {
+            ActivePlan.Entries.Remove(itemToDelete);
+            ConfigChanged = true;
+        }
+    }
+
+    public static void ImportCharacters(string input, List<TestyTraderCharacterData> list)
+    {
+        if (string.IsNullOrWhiteSpace(input) || input.Length < 2 || !input.StartsWith("[") || !input.EndsWith("]"))
+            return;
+
+        var content = input.Substring(1, input.Length - 2);
+        var entries = content.Split(',');
+
+        foreach (var entry in entries)
+        {
+            var parts = entry.Split('|');
+            if (parts.Length != 2)
+                continue;
+
+            var name = parts[0]
+                   .Trim();
+            var world = parts[1]
+                   .Trim();
+
+            var worldRow = Svc.Data.GetExcelSheet<World>()
+                              .FirstOrNull(x => string.Equals(x.Name.ExtractText(), world, StringComparison.OrdinalIgnoreCase));
+
+            if (worldRow == null)
+            {
+                InternalTaskError($"World {world} for {name} is not correct");
+                continue;
+            }
+
+            var newItem = new TestyTraderCharacterData
+                          {
+                                  DataCenterId = worldRow.Value.DataCenter.Value.RowId,
+                                  Enabled      = true,
+                                  Name         = name,
+                                  WorldId      = worldRow.Value.RowId
+                          };
+
+            if (!list.Contains(newItem))
+                list.Add(newItem);
+        }
+    }
+
+
+    public class TestyTraderCharacterData : IEquatable<TestyTraderCharacterData>
+    {
+        public uint   DataCenterId = 7;
+        public bool   Enabled      = true;
+        public string Name         = "";
+        public uint   WorldId      = 66;
+
+        public bool Equals(TestyTraderCharacterData other) => string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && WorldId == other.WorldId;
+
+        public override bool Equals(object obj) => obj is TestyTraderCharacterData other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(Name?.ToLowerInvariant(), WorldId);
+    }
+}

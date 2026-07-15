@@ -1,0 +1,6 @@
+{
+  "HelpText":       "Liste der aktuell bereitgestellten IPCs",
+  "ColReturn":      "Rückgabe",
+  "ColFunction":    "Funktion",
+  "ColDescription": "Beschreibung"
+}

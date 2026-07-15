@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Henchman", "Henchman\Henchman.csproj", "{13C812E9-0D42-4B95-8646-40EEBF30636F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C430C670-23D2-23FB-5B69-F14F464CF066} = {C430C670-23D2-23FB-5B69-F14F464CF066}
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25} = {361D00D1-5F72-4135-82A6-69B7D50F5E25}
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30} = {7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Henchman.Generators", "Henchman.Generators\Henchman.Generators.csproj", "{C430C670-23D2-23FB-5B69-F14F464CF066}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Underlings", "Underlings\Underlings\Underlings.csproj", "{361D00D1-5F72-4135-82A6-69B7D50F5E25}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Underlings.Generators", "Underlings\Underlings.Generators\Underlings.Generators.csproj", "{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A1B2C3D4-E5F6-4789-A0B1-C2D3E4F5A6B7}"
+	ProjectSection(SolutionItems) = preProject
+		LocalCS.props = LocalCS.props
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Private|x64 = Private|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Debug|x64.ActiveCfg = Debug|x64
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Debug|x64.Build.0 = Debug|x64
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Private|x64.ActiveCfg = Private|x64
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Private|x64.Build.0 = Private|x64
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.ActiveCfg = Release|x64
+		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.Build.0 = Release|x64
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Debug|x64.Build.0 = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Private|x64.ActiveCfg = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Private|x64.Build.0 = Debug|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Release|x64.ActiveCfg = Release|Any CPU
+		{C430C670-23D2-23FB-5B69-F14F464CF066}.Release|x64.Build.0 = Release|Any CPU
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Debug|x64.ActiveCfg = Debug|x64
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Debug|x64.Build.0 = Debug|x64
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Private|x64.ActiveCfg = Debug|x64
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Private|x64.Build.0 = Debug|x64
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Release|x64.ActiveCfg = Release|x64
+		{361D00D1-5F72-4135-82A6-69B7D50F5E25}.Release|x64.Build.0 = Release|x64
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Debug|x64.Build.0 = Debug|Any CPU
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Private|x64.ActiveCfg = Debug|Any CPU
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Private|x64.Build.0 = Debug|Any CPU
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Release|x64.ActiveCfg = Release|Any CPU
+		{7A1F5C2E-9B3D-4E6A-8C1F-2D5B6E9A4F30}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B17E85B1-5F60-4440-9F9A-3DDE877E8CDF}
+	EndGlobalSection
+EndGlobal

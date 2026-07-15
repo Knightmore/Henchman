@@ -1,0 +1,8 @@
+{
+  "HelpText":      "This only exists because a certain completionist *cough* Kawaii *cough* asked for a Chocobokeep Unlocker.\nHit \"Start\" and it will unlock all missing ChocoboTaxiStands.",
+  "HideUnlocked":  "Hide Unlocked",
+  "ColKeepId":     "KeepId",
+  "ColTerritory":  "Territory",
+  "ColPlaceName":  "Place Name",
+  "ColUnlocked":   "Unlocked"
+}

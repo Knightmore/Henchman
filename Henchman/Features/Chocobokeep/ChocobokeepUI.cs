@@ -1,0 +1,116 @@
+using System.Linq;
+using System.Text.Json.Serialization;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Lumina.Excel.Sheets;
+using Underlings.Keybinds;
+using Underlings.Modules;
+using Action = System.Action;
+
+namespace Henchman.Features.Chocobokeep;
+
+[Module]
+internal class ChocobokeepUI : ModuleUI
+{
+    private readonly Chocobokeep feature = new();
+
+    private         bool            hideUnlocked;
+    public override string          Name     => "Chocobokeep";
+    public override Enum            Category => Henchman.Category.Exploration;
+    public override FontAwesomeIcon Icon     => FontAwesomeIcon.Feather;
+
+    public override Action Help => () =>
+                                   {
+                                       ImGui.Text(T("HelpText"));
+                                       DrawRequirements(Requirements);
+                                   };
+
+    public override bool LoginNeeded => false;
+
+    [Keybind("Chocobokeep - Start")]
+    private void StartTask()
+    {
+        if (IsTaskRunning(Name)) return;
+        feature.RunTask();
+    }
+
+    public override List<(string pluginName, bool mandatory)> Requirements =>
+    [
+            (IPCNames.vnavmesh, true),
+            (IPCNames.Lifestream, true)
+    ];
+
+    public override void Draw()
+    {
+        DrawCentered("##StartRetainers", () => Layout.DrawButton(() =>
+                                                                 {
+                                                                     if (StartButton()) StartTask();
+                                                                 }));
+        LineCentered("###HideUnlocked", () => { ImGui.Checkbox(T("HideUnlocked"), ref hideUnlocked); });
+        DrawCentered("##ChocoboKeepTable", () => { DrawChocoboTable(); });
+    }
+
+    private unsafe void DrawChocoboTable()
+    {
+        var keeps = hideUnlocked
+                            ? feature.keeps.Where(x => !UIState.Instance()->IsChocoboTaxiStandUnlocked(x.ChocoboTaxiStandId))
+                            : feature.keeps;
+        var table = new Table<ChocobokeepData>(
+                                               "##KeepsTable",
+                                               new List<TableColumn<ChocobokeepData>>
+                                               {
+                                                       new(T("ColKeepId"), h => h.ChocoboTaxiStandId.ToString()),
+                                                       new(T("ColTerritory"), h => Svc.Data.GetExcelSheet<TerritoryType>()
+                                                                                      .GetRow(h.TerritoryId)
+                                                                                      .PlaceName.Value.Name.ExtractText(), 200, Alignment: ColumnAlignment.Center),
+                                                       new(T("ColPlaceName"), h => Svc.Data.GetExcelSheet<ChocoboTaxiStand>()
+                                                                                      .GetRow(h.ChocoboTaxiStandId)
+                                                                                      .PlaceName.ExtractText(), 200, Alignment: ColumnAlignment.Center),
+                                                       new(T("ColUnlocked"), h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
+                                                                                          ? FontAwesomeIcon.Check.ToIconString()
+                                                                                          : FontAwesomeIcon.Times.ToIconString(), 50, Alignment: ColumnAlignment.Center,
+                                                           GetTextColor: h => UIState.Instance()->IsChocoboTaxiStandUnlocked(h.ChocoboTaxiStandId)
+                                                                                      ? Theme.SuccessGreen
+                                                                                      : Theme.ErrorRed)
+                                               },
+                                               () => keeps,
+                                               size: new Vector2(550, 0)
+                                              );
+
+        table.Draw();
+    }
+
+    public class ChocobokeepData
+    {
+        public uint Id                 { get; set; }
+        public uint ChocoboTaxiStandId { get; set; }
+        public uint TerritoryId        { get; set; }
+
+        [JsonIgnore]
+        public Vector3 Location { get; set; }
+
+        [JsonPropertyName("Location")]
+        public Vector3Dto LocationDto
+        {
+            get => new(Location);
+            set => Location = new Vector3(value.X, value.Y, value.Z);
+        }
+    }
+
+    public class Vector3Dto
+    {
+        public Vector3Dto() { }
+
+        public Vector3Dto(Vector3 v)
+        {
+            X = v.X;
+            Y = v.Y;
+            Z = v.Z;
+        }
+
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+    }
+}

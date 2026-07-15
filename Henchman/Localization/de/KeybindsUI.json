@@ -1,0 +1,3 @@
+{
+  "HelpText": "Klicke auf den Stift, um einen Bind aufzunehmen. Halte deine Kombo (Strg, Alt und/oder Umschalt plus eine weitere Taste), dann klicke den Haken zum Speichern oder drücke Esc zum Abbrechen. Der Papierkorb entfernt einen Bind.\n\nEin roter Rand bedeutet, dass dieselbe Kombo doppelt vergeben ist. Keiner der beiden Binds löst dann aus, bis du das behebst - der Rand wird schon rot, sobald du eine bereits vergebene Kombo hältst, noch bevor du speicherst.\n\nBinds funktionieren, sobald das Spiel den Fokus hat, auch wenn dieses Fenster geschlossen ist. Sie blockieren den Tastendruck nicht - nutzt das Spiel dieselbe Kombo bereits, lösen beide aus."
+}

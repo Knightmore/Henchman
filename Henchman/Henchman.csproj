@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+    <PropertyGroup>
+        <Version>3.0.1.0</Version>
+        <Description></Description>
+        <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+        <IsPackable>false</IsPackable>
+        <Product>Henchman</Product>
+        <Company>Knightmore</Company>
+        <Authors>Knightmore</Authors>
+        <IconUrl>https://s3.puni.sh/media/plugin/85/icon-vlex66k1ins.png</IconUrl>
+        <PackageId>Henchman</PackageId>
+        <Configurations>Debug;Release;Private</Configurations>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="Properties\**" />
+        <EmbeddedResource Remove="Properties\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="Data\ChocoboTaxiStands.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <Content Include="Images\Henchman.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <None Include="Localization\**\*.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Private'">
+        <None Include="Features\Private\Data\ARRHunt.json">
+            <Link>Data\ARRHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\DTHunt.json">
+            <Link>Data\DTHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\EWHunt.json">
+            <Link>Data\EWHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\HWHunt.json">
+            <Link>Data\HWHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\SHBHunt.json">
+            <Link>Data\SHBHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\StBHunt.json">
+            <Link>Data\StBHunt.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Features\Private\Data\BRanks.json">
+            <Link>Data\BRanks.json</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Private|x64'">
+        <DefineConstants>$(DefineConstants);DEBUG;PRIVATE</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Configuration)' != 'Private'">
+        <Compile Remove="Features\Private\**\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Underlings\Underlings\Underlings.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="Exists('..\Henchman.Generators\Henchman.Generators.csproj')">
+        <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup Condition="Exists('..\Underlings\Underlings.Generators\Underlings.Generators.csproj')">
+        <ProjectReference Include="..\Underlings\Underlings.Generators\Underlings.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Update="DotNet.ReproducibleBuilds" Version="2.0.2" />
+    </ItemGroup>
+</Project>

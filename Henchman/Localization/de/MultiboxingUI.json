@@ -1,0 +1,10 @@
+{
+  "HelpText":       "Einstellungen für Multiboxing-Verbindungen.",
+  "NetworkWarning": "Du bist für deine eigenen Netzwerkeinstellungen verantwortlich. Kein allgemeiner IT-Support wird bereitgestellt.",
+  "UseOnlyLocally": "Nur lokal verwenden:",
+  "LocalOnlyHelp":  "Wenn du Multiboxing nicht über mehrere Maschinen, sondern nur lokal nutzen möchtest, kannst du diese Option aktiviert lassen.\nNetzwerk-Multiboxing kann auf deiner Boss-Maschine (Server) eine Firewall-Anfrage auslösen.",
+  "IPAddress":      "IP-Adresse (Boss) zum Verbinden",
+  "IPAddressHelp":  "Dies muss nur auf deinen Henchmen (Clients) eingestellt werden, wenn du es nicht nur lokal verwendest.",
+  "Port":           "Port:",
+  "PortHelp":       "Wenn du nicht mehrere Boss-Instanzen (Server) in deinem Netzwerk betreibst, kannst du den Standard-Port behalten.\nAndernfalls musst du für jede separate Boss/Henchmen-Gruppe (Server/Client) einen anderen Port festlegen."
+}

@@ -1,0 +1,345 @@
+using System.Linq;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Henchman.Models;
+using Lumina.Excel.Sheets;
+using Underlings.Configuration;
+using Underlings.Keybinds;
+using Underlings.Modules;
+using Underlings.TaskManager;
+using Action = System.Action;
+using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
+
+namespace Henchman.Features.BumpOnALog;
+
+[Module]
+public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
+{
+    internal readonly BumpOnALog          Feature = new();
+    private           int                 classMonsterNoteId;
+    private           MonsterNoteRankInfo classMonsterNoteRankInfo;
+    private           int                 currentClassLogRank;
+    private           int                 currentGcLogRank;
+    private           int                 gcMonsterNoteId;
+    private           MonsterNoteRankInfo gcMonsterNoteRankInfo;
+
+    public BumpOnALogUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
+
+    public override string          Name     => "Bump On A Log";
+    public override Enum            Category => Henchman.Category.Combat;
+    public override FontAwesomeIcon Icon     => FontAwesomeIcon.List;
+
+
+    public override Action Help => () =>
+                                   {
+                                       ImGui.Text(T("HelpText"));
+                                       DrawRequirements(Requirements);
+                                   };
+
+    public override List<(string pluginName, bool mandatory)> Requirements =>
+    [
+            (IPCNames.vnavmesh, true),
+            (IPCNames.Lifestream, true),
+            (IPCNames.AutoDuty, false),
+            (IPCNames.Questionable, false),
+            (IPCNames.BossMod, false),
+            (IPCNames.Wrath, false),
+            (IPCNames.RotationSolverReborn, false)
+    ];
+
+    public override bool LoginNeeded => true;
+
+    public sealed override required Configuration Configuration { get; init; }
+
+    [Keybind("Bump On A Log - Start Rank Log")]
+    private void StartRankLog()
+    {
+        if (IsTaskRunning(Name)) return;
+        TryStartTask(new TaskRecord(Feature.StartClassRank, "Bump On A Log - Rank Log", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+    }
+
+    [Keybind("Bump On A Log - Start GC Log")]
+    private void StartGcLog()
+    {
+        if (Feature.server != null || IsTaskRunning(Name)) return;
+        TryStartTask(new TaskRecord(token => Feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+    }
+
+    public override void Draw()
+    {
+        using var tabs = ImRaii.TabBar("Tabs");
+        if (tabs)
+        {
+            using (var tab = ImRaii.TabItem(T("TabClass")))
+            {
+                if (tab)
+                    DrawJobHuntLog();
+            }
+
+            using (var tab = ImRaii.TabItem(T("TabGrandCompany")))
+            {
+                if (tab)
+                    DrawGcHuntLog();
+            }
+
+
+            using (var tab = ImRaii.TabItem(T("TabSettings")))
+            {
+                if (tab)
+                    DrawSettings();
+            }
+        }
+    }
+
+    private unsafe void DrawJobHuntLog()
+    {
+        var classJobRow = Svc.Data.Excel.GetSheet<ClassJob>()
+                             .GetRow(PlayerState.Instance()->CurrentClassJobId);
+
+        classMonsterNoteId = classJobRow.MonsterNote.RowId.ToInt();
+
+        if (classMonsterNoteId is -1 or 127)
+        {
+            TextCentered(ImGuiColors.DalamudRed, T("NoHuntLogForClass"));
+            return;
+        }
+
+        classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
+        currentClassLogRank      = classMonsterNoteRankInfo.Rank;
+
+        Layout.DrawInfoBox(() =>
+                           {
+                               if (StartButton()) StartRankLog();
+                           },
+                           () =>
+                           {
+                               ImGui.Text(classJobRow.NameEnglish.ExtractText());
+                               ImGui.SameLine();
+
+                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentDifficultyFmt"), currentClassLogRank + 1));
+                           });
+
+        ImGui.Spacing();
+
+        DrawHuntLog(classMonsterNoteRankInfo, ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks, false);
+    }
+
+    private unsafe void DrawGcHuntLog()
+    {
+        gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
+                                  .GetRow(PlayerState.Instance()->GrandCompany)
+                                  .MonsterNote.RowId;
+
+        if (gcMonsterNoteId == 127)
+        {
+            TextCentered(ImGuiColors.DalamudRed, T("NotInGrandCompany"));
+            return;
+        }
+
+        var gcRow = Svc.Data.Excel.GetSheet<GrandCompany>()
+                       .GetRow(PlayerState.Instance()->GrandCompany);
+
+        gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
+        currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
+
+        Layout.DrawInfoBox(() =>
+                           {
+                               if (Feature.server == null && StartButton()) StartGcLog();
+                               /*else if (Feature.server != null && StartButton())
+                               {
+                                   if (!Feature.server!.StartRequested)
+                                       Feature.server.StartRequested = true;
+
+                               }*/
+                           }, () =>
+                              {
+                                  ImGui.Text(gcRow.Name.ExtractText());
+                                  ImGui.SameLine();
+
+                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentRankFmt"), GetGrandCompanyRank(), GetGCRankTitle(), currentGcLogRank));
+                              }, () =>
+                                 {
+                                     /*if (AdditionalButton("Connect") && !IsTaskRunning(Name))
+                                     {
+                                         TryStartTask(new TaskRecord(token => Feature.Client(token), "Bump On A Log - Client",
+                                                                    onDone: CleanupCombatAutomation,
+                                                                    onAbort: CleanupCombatAutomation));
+                                     }
+                                     if (AdditionalButton("Host") && !IsTaskRunning(Name))
+                                     {
+                                         TryStartTask(new TaskRecord(token => Feature.Server(token), "Bump On A Log - Server",
+                                                                    onDone: CleanupCombatAutomation,
+                                                                    onAbort: CleanupCombatAutomation));
+                                     }*/
+                                 });
+
+        ImGui.Spacing();
+
+        if (currentGcLogRank > 2)
+        {
+            TextCentered(ImGuiColors.HealerGreen, T("FinishedAllGCRanks"));
+            return;
+        }
+
+        if ((currentGcLogRank == 1 && GetGrandCompanyRank() < 5) || (currentGcLogRank == 2 && GetGrandCompanyRank() < 9))
+        {
+            TextCentered(ImGuiColors.DalamudRed, T("GCRankNotUnlocked"));
+            return;
+        }
+
+        DrawHuntLog(gcMonsterNoteRankInfo, GcHuntRanks[PlayerState.Instance()->GrandCompany].HuntMarks, true);
+    }
+
+    private void DrawHuntLog(MonsterNoteRankInfo rankInfo, HuntMark?[,] huntMarks, bool gcLog)
+    {
+        if (rankInfo.Rank > huntMarks.GetLength(0) - 1)
+        {
+            TextCentered(ImGuiColors.HealerGreen, T("FinishedAllRanks"));
+            return;
+        }
+
+        var huntMarksArray = Enumerable.Range(0, huntMarks.GetLength(1))
+                                       .Select(col => huntMarks[rankInfo.Rank, col])
+                                       .Where(mark => mark != null)
+                                       .Select(mark => ResolveBestLevelVariant(mark!, Svc.PlayerState.Level, preferOverworldNonFate: !gcLog))
+                                       .ToArray();
+
+        DrawHuntTable(huntMarksArray, gcLog);
+    }
+
+    private void DrawHuntTable(HuntMark[] marks, bool gcLog)
+    {
+        var table = new Table<HuntMark>(
+                                        "##HuntTable",
+                                        new List<TableColumn<HuntMark>>
+                                        {
+                                                new(T("ColName"), h => ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
+                                                new("Level", h => h.Level?.ToString() ?? "-", 70, Alignment: ColumnAlignment.Center),
+                                                new(T("ColKills"), h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
+                                                new(T("ColFinished"), Width: 100, Alignment: ColumnAlignment.Center, DrawCustom: (h, _) => DrawCompletionAction(h, gcLog))
+                                        },
+                                        () => marks,
+                                        h => h.IsCurrentTarget
+                                       );
+
+        table.Draw();
+    }
+
+    private void DrawCompletionAction(HuntMark mark, bool gcLog)
+    {
+        var finished = mark.GetOpenMonsterNoteKills == 0;
+        if (finished)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, Theme.SuccessGreen))
+            {
+                using var font = ImRaii.PushFont(UiBuilder.IconFont);
+                ImGui.Text(FontAwesomeIcon.Check.ToIconString());
+            }
+
+            return;
+        }
+
+        using (ImRaii.PushColor(ImGuiCol.Text, Theme.ErrorRed))
+        {
+            using (ImRaii.PushFont(UiBuilder.IconFont))
+                ImGui.Text(FontAwesomeIcon.Times.ToIconString());
+
+            if (ImGui.IsItemClicked() && !IsTaskRunning(Name)) TryStartTask(new TaskRecord(token => Feature.ProcessSingleMark(mark, gcLog, token), Name, onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+        }
+
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Click to hunt");
+    }
+
+    private void DrawSettings()
+    {
+        var configChanged = false;
+
+        DrawCentered("##BumpOnALogSpacer", () => { });
+        ImGui.Text(T("StopAfterJobRank"));
+        ImGui.SameLine(250          * GlobalFontScale);
+        ImGui.SetNextItemWidth(120f * GlobalFontScale);
+        configChanged |= ImGui.Combo("##jobRank", ref Configuration.StopAfterJobRank, Enumerable.Range(1, 5)
+                                                                                                .Select(x => x.ToString())
+                                                                                                .ToArray(), 5);
+
+        ImGui.Text(T("StopAfterGCRank"));
+        ImGui.SameLine(250          * GlobalFontScale);
+        ImGui.SetNextItemWidth(120f * GlobalFontScale);
+        configChanged |= ImGui.Combo("##gcRank", ref Configuration.StopAfterGCRank, Enumerable.Range(1, 9)
+                                                                                              .Select(x => x.ToString())
+                                                                                              .ToArray(), 9);
+
+        ImGui.Text(T("OrderByTerritory"));
+        ImGui.SameLine(250 * GlobalFontScale);
+        configChanged |= ImGui.Checkbox("##orderByTerritory", ref Configuration.OrderByTerritory);
+
+        ImGui.Text(T("SkipDutyMarks"));
+        ImGui.SameLine(250 * GlobalFontScale);
+        configChanged |= ImGui.Checkbox("##skipDutyMarks", ref Configuration.SkipDutyMarks);
+
+        ImGui.Text(T("SoloUnsyncDuty"));
+        ImGui.SameLine(250 * GlobalFontScale);
+        configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
+
+        ImGui.Text(T("RankUpGC"));
+        ImGui.SameLine(250 * GlobalFontScale);
+        configChanged |= ImGui.Checkbox("##autoGCRankUp", ref Configuration.AutoGCRankUp);
+
+
+        if (configChanged)
+        {
+            PluginConfig.Save();
+            SaveConfig(Configuration);
+        }
+    }
+
+    public unsafe string GetGCRankTitle()
+    {
+        var playerState = PlayerState.Instance();
+        var playerSex   = playerState->Sex;
+        var playerGC    = playerState->GrandCompany;
+        switch (playerGC)
+        {
+            case 1:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankLimsaMaleText>()
+                              .GetRow(playerState->GCRanks[0])
+                              .Singular.ExtractText();
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankLimsaFemaleText>()
+                          .GetRow(playerState->GCRanks[0])
+                          .Singular.ExtractText();
+            case 2:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankGridaniaMaleText>()
+                              .GetRow(playerState->GCRanks[1])
+                              .Singular.ExtractText();
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankGridaniaFemaleText>()
+                          .GetRow(playerState->GCRanks[1])
+                          .Singular.ExtractText();
+            case 3:
+                if (playerSex == 0)
+                {
+                    return Svc.Data.GetExcelSheet<GCRankUldahMaleText>()
+                              .GetRow(playerState->GCRanks[2])
+                              .Singular.ExtractText();
+                }
+
+                return Svc.Data.GetExcelSheet<GCRankUldahFemaleText>()
+                          .GetRow(playerState->GCRanks[2])
+                          .Singular.ExtractText();
+            default:
+                return "None";
+        }
+    }
+}

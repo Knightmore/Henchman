@@ -1,0 +1,21 @@
+{
+    "HelpText": "AutoRetainer Mode:\n- Enable all your characters that you want to cycle through for ocean fishing.\n- On A Boat will always log into the character with the lowest fisher level.\n- If you don't have enough characters with retainers running to end in PostProcess,\n  setup your AutoRetainer to wait on Titlescreen.\n\nSingle Character Mode:\n- Just enter your character name, pick its world and On A Boat will level only with that character.\n\nIf you don't have completed the ocean fishing quest already, it will be done for you. (Requires Questionable)\nTo take less travelling time, it will attune to the Arcanists' Guild aetheryte to use the athernet next time.",
+    "TabMain": "Main",
+    "TabSettings": "Settings",
+    "RegistrationOpenFmt": "Registration open for {0:D2}:{1:D2} minutes",
+    "NextVoyageFmt": "Next Voyage in {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "Use with AutoRetainer Multimode:",
+    "StopAt100": "Stop if selected chars are lvl 100:",
+    "SelectAll": "Select All",
+    "DeselectAll": "Deselect All",
+    "SelectAllShown": "Select All Shown",
+    "DeselectAllShown": "Deselect All Shown",
+    "CharacterName": "Character Name:",
+    "World": "World:",
+    "UseOnlyVersatileLure": "Use only Versatile Lure",
+    "UseARItemSell": "Use AR ItemSell after Voyage",
+    "UseARItemSellHelp": "If you do not enable the option below, this will only work if you return to a destination with a retainer bell/vendor NPC nearby.",
+    "UseARDiscard": "Use AR Discard after Voyage",
+    "UseARLocalSell": "Sell to the vendor at the docks",
+    "UseARLocalSellHelp": "This will sell to the local vendor at the docks. High risk to stack with other botters, so be careful!"
+}

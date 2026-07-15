@@ -1,0 +1,745 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Conditions;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using Henchman.Data;
+using Henchman.Helpers;
+using Henchman.Models;
+using Lumina.Excel.Sheets;
+using Underlings.GameHelpers;
+using Underlings.TaskManager;
+using Task = System.Threading.Tasks.Task;
+using Module = Underlings.Modules.Module;
+
+namespace Henchman.Features.RetainerVocate;
+
+public class RetainerVocate : Module
+{
+    private const  int            RetainerListEntryOffset = 3;
+    private const  int            RetainerListEntryStride = 10;
+    private static Configuration? Configuration => GetFeatureConfig<RetainerVocateUI, Configuration>();
+
+    private static uint GilShopItemId(uint itemId) => Svc.Data.GetSubrowExcelSheet<GilShopItem>()
+                                                         .Flatten()
+                                                         .FirstOrDefault(x => x.Item.RowId ==
+                                                                              itemId)
+                                                         .RowId;
+
+    private static GilShop GilShop(uint itemId) => Svc.Data.GetExcelSheet<GilShop>()
+                                                      .GetRow(GilShopItemId(itemId));
+
+    private static TopicSelect VendorShop(uint itemId) => Svc.Data.GetExcelSheet<TopicSelect>()
+                                                             .FirstOrDefault(topicSelect => topicSelect.Shop.Any(shop => shop.RowId == GilShopItemId(itemId)));
+
+    private static Item MainHand(uint retainerClass) => Svc.Data.GetExcelSheet<Item>()
+                                                           .FirstOrDefault(item => item.ClassJobCategory.Value.Name.ExtractText()
+                                                                                       .Contains(Svc.Data.GetExcelSheet<ClassJob>()
+                                                                                                    .FirstOrDefault(classJob => classJob.RowId == retainerClass)
+                                                                                                    .Abbreviation.ExtractText()) &&
+                                                                                   item.Name.ExtractText()
+                                                                                       .Contains("Weathered") &&
+                                                                                   new[] { "Arm", "Grimoire", "Primary Tool" }.Any(category => item.ItemUICategory.Value
+                                                                                                                                                   .Name.ExtractText()
+                                                                                                                                                   .Contains(category)));
+
+    private static NpcData VendorData(uint retainerClass) => IsCombat(retainerClass)
+                                                                     ? NpcDatabase.BeginnerDoWDoMVendor[Configuration!.RetainerCity]
+                                                                     : NpcDatabase.BeginnerDoLVendor[Configuration!.RetainerCity];
+
+    /*
+     * Main Tasks
+     */
+
+    internal async Task RunFullCreation(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0, uint combatClass = 0, bool firstExploration = false)
+    {
+        await GoToRetainerVocate(token);
+        await CreateRetainers(token, (int)retainerAmount);
+        if (!QuestManager.IsQuestComplete(66968) && !QuestManager.IsQuestComplete(66969) && !QuestManager.IsQuestComplete(66970))
+        {
+            if (!SubscriptionManager.IsLoaded(IPCNames.Questionable))
+            {
+                Chat.Warning("'Questionable' not available. Skipping Venture Quest and equipping Retainers.");
+                return;
+            }
+
+            await StartVentureQuest(token, combatClass);
+        }
+
+        await BuyAndEquipRetainerGear(token, retainerAmount, retainerClassId, firstExploration);
+    }
+
+    internal async Task GoToRetainerVocate(CancellationToken token = default)
+    {
+        if (token.IsCancellationRequested) return;
+        using var scope              = new TaskDescriptionScope("Go to Retainer Vocate");
+        var       retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
+        byte      maxRetainerEntitlement;
+        unsafe
+        {
+            maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
+        }
+
+        if (Player.TerritoryId != retainerVocateData.TerritoryId)
+
+        {
+            await TeleportTo(retainerVocateData.AetheryteTerritoryId, retainerVocateData.TerritoryId, retainerVocateData.AetheryteId, token);
+
+            if (retainerVocateData.ZoneTransitionPosition != null)
+                await MoveToNextZone(retainerVocateData.ZoneTransitionPosition.Value, retainerVocateData.TerritoryId, token);
+        }
+
+        if (Player.DistanceTo(retainerVocateData.InteractablePosition) > 5f) await MoveToStationaryObject(retainerVocateData.InteractablePosition, retainerVocateData.BaseId, token: token);
+
+        if (maxRetainerEntitlement == 0)
+        {
+            await CheckForRetainerEntitlement(retainerVocateData.BaseId, token);
+
+            await WaitUntilAsync(() => !Player.IsBusy, "Wait for not busy", token);
+        }
+    }
+
+    internal async Task<bool> CreateRetainers(CancellationToken token = default, int createRetainerAmount = -1)
+    {
+        if (token.IsCancellationRequested) return false;
+        int openRetainerAmount;
+        unsafe
+        {
+            openRetainerAmount = RetainerManager.Instance()->MaxRetainerEntitlement - RetainerManager.Instance()->GetRetainerCount();
+        }
+
+        if (openRetainerAmount == 0)
+            return false;
+
+        if (createRetainerAmount != -1)
+        {
+            if (createRetainerAmount > openRetainerAmount)
+                createRetainerAmount = openRetainerAmount;
+        }
+        else
+        {
+            if (!Configuration!.UseMaxRetainerAmount)
+            {
+                createRetainerAmount = openRetainerAmount >= createRetainerAmount
+                                               ? createRetainerAmount
+                                               : openRetainerAmount;
+            }
+            else
+                createRetainerAmount = openRetainerAmount;
+        }
+
+        using var scope = new TaskDescriptionScope($"Create {createRetainerAmount} Retainer");
+
+        for (var i = 0; i < createRetainerAmount; i++)
+            await CreateSingleRetainer(i, token);
+
+        return true;
+    }
+
+    internal async Task StartVentureQuest(CancellationToken token = default, uint combatClass = 0)
+    {
+        using var scope = new TaskDescriptionScope("Do Venture Quest");
+        if (combatClass == 0)
+            combatClass = Configuration!.QstClassJob;
+
+        var classJob = Svc.Data.GetExcelSheet<ClassJob>()
+                          .GetRow(combatClass);
+
+        if (Player.ClassJob.RowId != classJob.RowId)
+        {
+            var changedGearSet = ChangeToHighestGearsetForClassJobId(classJob.RowId);
+            ErrorThrowIf(changedGearSet == null, $"No gearset assigned for the chosen class {classJob.Name.ExtractText()}");
+        }
+
+        await Task.Delay(4 * GeneralDelayMs, token);
+
+        byte startTown;
+        unsafe
+        {
+            startTown = PlayerState.Instance()->StartTown;
+        }
+
+        switch (startTown)
+        {
+            case 1:
+            {
+                await Questionable.CompleteQuest(66969, token);
+                break;
+            }
+            case 2:
+            {
+                await Questionable.CompleteQuest(66968, token);
+                break;
+            }
+            case 3:
+            {
+                await Questionable.CompleteQuest(66970, token);
+                break;
+            }
+            default:
+                Console.WriteLine("Unknown start town, no quest assigned.");
+                break;
+        }
+    }
+
+    internal async Task BuyAndEquipRetainerGear(CancellationToken token = default, uint retainerAmount = 0, uint retainerClassId = 0, bool firstExploration = false)
+    {
+        using var scope = new TaskDescriptionScope("Buy and Equip Gear");
+        byte      maxRetainerEntitlement;
+        bool      anyRetainerNoJob;
+        int       retainerAmountNoJob;
+        unsafe
+        {
+            maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
+            anyRetainerNoJob = RetainerManager.Instance()->Retainers.ToArray()
+                                                                    .Any(x => x is { ClassJob: 0, Available: true });
+            retainerAmountNoJob = RetainerManager.Instance()->Retainers.ToArray()
+                                                                       .Count(x => x is { ClassJob: 0, Available: true });
+        }
+
+        if (retainerAmount > retainerAmountNoJob)
+            retainerAmount = (uint)retainerAmountNoJob;
+
+        if (maxRetainerEntitlement > 0 && anyRetainerNoJob)
+        {
+            if (retainerClassId == 0)
+                retainerClassId = Configuration!.RetainerClass;
+            await GoToVendor(retainerClassId, token);
+            await PurchaseStarterGear(retainerAmount, retainerClassId, token);
+            await AssignRetainerClassEquipMain(retainerAmount, retainerClassId, firstExploration, token);
+        }
+    }
+
+
+    private async Task GoToVendor(uint retainerClassId, CancellationToken token = default)
+    {
+        using var scope      = new TaskDescriptionScope("Go to Vendor");
+        var       vendorData = VendorData(retainerClassId);
+        await TeleportTo(vendorData.AetheryteTerritoryId, vendorData.TerritoryId, vendorData.AetheryteId, token);
+
+        if (vendorData.ZoneTransitionPosition != null && Player.TerritoryId != vendorData.TerritoryId)
+            await MoveToNextZone(vendorData.ZoneTransitionPosition.Value, vendorData.TerritoryId, token);
+
+        await MoveToStationaryObject(vendorData.InteractablePosition, vendorData.BaseId, token: token);
+    }
+
+    private async Task PurchaseStarterGear(uint retainerAmount, uint retainerClassId, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        using var scope      = new TaskDescriptionScope("Purchase Starter Gear");
+        var       vendorData = VendorData(retainerClassId);
+
+        await WaitUntilAsync(() => TargetNearestByBaseId(vendorData.BaseId, token), $"Target {vendorData.Name}", token);
+        await WaitUntilAsync(() => EventUtils.OpenEventHandler(vendorData.BaseId, VendorShop(MainHand(retainerClassId)
+                                                                                                    .RowId)
+                                                                      .RowId), "Open Shop", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(GilShop(MainHand(retainerClassId)
+                                                                         .RowId)
+                                                         .Name.ExtractText()), $"Try open \"{GilShop(MainHand(retainerClassId).RowId).Name.ExtractText()}\"", token);
+        await WaitUntilAsync(() => ShopUtils.IsShopOpen(GilShop(MainHand(retainerClassId)
+                                                                       .RowId)
+                                                               .RowId), "Wait for Shop Open", token);
+
+        byte maxRetainerEntitlement;
+        unsafe
+        {
+            maxRetainerEntitlement = RetainerManager.Instance()->MaxRetainerEntitlement;
+        }
+
+        if (maxRetainerEntitlement > 0)
+        {
+            for (var i = 0;
+                 i <=
+                 retainerAmount -
+                 1;
+                 i++)
+            {
+                await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(GilShop(MainHand(retainerClassId)
+                                                                                    .RowId)
+                                                                            .RowId, MainHand(retainerClassId)
+                                                                            .RowId, 1), $"Buy Item {MainHand(retainerClassId).Name.ExtractText()}", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(GilShop(MainHand(retainerClassId)
+                                                                                              .RowId)
+                                                                                      .RowId), "Waiting for transaction", token);
+            }
+        }
+
+        await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
+
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringCancel), "SelectString Cancel", token);
+    }
+
+    internal async Task AssignRetainerClassEquipMain(uint retainerAmount = 0, uint retainerClassId = 0, bool firstExploration = false, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        using var scope = new TaskDescriptionScope("Assign Retainer Class");
+        await MoveAndInteractWithClosestSummoningBell(token);
+
+        uint retainerCount;
+        unsafe
+        {
+            retainerCount = RetainerManager.Instance()->GetRetainerCount();
+        }
+
+        if (retainerAmount > retainerCount)
+            retainerAmount = retainerCount;
+
+        string classEntry;
+
+        if (retainerClassId != 0)
+        {
+            ErrorThrowIf(retainerClassId is not (>= 1 and <= 7 or >= 16 and <= 18 or 26), "No valid retainer class id passed!");
+            classEntry = Svc.Data.GetExcelSheet<ClassJob>()
+                            .GetRow(retainerClassId)
+                            .Name.ExtractText();
+        }
+        else
+        {
+            classEntry = Svc.Data.GetExcelSheet<ClassJob>()
+                            .GetRow(Configuration!.RetainerClass)
+                            .Name.ExtractText();
+        }
+
+        TaskLog.Debug(retainerAmount.ToString());
+        var index = -1;
+        unsafe
+        {
+            for (var i = 0; i < retainerCount; i++)
+            {
+                if (RetainerManager.Instance()->Retainers[i].ClassJob == 0)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1) return;
+        }
+
+        for (var i = index; i < index + retainerAmount; i++)
+        {
+            var    pos = i;
+            byte   classJob;
+            string nameString;
+            unsafe
+            {
+                classJob   = RetainerManager.Instance()->Retainers[pos].ClassJob;
+                nameString = RetainerManager.Instance()->Retainers[pos].NameString;
+            }
+
+            if (classJob != 0) continue;
+            await WaitUntilAsync(() => SelectRetainerInList(pos, token), $"Select Retainer {nameString}", token);
+            await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringAssignRetainerClass), "SelectString AssignClass", token);
+            await WaitUntilAsync(() => TrySelectSpecificEntry(classEntry), "SelectString Class", token);
+            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoClassConfirmAsk), "SelectYesNo Confirm class", token);
+            await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringNoMainEquipped), "SelectString Retainer Gear", token);
+            await WaitUntilAsync(() => EquipRetainer(MainHand(retainerClassId), token),
+                                 $"Equip {MainHand(retainerClassId).Name.ExtractText()} to Retainer {nameString}", token);
+            await WaitUntilAsync(() => CloseRetainerCharacter(token), "CloseRetainerWindow", token);
+            if ((Configuration!.SendOnFirstExploration || firstExploration) && InventoryHelper.GetInventoryItemCount(21072) > 2)
+            {
+                unsafe
+                {
+                    classJob = RetainerManager.Instance()->Retainers[pos].ClassJob;
+                }
+
+                await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringAssignVenture), "SelectString Assign Venture", token);
+                await WaitUntilAsync(() => TrySelectSpecificEntry([Lang.SelectStringVentureCategoryFieldExploration, Lang.SelectStringVentureCategoryHighlandExploration, Lang.SelectStringVentureCategoryWatersideExploration, Lang.SelectStringVentureCategoryWoodlandExploration]), "SelectString Retainer Gear", token);
+                await WaitUntilAsync(() => TrySelectFirstExplorationVenture(classJob), "SelectString Exploration Task", token);
+                await WaitUntilAsync(() => TryClickRetainerTaskAskAssign(), "Assign Venture", token);
+            }
+
+            await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringQuitWithDot), "SelectString Quit", token);
+        }
+
+        await WaitUntilAsync(() => CloseRetainerList(token), "Close RetainerList", token);
+
+#if PRIVATE
+        var offlineData = AutoRetainer.GetOfflineCharacterData.Invoke(Player.CID);
+        var retainers   = offlineData.RetainerData;
+        offlineData.Enabled = true;
+        AutoRetainer.WriteOfflineCharacterData(offlineData);
+        AutoRetainer.GetSelectedRetainers.Invoke([])[Player.CID]
+                    .UnionWith(retainers.Select(x => x.Name));
+#endif
+    }
+
+    /*
+     * Sub Tasks
+     */
+
+    private async Task MoveAndInteractWithClosestSummoningBell(CancellationToken token = default)
+    {
+        await WaitUntilAsync(() => PathfindAndMoveToBell(token), "Pathfind to Bell", token);
+        UseSprint();
+        await WaitUntilAsync(() => IsPlayerInObjectRange3D(GetNearestSummoningBell()!, 2f), "Check for distance", token);
+        Vnavmesh.StopCompletely();
+        await WaitUntilAsync(InteractWithSummoningBell, "Interact with Summoning Bell", token);
+    }
+
+    private async Task CheckForRetainerEntitlement(uint baseId, CancellationToken token = default)
+    {
+        await WaitUntilAsync(() => TargetNearestByBaseId(baseId, token), "Target Retainer Vocate", token);
+        await Task.Delay(GeneralDelayMs * 2, token)
+                  .ConfigureAwait(true);
+        unsafe
+        {
+            TargetSystem.Instance()->InteractWithObject(TargetSystem.Instance()->Target, false);
+        }
+
+        byte maxRetainerEntitlement = 0;
+        byte retainerCount          = 0;
+
+        await WaitUntilAsync(async () =>
+                             {
+                                 unsafe
+                                 {
+                                     var manager = RetainerManager.Instance();
+                                     maxRetainerEntitlement = manager->MaxRetainerEntitlement;
+                                     retainerCount          = manager->GetRetainerCount();
+                                 }
+
+                                 return (maxRetainerEntitlement > 0 && maxRetainerEntitlement == retainerCount) || await TrySelectSpecificEntry(Lang.SelectStringHireARetainer);
+                             }, "Wait for Retainer data or select 'Hire A Retainer' string", token);
+
+        await Task.Delay(GeneralDelayMs * 4, token);
+
+        unsafe
+        {
+            var manager = RetainerManager.Instance();
+            maxRetainerEntitlement = manager->MaxRetainerEntitlement;
+            retainerCount          = manager->GetRetainerCount();
+        }
+
+        if (maxRetainerEntitlement != retainerCount)
+            await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
+    }
+
+    private async Task CreateSingleRetainer(int index = 0, CancellationToken token = default)
+    {
+        var retainerVocateData = NpcDatabase.RetainerVocates[Configuration!.RetainerCity];
+
+        await WaitUntilAsync(() => TargetNearestByBaseId(retainerVocateData.BaseId, token), "Target Retainer Vocate", token);
+        await Task.Delay(GeneralDelayMs * 2, token)
+                  .ConfigureAwait(true);
+        unsafe
+        {
+            TargetSystem.Instance()->InteractWithObject(TargetSystem.Instance()->Target, false);
+        }
+
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringHireARetainer), "SelectString HireARetainer", token);
+        await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireARetainer), "SelectYesNo HireARetainer", token);
+
+        await SetupRetainer(presetslot: Configuration.RetainerCharacters[index].PresetId.DenseIndex, name: Configuration!.UseMaxRetainerAmount
+                                                                                                                   ? ""
+                                                                                                                   : Configuration!.RetainerCharacters[index].Name, characterIndex: index, token: token);
+    }
+
+    internal async Task SetupRetainer(bool newRetainer = true, byte presetslot = 255, string name = "", int characterIndex = -1, CancellationToken token = default)
+    {
+        Log.Information($"NAME: {name}");
+        uint validPresets;
+        unsafe
+        {
+            validPresets = Framework.Instance()->CharamakeAvatarSaveData->Release.GetValidSlotCount();
+        }
+
+        if (validPresets > 0)
+        {
+            if (presetslot != 255)
+            {
+                await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
+                await WaitUntilAsync(() => AddonHelpers.SelectPreset(presetslot), "Select Preset", token);
+            }
+            else
+            {
+                await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoUseSavedAppearance), "SelectYesNo UseSavedAppearance", token);
+                await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount
+                                                                               ? (int)Configuration!.RetainerRace                            + (int)Configuration!.RetainerGender
+                                                                               : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
+                await WaitUntilAsync(() => SelectClan(Configuration!.RetainerCharacters[characterIndex].Clan, token), "Select Clan", token);
+                await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
+            }
+        }
+        else
+        {
+            await WaitUntilAsync(() => SelectRetainerRaceAndGender(Configuration!.UseMaxRetainerAmount
+                                                                           ? (int)Configuration!.RetainerRace                            + (int)Configuration!.RetainerGender
+                                                                           : (int)Configuration!.RetainerCharacters[characterIndex].Race + (int)Configuration!.RetainerCharacters[characterIndex].Gender, token), "Select Retainer Race and Gender", token);
+            await WaitUntilAsync(() => SelectClan(Configuration!.RetainerCharacters[characterIndex].Clan, token), "Select Clan", token);
+            await WaitUntilAsync(() => RandomizeRetainerLook(token), "Randomize Retainer Look", token);
+        }
+
+        await WaitUntilAsync(() => FinishRetainer(token), "Finish Retainer", token);
+        await WaitUntilAsync(() => ProcessYesNo(false, Lang.SelectYesNoSaveAppearance), "SelectYesNo SaveAppearance", token);
+        await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoFinalizeRetainer), "SelectYesNo FinalizeRetainer", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringRetainerPersonality(Configuration!.UseMaxRetainerAmount
+                                                                                                       ? Configuration!.RetainerPersonality
+                                                                                                       : Configuration!.RetainerCharacters[characterIndex].Personality)), "SelectString RetainerPersonality", token);
+        if (newRetainer) await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoHireThisRetainer), "SelectYesNo HireThisRetainer", token);
+        else await WaitUntilAsync(() => ProcessYesNo(true, Lang.SelectYesNoSatisfiedWithPersonality), "SelectYesNo SatisfiedWithPersonality", token);
+
+        if (string.IsNullOrEmpty(name))
+        {
+            do
+            {
+                await WaitUntilAsync(() => InputRetainerName(token: token), "InputString RetainerName", token);
+                await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectStringHireTheServicesRetainer), "SelectYesNo HireTheServices", token);
+                await Task.Delay(GeneralDelayMs * 12, token);
+            }
+            while (Svc.Condition[ConditionFlag.OccupiedInQuestEvent]);
+        }
+        else
+        {
+            await WaitUntilAsync(() => InputRetainerName(name, token), "InputString RetainerName", token);
+            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectStringHireTheServicesRetainer), "SelectYesNo HireTheServices", token);
+        }
+    }
+
+    private async Task<bool> SelectRetainerRaceAndGender(int raceGender, CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeRaceGender", out var charaMakeRaceGenderAddon) && IsAddonReady(charaMakeRaceGenderAddon) && charaMakeRaceGenderAddon->IsVisible)
+            {
+                if (TryGetAddonByName<AtkUnitBase>("_CharaMakeProgress", out var charaMakeProgessAddon) && IsAddonReady(charaMakeProgessAddon) && charaMakeProgessAddon->IsVisible)
+                {
+                    TaskLog.Debug($"RaceGender {raceGender}");
+                    var evt  = new AtkEvent { Node = null, Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                    var data = new AtkEventData();
+                    charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, raceGender, &evt, &data);
+                    evt  = new AtkEvent { Node = null, Listener = &charaMakeRaceGenderAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                    data = new AtkEventData();
+                    charaMakeRaceGenderAddon->ReceiveEvent(AtkEventType.ButtonClick, 28, &evt, &data);
+                    return true;
+                }
+            }
+        }
+
+        TaskLog.Debug("RaceGender waiting");
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> SelectClan(int tribe, CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeTribe", out var charaMakeTribe) && IsAddonReady(charaMakeTribe) && charaMakeTribe->IsVisible && charaMakeTribe->IsFullyLoaded())
+            {
+                var selectEvt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var selectData = new AtkEventData();
+                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, tribe, &selectEvt, &selectData);
+                var confirmEvt  = new AtkEvent { Node = null, Listener = &charaMakeTribe->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var confirmData = new AtkEventData();
+                charaMakeTribe->ReceiveEvent(AtkEventType.ButtonClick, 3, &confirmEvt, &confirmData);
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> RandomizeRetainerLook(CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
+            {
+                var evt  = new AtkEvent { Node = null, Listener = &charaMakeFeatureAddon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget, Param = 3 };
+                var data = new AtkEventData();
+                charaMakeFeatureAddon->ReceiveEvent(AtkEventType.ButtonClick, 4, &evt, &data);
+                TaskLog.Debug("Randomize Retainer Look");
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> FinishRetainer(CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("_CharaMakeFeature", out var charaMakeFeatureAddon))
+            {
+                charaMakeFeatureAddon->FireCallback(true, 100);
+                TaskLog.Debug("Finish Retainer");
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> InputRetainerName(string name = "", CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("InputString", out var inputString) && IsAddonReady(inputString))
+            {
+                inputString->FireCallback(true, 0, string.IsNullOrEmpty(name)
+                                                           ? Configuration!.RetainerGender == RetainerDetails.RetainerGender.Male
+                                                                     ? NameGenerator.GenerateMasculineName
+                                                                     : NameGenerator.GenerateFeminineName
+                                                           : name, "");
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> CloseRetainerCharacter(CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("RetainerCharacter", out var retainerCharacterAddon) && IsAddonReady(retainerCharacterAddon))
+            {
+                retainerCharacterAddon->FireCallback(true, -1);
+                TaskLog.Debug("Close Retainer Character window");
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> PathfindAndMoveToBell(CancellationToken token = default)
+    {
+        var bell = GetNearestSummoningBell();
+        ErrorThrowIf(bell == null, "Summoning Bell not found");
+        if (bell != null)
+        {
+            Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(bell.Position, false);
+            return true;
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> SelectRetainerInList(int pos, CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon))
+            {
+                TaskLog.Debug(pos.ToString());
+
+                var isActive = retainerListAddon->AtkValues[RetainerListEntryOffset + (pos * RetainerListEntryStride) + 8].Byte != 0;
+                if (isActive)
+                    retainerListAddon->FireCallback(true, 2, (uint)pos, new AtkValue(), new AtkValue());
+
+                return isActive;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> CloseRetainerList(CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon))
+            {
+                retainerListAddon->FireCallback(true, -1);
+                return true;
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private async Task<bool> EquipRetainer(Item mainHand, CancellationToken token = default)
+    {
+        unsafe
+        {
+            if (InventoryManager.Instance()->GetInventoryContainer(InventoryType.RetainerEquippedItems)->GetInventorySlot(0)->ItemId == mainHand.RowId)
+                return true;
+
+            var itemCount = InventoryManager.Instance()->GetInventoryItemCount(mainHand.RowId, checkArmory: true);
+
+            ErrorThrowIf(itemCount == 0, "No gear for Retainer in inventory found.");
+        }
+
+        var inventoryTypes = new List<InventoryType>
+                             {
+                                     InventoryType.ArmoryMainHand,
+                                     InventoryType.Inventory1,
+                                     InventoryType.Inventory2,
+                                     InventoryType.Inventory3,
+                                     InventoryType.Inventory4
+                             };
+
+        foreach (var inventoryType in inventoryTypes)
+        {
+            int itemCountInContainer;
+            unsafe
+            {
+                itemCountInContainer = InventoryManager.Instance()->GetItemCountInContainer(mainHand.RowId, inventoryType);
+            }
+
+            if (itemCountInContainer > 0)
+            {
+                int invSize;
+                unsafe
+                {
+                    invSize = InventoryManager.Instance()->GetInventoryContainer(inventoryType)->Size;
+                }
+
+                for (var i = 0; i < invSize; ++i)
+                {
+                    uint   itemId;
+                    ushort invSlot;
+                    unsafe
+                    {
+                        itemId  = InventoryManager.Instance()->GetInventoryContainer(inventoryType)->GetInventorySlot(i)->ItemId;
+                        invSlot = (ushort)InventoryManager.Instance()->GetInventoryContainer(inventoryType)->GetInventorySlot(i)->Slot;
+                    }
+
+                    if (itemId == mainHand.RowId)
+                    {
+                        unsafe
+                        {
+                            InventoryManager.Instance()->MoveItemSlot(inventoryType, invSlot, InventoryType.RetainerEquippedItems, 0,
+                                                                      true);
+                        }
+
+                        await Task.Delay(GeneralDelayMs * 4, token);
+                        return false;
+                    }
+                }
+            }
+        }
+
+        await Task.Delay(GeneralDelayMs * 2, token);
+        return false;
+    }
+
+    private unsafe bool InteractWithSummoningBell()
+    {
+        TargetSystem.Instance()->InteractWithObject(GetNearestSummoningBell()
+                                                           .Struct(), false);
+        return TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon);
+    }
+
+    private unsafe bool InteractWithVocate()
+    {
+        TargetSystem.Instance()->InteractWithObject(GetNearestSummoningBell()
+                                                           .Struct(), false);
+        return TryGetAddonByName<AtkUnitBase>("RetainerList", out var retainerListAddon) && IsAddonReady(retainerListAddon);
+    }
+}

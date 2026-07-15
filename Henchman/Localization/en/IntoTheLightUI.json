@@ -1,0 +1,14 @@
+{
+  "HelpText":      "Configure your wanted character data, go to Titlemenu and hit Start.",
+  "Start":         "Start",
+  "NoLoginSkip":   "No login skip",
+  "NoLoginSkipHelp": "Let each new character login. Useful for character registration in AutoRetainer.",
+  "ColFirstName":  "First Name",
+  "ColLastName":   "Last Name",
+  "ColDataCenter": "Data Center",
+  "ColWorld":      "World",
+  "ColClassJob":   "ClassJob",
+  "ColPreset":     "Preset",
+  "Random":        "Random",
+  "None":          "None"
+}

@@ -1,0 +1,22 @@
+{
+  "HelpText":              "Click the \"Start\" button for your wanted Hunt Log.\nBumpOnALog will complete all current mob entries for your rank.\n\nIf your character has enough GrandCompany seals and the appropriate level,\n'Bump On A Log' will progress through your GrankCompany ranks up until 2nd Lieutenant.\n\nChange your settings if you want it to stop earlier.\n\nIf you want to use multiboxing (high level carry) for GC logs,\nplease check and adjust your general Multiboxing settings.",
+  "TabClass":              "Class",
+  "TabGrandCompany":       "Grand Company",
+  "TabSettings":           "Settings",
+  "NoHuntLogForClass":     "There is no hunt log for your class!",
+  "NotInGrandCompany":     "You are not in any GrandCompany!",
+  "FinishedAllGCRanks":    "You finished all hunt log ranks for your grand company!",
+  "GCRankNotUnlocked":     "The required Grand Company rank has not yet been unlocked!",
+  "FinishedAllRanks":      "You finished all hunt log ranks!",
+  "CurrentDifficultyFmt":  "- Current Difficulty: {0}",
+  "CurrentRankFmt":        "- Current Rank: {0} {1} - Difficulty: {2}",
+  "ColName":               "Name",
+  "ColKills":              "Kills",
+  "ColFinished":           "Finished",
+  "StopAfterJobRank":      "Stop after Job Log Rank",
+  "StopAfterGCRank":       "Stop after GC Rank",
+  "OrderByTerritory":      "Order Mobs by Territory",
+  "SkipDutyMarks":         "Skip Duty Marks",
+  "SoloUnsyncDuty":        "Solo Unsync Duty",
+  "RankUpGC":              "Rank Up GC"
+}

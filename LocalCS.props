@@ -1,0 +1,7 @@
+<Project>
+
+    <PropertyGroup>
+        <LocalCSOverride>true</LocalCSOverride>
+    </PropertyGroup>
+
+</Project>

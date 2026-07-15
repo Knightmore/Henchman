@@ -1,0 +1,639 @@
+#if PRIVATE
+using Henchman.Features.Private;
+#endif
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.DutyState;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using Henchman.Data;
+using Lumina.Excel.Sheets;
+using Underlings.GameHelpers;
+using Underlings.TaskManager;
+using Module = Underlings.Modules.Module;
+
+namespace Henchman.Features.OnABoat;
+
+internal class OnABoat : Module
+{
+    public enum Bait
+    {
+        Ragworm = 29714,
+        Krill,
+        PlumpWorm,
+        VersatileLure
+    }
+
+    public enum TimeOfDay
+    {
+        Daytime = 1,
+        Sunset,
+        Nighttime
+    }
+
+    private static readonly Random Rng = new();
+
+    private readonly Cached<List<OfflineCharacterData>> charactersCache = new(
+                                                                              () => AutoRetainer.GetRegisteredCIDs.Invoke([])
+                                                                                                .Select(cid => AutoRetainer.GetOfflineCharacterData.Invoke(cid))
+                                                                                                .OrderBy(x => x.ClassJobLevelArray[17])
+                                                                                                .Where(x => x.ClassJobLevelArray[17] >= 1)
+                                                                                                .ToList(),
+                                                                              TimeSpan.FromMilliseconds(500));
+
+    private readonly Vector2 dryskthotaA = new(-409, 75.3f);
+    private readonly Vector2 dryskthotaB = new(-407.5f, 72f);
+    internal         bool    AskARforAccess;
+
+    // TODO: Add BaitData for new route
+    public Dictionary<uint, BaitData> BaitMap = new()
+                                                {
+                                                        { 237, new BaitData(Bait.Krill, Bait.Ragworm, Bait.PlumpWorm, Bait.Krill) },
+                                                        { 239, new BaitData(Bait.Krill, Bait.Krill, Bait.Ragworm, Bait.PlumpWorm) },
+                                                        { 241, new BaitData(Bait.PlumpWorm, Bait.PlumpWorm, Bait.Ragworm, Bait.Krill) },
+                                                        { 243, new BaitData(Bait.Ragworm, Bait.PlumpWorm, Bait.Ragworm, Bait.Krill) },
+                                                        { 246, new BaitData(Bait.Ragworm, Bait.Krill, Bait.PlumpWorm, Bait.Krill) },
+                                                        { 248, new BaitData(Bait.Krill, Bait.Ragworm, Bait.PlumpWorm, Bait.Krill) },
+                                                        { 250, new BaitData(Bait.PlumpWorm, Bait.Krill, Bait.Krill, Bait.Krill) },
+                                                        { 286, new BaitData(Bait.PlumpWorm, Bait.Krill, Bait.Krill, Bait.Krill) },
+                                                        { 288, new BaitData(Bait.Ragworm, Bait.Krill, Bait.Ragworm, Bait.PlumpWorm) },
+                                                        { 290, new BaitData(Bait.Krill, Bait.Ragworm, Bait.PlumpWorm, Bait.Krill) },
+                                                        { 292, new BaitData(Bait.Krill, Bait.Ragworm, Bait.Krill, Bait.Krill) }
+                                                };
+
+    internal uint BaseIdDryskthota     = 1005421;
+    internal uint BaseIdMerchantMender = 1005422;
+    internal bool CachedMultiMode;
+
+    internal bool dutyStarted;
+    internal bool EventsSubscribed;
+
+    internal string HighGPPresetNormal       = "AH4_H4sIAAAAAAAACu1Zy1LjOBT9FUrrqMryQ37s0hmgqUkDRWBYdM1Ctq8TFY6VlmVohsq/d8m2ktgk0JnpxTDjnaN77/G5Dx2pnBc0rpSYsFKVk2yOohd0WrA4h3Geo0jJCkZIG6e8gK0xNaaLFEV2EI7QteRCcvWMIjJCF+Xp9ySvUki3y9p/3WB9ESJZaLD6wdZPNQ4NRuh8dbuQUC5EnqKIWFYH+W3ofdRCvwNgvcttsqiWB/J0ieX2CPrU6+AbEJHnkCiTmEsssutmv89CyJSz3ABQ4nYA3NbtjJeL02cod17k9Rh6XqeE1LSAPcBswTP1ifGap14ozcJMseShRJHXVpEGr3F3UcMW9ZopDkUCO3xoP452W2qbUMn/gglTzWCYt/aj7d5AOG307YLlnD2UZ+xRSA3QWTDp6PZ3DDeQiEeQKCK6Svvmhwaveu71OHQ5jmPxCCjKWF6aZn7i83O2rIsyLuY5yNIQ0oOQosjxLfdVpp13BGs939+VZJ09uuGqm3YrZk9sdVGoiisuinPGC1NKTEZoWkn4AmXJ5oAihEbosuaELkUBqEV4XgGKdE334E1Fqf423rWEEvYzRBgdsDdvrO1bPrMVJEqyfFJJCYX6RVn2UP9RrhqvyWcv16ZhuwnvdUOfoUgWS1ac4JOrBFhxYtx65dpLvS5aM2wzJVZaJ3gxnylY1fq8TbwdyLH8Nb3dhXvV2NkTX8aMqzOe5+Ub9puqKK8qg3BX8G8VaGYoiz3fJomL0yALsEuojcPYSrHvBxCDzUInsNF6hKa8VFeZZlmi6OtLzVeXYKMsoU/8w1n+AbJkiudwoj004KWQS5Z/FuJBQxiVuwf2sN2L2qp7/sRWpsntUlMql/haJk3wTElRzI8Jt5yd8CnMoUiZfD4a4TdRxfmGe+uxkZNat3qBNg03cVvax0Z2GO/xupV8dSQv37OdTeSRzDqxb3Br/fQuGmcK5IRV84Wa8qU+Nklj6G+v+r5UyeZc1g9G7x2j917YP1XevJqsR2ijimYKb+BbxSWkM8VUpc9qfXvqj+bPTeBPD9pHmqe7EprmNgVrNsQwZG8OmVHgiagKtRs3QldF/nxXwv0CiktR39vHj4znOntT3B2lpqFjB3ZGMHGCGLt+6OA4BhczkjjE9xJKiYfWo/3S7B6W5hs2fxJyOWjyoMkfVpOH0Rzk/YPLu+fSjDp2iolPHOxSLe+hk2Ea2FkQZlbqEXJQ3r3D8v675Hn+vrj/j281w4QPt+RBRv8jMsockqTgxJhCTLDLIMVxQDOcEJ+RGFLKgsO3ZHpYRq/zark6uR8uyoMs/zt2zCDLgyx/HFlOQx8cYmeYEKDYpRbFMbM9HPgejRPfzmhG0PpP8525/Tfz62ahUWr9u/m63aryqw/6jTB3P3G7LLTdkKbY9d0Yux4JcRgwC1PLoeBkTmo5gNY/AHUODJ60HQAA";
+    internal string HighGPPresetNormalName   = "anon_Henchman - Ocean Normal";
+    internal string HighGPPresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZQP5/Ot0wUGLQOIwvKA5sGxb1oLN+k4DjMs6n8fOR+laRtgVkjLQ95a+95zj69PjlP3GU0qXUxpqctpNkfJMzrOaSphIiVKtKrAQmbyXORgJs/meaHgW1GwBUoyKkuw2gTehZ9xlLhRbKErJQol9BNKHAudlce/mKw48JdhE79u8FvEZ1R/cF949GGDyEKnq5uFgnJRSI4Sx7Z7hV6vdAgyDnsA9ptUp4tqWbeCo4Q4NnmDUZdVSAlMbyU622Hu22ULxQWVA50JHNLDI23WiSgXx09QbtX1dwj7fo9w0O0IfYDZQmT6CxU1bTNQdgMzTdlDiRJ/szH7uNuocYt6RbWAnMEWn2A3L+g30O1SlfgXplQ3Oumq7ma7O+332uybBZWCPpQn9LFQBqA30C3Hs/rj18CKR1AocUyTDityTwFej0DXzy9ifkqX9cIn+VyCKruiZu9NWmiTvdX0oKK10fAvrWjvUd0QMhtzU8x+0tVZriuhRZGfUpF37cKOhc4rBd+gLOkcUIKQhS5qTuiiyAG1CE8rQInp2wG886LU/xnvSkEJhxkijAbmm4r1/Auf2QqYVlROK6Ug1x+0yh3UD1vrQbbo3jybIp9fU8G/H10UakklspBJaJIP0ml2+hX0tl9fIWeLJc2P8NElA5q/FGjUN9PFqiUw07CqPfqlE61CJ+pjGrANt7fTs59imVKhT4SU5Svz11VeXlYdwm0uflRgmKHYy7LAjxzsRyHHxE9THHFgOI6AUaA+te0MrS10Lkp9mRmWJUrun2u+pgUbO4lDJxxe5T+gSqqFhCMTYQCbln4tigcD0VnbHdD6uxk3i6g7QpzQWGAXM9OqyOcHomxvK+oc5pBzqp6GAv8qqlTuFtyYQns89xLdIN7kDZDYDhlm0ETdlnCjxEpC04RGnM3IH7EKfdesp8kc4tULeoVZG2cUPsk0qCmt5gt9LpbmHHOaiV3p1+84lWoOSvNh60RozNmP90/6Vw7ttYU2FtYp5Bp+VEIBn2mqK3N4mteZUTajbHqy6fxuWlS53s6z0GUun25LuFtAflHUb8qTRyqkaVHXxS1fjFzGg8xzceb5GSYRBDglDsMRiYOUezH34gitrcNGSIaN8JrOfxZqOTrgKOXRAUfZfGIHtLlDeMgYDm3OMXEyglPfs3Hm2pHrZ4R6fNgB/WEH/FsJKUf/G4U8+t8om0/sf24cZiHxXAxxTDEJfR/H4EfYDyB1U4+EbkAG/S8Y9r8rWS1XR3fvegls9q9ttPk93/F8n8zfmz6s/z9CGB+Mz/xgjH46yub/9FOfhoylJMUp8WJMwAkwZU6EM8q450cBhYCj9ffuqrH9U+t+M9BYrPneXHC2drp3V9td6fbvOR0WsIxlgCn3OSYpRJj6jGMIMwpZ5AWU2Gj9G/K19XzRGwAA";
+    internal string HighGPPresetSpectralName = "anon_Henchman - Ocean Spectral";
+    internal bool   InPostProcess;
+
+    internal Vector3 PositionDryskthota = new(-408, 4, 75);
+
+    internal Vector3 PositionMerchantMender = new(-399, 3, 80);
+
+    internal string PresetNormal       = "AH4_H4sIAAAAAAAACu1Z227jNhD9FYPPJkDdL29eN8kG9SZBnDQPi6KgyJFNRCa9FJVsGvjfC0qWbTl2LkVQwF2/KRzO4ZnhzCHNPKNBZdSQlqYc5hOUPqMTSbMCBkWBUqMr6CNrHAkJayNvTeccpW6c9NGVFkoL84RSp4/Oy5OfrKg48PWwnb9osL4pxaYWrP5w7VeNE8Z9dDa/mWoop6rgKHUI6SC/Dr2LWhJ1AMib3IbTarYnTt8h/hsEWxBVFMBMG5jvEGdzmvs2C6W5oEULEDp+B8BfTjsV5fTkCcqNhYIthkHQYRi2W0DvYTwVuflCRc3TDpTtwNhQdl+iNFhmMYxf4m6iJkvUK2oESAYbfMJtv7CbMbd11eJvGFLTFEa76ra3u5Vvb+l9M6WFoPflKX1Q2gJ0Btpw7PZ3DNfA1ANolDo2S7vqJ4xf7Pk2hy7HQaYeAKU5Lcp2M7+IyRmd1UkZyEkBumwJ2ULgKPUi4r+ItLNGvLD1/dNo2unRFVe7aTdq/Ejn59JUwgglz6iQbSqx00ejSsM3KEs6AZQi1EcXNSd0oSSgJcLTHFBqc7oDb6RK86/xrjSUsJshwmiPvVmxtq/5jOfAjKbFsNIapPmkKLdQPy3WnWwRlUr+9RUkm86o7OHeJQMqeyN4gELISa912srLTo51dpqqGhs1t4Ig5GRsYF4L8TrCZeUN9OcEtgn3YgfHj2KWUWFORVGUr9ivK1leVi3CrRQ/KrDMUORlThTTHGfcAeznAcFxlHGc+CzPYsI4yUO06KORKM1lblmWKP3+XPO1KVhJSBI50f4o/wBdUiMK6NkZFvBC6Rktvip1byFaObsDer9uOmstwdhA2vZbDjWp8p3I6mHrPDZayclH3Im34T6CCUhO9dOHEX5TVVasuC9nrHSjFqgtRzdMVn5r2h/17DDeMetGi/kHeUWB6608P8is4/sKt+U820WD3IAe0moyNSMxs+ej0xi226u+GFW6OYDtRyvsXivsQfLyyvDK6b/oo5X8tVV4DT8qoYGPDTWVPZTtNemwS/O2hKZWmhibicd6Pch6bcV8qCppNv366FIWT7cl3E1BXqj6rj94oKKw0bebviH6DvF4FHqAacZ87JMkxknAMxznNPEpdRNGHLTo71Z5f7/KX9PJo9Kzt+X9fa3y7o44avIvrsn/QT0dhfT/U2SfJqSEOhBFXoz9BHzsczfEceLHmCRJlpOQcxJHe4U02C+kv2tRFEcZPVb4UUaPRfYL3EeDmAVZnOE4JhT7PMtwwpwIOwAOcyjLc3e/jIb7ZfSqqGbz3t27rqSH9bPu2DEH2TFHWT4W2eHIchYkJCAhxYEXhNgPOMOUM4b9xHGDkPKYkBwt/mwfh5f/a/y+GmiU2v7dPEkvVXn/c3yj0N0Has/LQ4fFEQ4hYdgnnofjkHEcMRo5bhwmlBO0+Af0uqCDWx0AAA==";
+    internal string PresetNormalName   = "anon_Henchman - Ocean Leveling Normal";
+    internal string PresetSpectral     = "AH4_H4sIAAAAAAAACu1ZXU/jOBT9K8jPsZTvr7dOFxi0HUAUlofRauU4N61FandsB4ZB/e8rN0nbtA0MK6Sd1eatte89Pvfm5Nh1X9Co0mJMlFbjYobSF3TKSVbCqCxRqmUFFjKTE8bBTF7MuJDwRQg6R2lBSgVWk5C34Rc5St04sdC1ZEIy/YxSx0IX6vQ7Lasc8u2wiV/V+A3iC1p/cLc8urBhbKHz5e1cgpqLMkepY9udhV5f6RhkEnUA7DepjufVYt2KHKW+Y/tvMGqzRFkC1TuJzm6Y+/ayQuaMlD2dCR2/g+c3WWdMzU+fQe2sG+wRDoIO4bB9IuQBpnNW6E+ErWmbAdUOTDWhDwqlwebBHOLuoiYN6jXRDDiFnjJ8x3b3YNy9frotkmQ/YEx0LZuWRPhGttdk385JyciDOiOPQhqAzkBbnWd1x2+AikeQKHVMz44L9EAQXodA295PbHZOFus+jPisBKnaRY0UTFpk+wfVdKDilZH0dy1J583dEDLP6VZMn8jyguuKaSb4OWG8bRd2LDSpJHwBpcgMUIqQhS7XnNCl4IAahOcloNT07QjeRCj9j/GuJSg4zhBh1DNfr7ie3/KZLoFqScpxJSVw/UFV7qF+WK1H2R5UfHR1RLjgf30GTucLwk/wyRUFwk8m8Agl47OTSyEXpERWo6mpFkvjAIzPphqWayPe1tfobiQ/pqxduMNqntgiI0yfsbJUr8zfVFxdVS3CHWffKjDMUJ5nDrghxeAHMfZDSnCcU4IpEOpmnuNkuYdWFpowpa8Kw1Kh9OvLmq9pwcYkksiJ+qv8A6QimpVwYiIMYN3Sz0I8GIjWv+6BPGxfOTOrQJtC2pevGapb5TuRMcA2eaql4LP3pNveTvoEZsBzIp/fjXCn4DdRNfFtYD3SFtSkbayk2eM7aG5oqqnztrX0hnT4Hom6lWz5TgJR4HqbzD4KnaBXSDRx5mUZFRrkmFSzuZ6whdn3nHpi/y1an4kqWW+s5sPOllG7d5Acngxe2eRXFtp4XCu2G/hWMQn5VBNdmc3WHH/2FfhzQvtpPQ2y+a/JprXOsai43s2z0BUvn+8U3M+BX4r1yXr0SFhpWtQ+xh2Lje3YcyAmOAfXwb4TBziJgwJTN/LCJI5JSBK0so57qt/vqTdk9iTk4m0zHaT8P5fy4ICDbP5NBwygICQPzKkycbGfhSHOIA9xEpIw9jybJnnc64BBvwP+LllZDv43CHnwv0E2v7D/+WGQ0SBLcJCbH9m0oDihQYahoEVSeHZOAtLrf2G//12X1WJ5cj8cAgc1DyY4yOYXN8E4C7PEznAeRC72vdzFJHRsTNw4pHaROXaUoNWf7VVj88/V181A7Yvme33B2Xhg/6Vte9PbvfAMczdyfXCxV1Af+7Zt4ySKE+y4QRzQCJyCemj1Nw8lKWu/GwAA";
+    internal string PresetSpectralName = "anon_Henchman - Ocean Leveling Spectral";
+
+    internal uint RepairId = 720915;
+    internal uint ShopId   = 263015;
+
+    private bool spectralActiveCache;
+
+    private static unsafe float          OceanFishingTimeLeft   => EventFramework.Instance()->GetInstanceContentDirector()->ContentDirector.ContentTimeLeft - OceanFishingTimeOffset;
+    private static unsafe uint           OceanFishingTimeOffset => EventFramework.Instance()->GetInstanceContentOceanFishing()->TimeOffset;
+    private static        Configuration? Configuration          => GetFeatureConfig<OnABoatUI, Configuration>();
+
+    public unsafe IKDRoute CurrentRoute => Svc.Data.GetExcelSheet<IKDRoute>()
+                                              .GetRow(EventFramework.Instance()->GetInstanceContentOceanFishing()->CurrentRoute);
+
+    public unsafe int CurrentZone => (int)EventFramework.Instance()->GetInstanceContentOceanFishing()->CurrentZone;
+
+    public uint CurrentSpot => CurrentRoute.Spot[CurrentZone].Value.SpotMain.RowId;
+
+    public byte CurrentTimeOfDay => Svc.Data.GetExcelSheet<IKDRoute>()
+                                      ?.GetRow(CurrentRoute.RowId)
+                                       .Time[CurrentZone].Value.TimeOfDay ??
+                                    0;
+
+    public BaitData GetBaits => BaitMap[CurrentSpot];
+
+    public Bait GetCurrentBait => IsSpectralActive
+                                          ? GetBaits.SpectralBait[(TimeOfDay)CurrentTimeOfDay]
+                                          : GetBaits.NormalBait;
+
+    public unsafe bool IsSpectralActive => EventFramework.Instance()->GetInstanceContentOceanFishing()->SpectralCurrentActive;
+
+    public unsafe InstanceContentOceanFishing.OceanFishingStatus GetStatus => EventFramework.Instance()->GetInstanceContentOceanFishing()->Status;
+
+    internal       bool IsRegistrationOpen => DateTime.UtcNow.Hour % 2 == 0                          && DateTime.UtcNow.Minute <= 13;
+    private unsafe bool IsInTitleScreen    => TryGetAddonByName<AtkUnitBase>("Title", out var addon) && addon->IsVisible;
+
+    public override void RunTask() => TryStartTask(new TaskRecord(Start, "On A Boat", onDone: () => UnsubscribeEvents(), onAbort: UnsubscribeEvents, onError: OnError));
+
+    internal Vector3 GetFishingPosition()
+    {
+        Vector3 left = new((float)(7 + (Rng.NextDouble() * 0.25)), 6.711f, Rng.Next(2) == 0
+                                                                                   ? (Rng.NextSingle() * 10f) + -14f
+                                                                                   : (Rng.NextSingle() * 7f)  + -2f);
+        Vector3 right = new((float)(-7 - (Rng.NextDouble() * 0.25)), 6.711f, (Rng.NextSingle() * (5.5f - -10)) + -10);
+        return Rng.Next(2) == 0
+                       ? left
+                       : right;
+    }
+
+    internal async Task Start(CancellationToken token = default)
+    {
+        SubscribeEvents();
+        AutoHook.CreateAndSelectAnonymousPreset.Invoke(PresetNormal);
+        AutoHook.CreateAndSelectAnonymousPreset.Invoke(PresetSpectral);
+        AutoHook.CreateAndSelectAnonymousPreset.Invoke(HighGPPresetNormal);
+        AutoHook.CreateAndSelectAnonymousPreset.Invoke(HighGPPresetSpectral);
+
+
+        var state = Player.TerritoryId is 900 or 1163
+                            ? OceanFishingState.FishingVoyage
+                            : OceanFishingState.WaitingForVoyage;
+        if (state == OceanFishingState.FishingVoyage)
+            dutyStarted = true;
+
+        while (!token.IsCancellationRequested)
+        {
+            switch (state)
+            {
+                case OceanFishingState.WaitingForVoyage:
+                    await WaitUntilAsync(() => IsRegistrationOpen, "Waiting for Ocean Fishing time window", token);
+                    state = OceanFishingState.CharacterSelection;
+                    break;
+
+                case OceanFishingState.CharacterSelection:
+                    await SelectCharacter(token);
+                    state = OceanFishingState.Preparation;
+                    break;
+
+                case OceanFishingState.Preparation:
+                    await PrepareForVoyage(token);
+                    state = OceanFishingState.Boarding;
+                    break;
+
+                case OceanFishingState.Boarding:
+                    await BoardVoyage(token);
+                    state = OceanFishingState.FishingVoyage;
+                    break;
+
+                case OceanFishingState.FishingVoyage:
+                    await Fish(token);
+                    state = OceanFishingState.PostVoyage;
+                    break;
+
+                case OceanFishingState.PostVoyage:
+                    await PostVoyageCleanup(token);
+                    state = OceanFishingState.WaitingForVoyage;
+                    break;
+            }
+        }
+    }
+
+    internal async Task SelectCharacter(CancellationToken token = default)
+    {
+        if (Configuration!.OCFishingHandleAR)
+        {
+            if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+            {
+                AskARforAccess = true;
+
+                await WaitUntilAsync(() => InPostProcess || (!AutoRetainer.IsBusy.Invoke() && !Lifestream.IsBusy.Invoke() && IsInTitleScreen), "Waiting for AR PostProccess", token);
+                AskARforAccess  = false;
+                CachedMultiMode = AutoRetainer.GetMultiModeEnabled.Invoke();
+                StopAutoRetainer();
+
+                var lowestFisherCharacter = GetCurrentARCharacterData()
+                                           .Where(x => Configuration!.EnableCharacterForOCFishing.ContainsKey(x.CID) && Configuration!.EnableCharacterForOCFishing[x.CID])
+                                           .OrderBy(x => x.ClassJobLevelArray[17])
+                                           .First();
+
+                if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && Configuration!.OCFishingStop100)
+                {
+                    AutoRetainer.FinishCharacterPostprocessRequest.Invoke();
+                    AutoRetainer.SetMultiModeEnabled.Invoke(true);
+                    UnsubscribeEvents();
+                    InPostProcess = false;
+                    return;
+                }
+
+                await Lifestream.SwitchToChar(lowestFisherCharacter.Name, lowestFisherCharacter.World, Lang.SelectYesNoLogout, token);
+            }
+            else
+                FullError("Auto Retainer not enabled! Use On A Boat - Single Character mode or enabled Auto Retainer for this feature to work!");
+        }
+        else
+            await Lifestream.SwitchToChar(Configuration!.OceanChar, Configuration!.OceanWorld, Lang.SelectYesNoLogout, token);
+    }
+
+    internal async Task PrepareForVoyage(CancellationToken token = default)
+    {
+#if PRIVATE
+        unsafe
+        {
+            UIModule.Instance()->SendChatCommand("/nastatus off");
+        }
+#endif
+
+        await Task.Delay(8 * GeneralDelayMs, token);
+
+        if (Player.ClassJob.RowId != 18)
+            ErrorIf(!ChangeToHighestGearsetForClassJobId(18), "No gearset for jobId 18 found");
+
+        await Task.Delay(4 * GeneralDelayMs, token);
+
+        if (!QuestManager.IsQuestComplete(69379))
+        {
+            if (SubscriptionManager.IsLoaded(IPCNames.Questionable))
+            {
+                await TeleportTo(8, token);
+                await Questionable.CompleteQuest(69379, token);
+            }
+            else
+                ErrorThrow($"{Player.NameWithWorld} has not unlocked ocean fishing!");
+        }
+
+        if (Player.TerritoryId != 129)
+        {
+            await TeleportTo(8, token);
+            bool arcGuildUnlocked;
+            unsafe
+            {
+                arcGuildUnlocked = UIState.Instance()->IsAetheryteUnlocked(43);
+            }
+
+            if (arcGuildUnlocked)
+            {
+                if (Lifestream.AethernetTeleportById.Invoke(43)) await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.BetweenAreas], "Waiting for Aethernet Transition", token);
+            }
+            else
+            {
+                await MoveTo(new Vector3(-335f, 12f, 54f), false, token);
+                await InteractWithByBaseId(43, token);
+                await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
+            }
+        }
+
+        if (Configuration!.UseOnlyVersatile)
+        {
+            var versatileAmount = InventoryHelper.GetInventoryItemCount((int)Bait.VersatileLure);
+            if (versatileAmount <= 3)
+            {
+                await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
+                await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
+                await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.VersatileLure, 4 - versatileAmount), $"Buy Item {Bait.VersatileLure}", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
+                await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
+            }
+        }
+        else
+        {
+            var ragAmount   = InventoryHelper.GetInventoryItemCount((int)Bait.Ragworm);
+            var krillAmount = InventoryHelper.GetInventoryItemCount((int)Bait.Krill);
+            var plumpAmount = InventoryHelper.GetInventoryItemCount((int)Bait.PlumpWorm);
+
+            if (ragAmount < 99 || krillAmount < 99 || plumpAmount < 99)
+            {
+                await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+                await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, ShopId), "Waiting to open shop", token);
+                await WaitUntilAsync(() => ShopUtils.IsShopOpen(ShopId), "Wait for Shop Open", token);
+                if (ragAmount < 99)
+                {
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Ragworm, 99 - ragAmount), $"Buy Item {Bait.Ragworm}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                if (krillAmount < 99)
+                {
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.Krill, 99 - krillAmount), $"Buy Item {Bait.Krill}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                if (plumpAmount < 99)
+                {
+                    await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(ShopId, (uint)Bait.PlumpWorm, 99 - plumpAmount), $"Buy Item {Bait.PlumpWorm}", token);
+                    await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                    await Task.Delay(GeneralDelayMs * 2, token)
+                              .ConfigureAwait(true);
+                }
+
+                await WaitUntilAsync(ShopUtils.CloseShop, "Close Shop", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(ShopId), "Waiting for transaction", token);
+                await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
+            }
+        }
+
+        if (InventoryHelper.GetItemAmountInNeedOfRepair(30) > 0)
+        {
+            await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+            await WaitUntilAsync(() => EventUtils.OpenEventHandler(BaseIdMerchantMender, RepairId), "Waiting to open repair", token);
+            unsafe
+            {
+                RepairManager.Instance()->RepairEquipped(true);
+            }
+
+            await Task.Delay(4 * GeneralDelayMs, token);
+            unsafe
+            {
+                var agentRepair = (AgentRepair*)AgentModule.Instance()->GetAgentByInternalId(AgentId.Repair);
+                agentRepair->UIModuleInterface->GetRaptureAtkModule()->CloseAddon(agentRepair->AddonId);
+            }
+
+            await WaitWhileAsync(() => Player.IsBusy, "Wait for Player not busy", token);
+        }
+    }
+
+    internal async Task BoardVoyage(CancellationToken token = default)
+    {
+        var randomPoint = GetRandomPoint(dryskthotaA, dryskthotaB);
+        await MoveTo(new Vector3(randomPoint.X, 4, randomPoint.Y), false, token);
+
+        await InteractWithByBaseId(BaseIdDryskthota, token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringBoardOCShip), "Waiting for boarding SelectString", token);
+        if (QuestManager.IsQuestComplete(68089)) await SelectRouteIfPromptAppears(token);
+
+        await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoEmbark), "Waiting for SelectYesNo Embark", token);
+        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.WaitingForDutyFinder], "Waiting for accepting duty finder", token);
+        await WaitUntilAsync(() => TryConfirmContentsFinder(), "Waiting for contentsFinder Confirm", token);
+
+        await WaitUntilAsync(() => dutyStarted, "Waiting for duty to start", token);
+        await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for voyage to begin", token);
+        await Task.Delay(2 * GeneralDelayMs, token);
+    }
+
+    private static async Task SelectRouteIfPromptAppears(CancellationToken token)
+    {
+        using var scope     = new TaskDescriptionScope("Checking for route SelectString");
+        var       timeoutAt = DateTime.UtcNow.AddSeconds(5);
+
+        while (DateTime.UtcNow < timeoutAt)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (IsSelectYesNoVisible(Lang.SelectYesNoEmbark))
+                return;
+
+            if (await TrySelectEntryNumber(0))
+                return;
+
+            await Task.Delay(GeneralDelayMs, token);
+        }
+    }
+
+    internal async Task Fish(CancellationToken token = default)
+    {
+        bool canFish;
+        unsafe
+        {
+            canFish = EventFramework.Instance()->EventHandlerModule.FishingEventHandler->CanFish;
+        }
+
+        if (!canFish)
+            await WalkToRailing(token);
+        await Task.Delay(4 * GeneralDelayMs, token);
+
+        AutoHook.SetPluginState.Invoke(true);
+
+        while (dutyStarted)
+        {
+            if (Player.Available && Player.TerritoryId is 900 or 1163)
+            {
+                spectralActiveCache = IsSpectralActive;
+                if (GetStatus == InstanceContentOceanFishing.OceanFishingStatus.NewZone)
+                {
+                    await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for new zone", token);
+                    while (!Svc.Condition[ConditionFlag.Fishing])
+                    {
+                        unsafe
+                        {
+                            ActionManager.Instance()->UseAction(ActionType.Action, 289);
+                        }
+
+                        await Task.Delay(GeneralDelayMs, token);
+                    }
+                }
+
+                if (OceanFishingTimeLeft > 32)
+                {
+                    unsafe
+                    {
+                        if (Player.BattleChara->MaxGatheringPoints < 750)
+                        {
+                            AutoHook.SetPreset.Invoke(IsSpectralActive
+                                                              ? PresetSpectralName
+                                                              : PresetNormalName);
+                        }
+                        else
+                        {
+                            AutoHook.SetPreset.Invoke(IsSpectralActive
+                                                              ? HighGPPresetSpectralName
+                                                              : HighGPPresetNormalName);
+                        }
+                    }
+
+                    if (Configuration!.UseOnlyVersatile)
+                        ChangeBait((int)Bait.VersatileLure);
+                    else
+                        ChangeBait((int)GetCurrentBait);
+
+                    unsafe
+                    {
+                        if (!Svc.Condition[ConditionFlag.Fishing])
+                            ActionManager.Instance()->UseAction(ActionType.Action, 289);
+                    }
+
+                    await WaitUntilAsync(() => !Svc.Condition[ConditionFlag.Fishing] || spectralActiveCache != IsSpectralActive, "Waiting for reel in", token);
+                    if (spectralActiveCache != IsSpectralActive)
+                    {
+                        unsafe
+                        {
+                            ActionManager.Instance()->UseAction(ActionType.Action, 296);
+                        }
+                    }
+                }
+            }
+
+            await Task.Delay(GeneralDelayMs, token);
+        }
+    }
+
+    internal async Task PostVoyageCleanup(CancellationToken token = default)
+    {
+        await Task.Delay(GeneralDelayMs * 4, token);
+
+        await WaitUntilAsync(() => CloseIKDResult(), "Waiting for Ocean Fishing results", token);
+
+        await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Player", token);
+
+        await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
+
+        if (Configuration!.SellAfterVoyage && Configuration!.SellAtLocalVendor && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            await MoveToStationaryObject(PositionMerchantMender, BaseIdMerchantMender, token: token);
+            unsafe
+            {
+                UIModule.Instance()->SendChatCommand("/ays itemsell");
+            }
+
+            await WaitWhileAsync(() => AutoRetainer.IsBusy.Invoke(), "Wait until selling finished", token);
+        }
+
+        await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
+
+        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            if (Configuration!.DiscardAfterVoyage)
+            {
+                unsafe
+                {
+                    UIModule.Instance()->SendChatCommand("/ays discard");
+                }
+
+                await WaitWhileAsync(() => AutoRetainer.IsBusy.Invoke(), "Wait until discard finished", token);
+            }
+
+            if (Configuration!.OCFishingHandleAR)
+            {
+                if (Configuration!.SellAfterVoyage)
+                {
+                    unsafe
+                    {
+                        UIModule.Instance()->SendChatCommand("/ays itemsell");
+                    }
+
+                    await WaitWhileAsync(() => AutoRetainer.IsBusy.Invoke(), "Wait until selling finished", token);
+                }
+
+                if (InPostProcess || CachedMultiMode)
+                    AutoRetainer.SetMultiModeEnabled.Invoke(true);
+
+                InPostProcess = false;
+            }
+        }
+    }
+
+    internal async Task WalkToRailing(CancellationToken token = default)
+    {
+#if PRIVATE
+        var positionalData = ReleaseUtils.GetRandomFishingPositionWithRotation();
+        var position       = positionalData.position;
+        var rotation       = positionalData.rotation;
+#else
+        var position = GetFishingPosition();
+        var rotation = position.X > 0
+                               ? 1.5f
+                               : -1.5F;
+#endif
+        await MoveTo(position, token: token);
+        unsafe
+        {
+            Player.GameObject->SetRotation(rotation);
+        }
+    }
+
+    public void OnCharacterPostProcessStep()
+    {
+        if (AskARforAccess)
+        {
+            AutoRetainer.RequestCharacterPostprocess.Invoke(Svc.PluginInterface.InternalName);
+            TaskLog.Info("Requesting AR post process");
+        }
+        else
+            TaskLog.Verbose("Outside of Voyage window. Skipping post process request.");
+    }
+
+    public void OnCharacterReadyToPostProcess()
+    {
+        StopAutoRetainer();
+        InPostProcess = true;
+    }
+
+    private void StopAutoRetainer()
+    {
+        AutoRetainer.SetMultiModeEnabled.Invoke(false);
+        AutoRetainer.SetSuppressed.Invoke(true);
+        AutoRetainer.AbortAllTasks.Invoke();
+        AutoRetainer.SetSuppressed.Invoke(false);
+        AutoRetainer.FinishCharacterPostprocessRequest.Invoke();
+        Log.Verbose("AutoRetainer MultiMode disabled.");
+    }
+
+    internal void SubscribeEvents()
+    {
+        if (EventsSubscribed) return;
+        Log.Information("Subscribe");
+        AutoRetainer.OnCharacterPostprocessStep    += OnCharacterPostProcessStep;
+        AutoRetainer.OnCharacterReadyToPostProcess += OnCharacterReadyToPostProcess;
+        Svc.DutyState.DutyStarted                  += DutyStarted;
+        Svc.DutyState.DutyCompleted                += DutyCompleted;
+        EventsSubscribed                           =  true;
+    }
+
+    internal void UnsubscribeEvents()
+    {
+        if (!EventsSubscribed) return;
+        Log.Information("Unsubscribe");
+        AutoRetainer.OnCharacterPostprocessStep    -= OnCharacterPostProcessStep;
+        AutoRetainer.OnCharacterReadyToPostProcess -= OnCharacterReadyToPostProcess;
+        Svc.DutyState.DutyStarted                  -= DutyStarted;
+        Svc.DutyState.DutyCompleted                -= DutyCompleted;
+        AutoHook.DeleteAllAnonymousPresets.Invoke();
+        AskARforAccess   = false;
+        dutyStarted      = false;
+        InPostProcess    = false;
+        EventsSubscribed = false;
+    }
+
+    private void DutyStarted(IDutyStateEventArgs   args) => dutyStarted = true;
+    private void DutyCompleted(IDutyStateEventArgs args) => dutyStarted = false;
+
+    internal async Task OnError()
+    {
+        UnsubscribeEvents();
+        if (Player.Available)
+            await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone);
+    }
+
+    internal List<OfflineCharacterData> GetCurrentARCharacterData() => charactersCache.Value;
+
+    internal static async Task<bool> CloseIKDResult()
+    {
+        unsafe
+        {
+            if (TryGetAddonByName<AtkUnitBase>("IKDResult", out var addon) && IsAddonReady(addon))
+            {
+                addon->FireCallback(true, 0);
+                return true;
+            }
+        }
+
+        await Task.Delay(100);
+        return false;
+    }
+
+    private enum OceanFishingState
+    {
+        WaitingForVoyage,
+        CharacterSelection,
+        Preparation,
+        Boarding,
+        FishingVoyage,
+        PostVoyage
+    }
+
+    internal struct BaitData(Bait normal, Bait daytime, Bait sunset, Bait nighttime)
+    {
+        public Bait NormalBait = normal;
+
+        public Dictionary<TimeOfDay, Bait> SpectralBait = new()
+                                                          {
+                                                                  { TimeOfDay.Daytime, daytime },
+                                                                  { TimeOfDay.Sunset, sunset },
+                                                                  { TimeOfDay.Nighttime, nighttime }
+                                                          };
+    }
+}

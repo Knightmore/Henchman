@@ -1,0 +1,22 @@
+{
+  "HelpText":          "Aktiviere die Checkboxen für die gewünschten Aufträge und klicke auf 'Start'.\nOnYourMark sammelt alle aktivierten Jagdaufträge und erledigt alle Markierungen.\n\nAuftragsfarben:",
+  "ColorGrey":         "Grau",
+  "ColorGreyDesc":     "-   Nicht freigeschaltet.",
+  "ColorRed":          "Rot",
+  "ColorRedDesc":      "-   Nicht erhalten.",
+  "ColorYellow":       "Gelb",
+  "ColorYellowDesc":   "-   Erhalten, unvollständig.",
+  "ColorOrange":       "Orange",
+  "ColorOrangeDesc":   "-   Erhalten, unvollständige alte Markierung.",
+  "ColorGreen":        "Grün",
+  "ColorGreenDesc":    "-   Abgeschlossen.",
+  "Enable":            "Aktivieren",
+  "TabSettings":       "Einstellungen",
+  "ColName":           "Name",
+  "ColAmount":         "Anzahl",
+  "ColFinished":       "Fertig",
+  "DiscardOldBills":   "Alte Jagdaufträge verwerfen",
+  "DetourForARanks":   "Umweg für A-Rang-Ziele in der Nähe",
+  "DetourHelp":        "Versucht nur einmal einen Umweg pro Markierung.\nWenn dein Charakter beim Umweg stirbt, setzt er die Suche nach der ursprünglichen Markierung fort.\nAls Sicherheitsmaßnahme funktioniert dies nur bis einschließlich Sturmblut.",
+  "SkipFateMarks":     "Fate-Markierungen überspringen"
+}

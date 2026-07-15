@@ -1,0 +1,14 @@
+{
+  "HelpText":        "Konfiguriere deine gewünschten Charakterdaten, gehe ins Titelmenü und drücke Start.",
+  "Start":           "Start",
+  "NoLoginSkip":     "Login nicht überspringen",
+  "NoLoginSkipHelp": "Lässt jeden neuen Charakter einloggen. Nützlich für die Charakterregistrierung in AutoRetainer.",
+  "ColFirstName":    "Vorname",
+  "ColLastName":     "Nachname",
+  "ColDataCenter":   "Datenzentrum",
+  "ColWorld":        "Welt",
+  "ColClassJob":     "Klasse/Job",
+  "ColPreset":       "Voreinstellung",
+  "Random":          "Zufällig",
+  "None":            "Keins"
+}

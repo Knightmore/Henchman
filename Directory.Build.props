@@ -1,0 +1,32 @@
+<Project>
+
+    <Import Project="$(MSBuildThisFileDirectory)LocalCS.props" />
+
+    <PropertyGroup>
+        <LocalCS Condition="!$(MSBuildProjectName.EndsWith('Generators'))">$(LocalCSOverride)</LocalCS>
+        <LocalCS Condition="$(MSBuildProjectName.EndsWith('Generators'))">false</LocalCS>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(LocalCS)'=='true' AND '$(Configuration)' != 'Release'">
+        <Reference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll" Private="true" />
+        <Reference
+            Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator.Runtime\bin\Debug\net10.0\InteropGenerator.Runtime.dll"
+            Private="true" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LocalCS)'=='true' AND '$(Configuration)'=='Release'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="true" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="true" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LocalCS)'=='true'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator\InteropGenerator.csproj"
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(LocalCS)'=='true'">
+        <DefineConstants>$(DefineConstants);LOCAL_CS</DefineConstants>
+        <Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
+    </PropertyGroup>
+
+</Project>
