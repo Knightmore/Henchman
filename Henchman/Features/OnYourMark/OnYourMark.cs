@@ -266,10 +266,25 @@ public class OnYourMark : Module
             if (offset == 0)
                 continue;
 
+            if (IsBillCompleted(typeRow, offset))
+                continue;
+
             bills.Add((typeRow, offset));
         }
 
         return bills;
+    }
+
+    internal static unsafe bool IsBillCompleted(byte mobHuntOrderType, uint markOffset)
+    {
+        var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()
+                [Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                    .GetRow(mobHuntOrderType)
+                    .OrderStart.Value.RowId +
+                 (markOffset - 1)];
+
+        return mobHuntTargets.All(mark =>
+                                          MobHunt.Instance()->GetKillCount(mobHuntOrderType, (byte)mark.SubrowId) >= mark.NeededKills);
     }
 
     private async Task GoToHuntboard(Location location, string expansion, List<string> billsSelectString, CancellationToken token)

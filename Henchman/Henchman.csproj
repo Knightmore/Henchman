@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>3.0.1.0</Version>
+        <Version>3.0.1.2</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>

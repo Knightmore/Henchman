@@ -491,7 +491,7 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
             {
                 if (!hasObtainedBill && obtainedMarkId != availableMarkId)
                     AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, false);
-                else if (!hasObtainedBill && !IsBillCompleted(mobHuntOrderType, availableMarkOffset)) AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, true);
+                else if (!hasObtainedBill && !OnYourMark.IsBillCompleted(mobHuntOrderType, availableMarkOffset)) AddBillRewards(pendingRewards, mobHuntOrderType, availableMarkOffset, currencyItemId, true);
             }
         }
 
@@ -502,18 +502,6 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
                                      })
                              .Where(projection => projection.Current > 0 || projection.PendingReward > 0)
                              .ToList();
-    }
-
-    private unsafe bool IsBillCompleted(byte mobHuntOrderType, uint markOffset)
-    {
-        var mobHuntTargets = Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()
-                [Svc.Data.GetExcelSheet<MobHuntOrderType>()
-                    .GetRow(mobHuntOrderType)
-                    .OrderStart.Value.RowId +
-                 (markOffset - 1)];
-
-        return mobHuntTargets.All(mark =>
-                                          MobHunt.Instance()->GetKillCount(mobHuntOrderType, (byte)mark.SubrowId) >= mark.NeededKills);
     }
 
     private unsafe void AddBillRewards(Dictionary<uint, uint> pendingRewards, byte mobHuntOrderType, uint markOffset, uint currencyItemId, bool onlyOpenMarks)

@@ -39,13 +39,19 @@ internal static class IPCProvider
      * Tweaks
      */
 
-    [IPCDescription("Toggle Rendering")]
+    [IPCDescription("Toggle rendering")]
     public static void SetRender(bool enabled)
     {
         Rendering.SetRender(enabled);
     }
 
-    [IPCDescription("Force Rendering")]
+    [IPCDescription("Toggle unfocused window rendering")]
+    public static void UnfocusedRender(bool enabled)
+    {
+        Rendering.SetDisableRenderWhenUnfocused(enabled);
+    }
+
+    [IPCDescription("Force rendering")]
     public static void ForceRender(bool enabled)
     {
         if (enabled)
