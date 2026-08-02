@@ -1,0 +1,6 @@
+{
+  "HelpText":       "目前提供的 IPC 列表",
+  "ColReturn":      "回傳值",
+  "ColFunction":    "函式",
+  "ColDescription": "說明"
+}

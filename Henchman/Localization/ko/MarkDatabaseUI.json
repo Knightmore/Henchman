@@ -1,0 +1,12 @@
+{
+  "CurrentTerritory":      "현재 지역:",
+  "CurrentTargetId":       "현재 타겟 ID:",
+  "CurrentTargetName":     "현재 타겟 이름:",
+  "CurrentPosition":       "현재 위치:",
+  "None":                  "없음",
+  "CopyAreaMarker":        "새 지역 마커 복사(현재 위치)",
+  "OverlappingMarkAreas":  "겹치는 마크 지역:",
+  "ColId":                 "ID",
+  "ColName":               "이름",
+  "ColPosition":           "위치"
+}

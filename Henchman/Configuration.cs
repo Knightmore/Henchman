@@ -1,6 +1,15 @@
-using Dalamud.Game;
-
 namespace Henchman;
+
+public enum UiLanguage
+{
+    Japanese  = 0,
+    English   = 1,
+    German    = 2,
+    French    = 3,
+    Korean    = 4,
+    Chinese   = 5,
+    Taiwanese = 6
+}
 
 [Serializable]
 public class Configuration
@@ -20,7 +29,7 @@ public class Configuration
     public bool SoloUnsyncLogDuty = false;
     public bool TrackBRankSpots   = false;
 
-    public ClientLanguage UILanguage         = ClientLanguage.English;
+    public UiLanguage UILanguage             = UiLanguage.English;
     public bool           UseChocoboInFights = false;
     public bool           UseMount           = true;
     public bool           UseMountRoulette   = true;

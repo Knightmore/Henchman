@@ -1,0 +1,13 @@
+{
+  "HelpText":              "구현된 모든 기능에서 사용되는 일반 설정입니다.",
+  "UseMount":              "탈것 사용",
+  "UseMountRoulette":      "탈것 룰렛 사용",
+  "Mount":                 "탈것",
+  "MountDistance":         "거리가 다음보다 클 때 탈것 사용:",
+  "RunDistance":           "거리가 다음보다 클 때 달리기:",
+  "ReturnOnceDone":        "기능 완료 후 귀환:",
+  "AutoRotationPlugin":    "오토 로테이션 플러그인:",
+  "UseChocoboCompanion":   "초코보 컴패니언 사용",
+  "ChocoboCompanionHelp":  "초코보 컴패니언을 소환하거나, 남은 시간이 5분 미만이면 먹이를 줍니다.",
+  "UILanguage":            "UI 언어:"
+}

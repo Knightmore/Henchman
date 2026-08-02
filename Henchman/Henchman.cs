@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Command;
 using Dalamud.Interface;
@@ -105,8 +104,8 @@ public class Henchman : IDalamudPlugin
         Hooks.UnloadHooks();
         Debugging.DisableMaxGC();
 #endif
-        Svc.Framework.Update                     -= SubscriptionManager.Subscribe;
-        Svc.Framework.Update                     -= Tick;
+        Svc.Framework.Update -= SubscriptionManager.Subscribe;
+        Svc.Framework.Update -= Tick;
         KeybindManager.Dispose();
         Svc.PluginInterface.UiBuilder.Draw       -= DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
@@ -140,7 +139,8 @@ public class Henchman : IDalamudPlugin
             ModuleRegistry.Instances.Add(instance);
         }
 
-        KeybindDiscovery.Discover(GetType().Assembly);
+        KeybindDiscovery.Discover(GetType()
+                                         .Assembly);
         KeybindManager.Initialize();
 
         Svc.Commands.AddHandler("/henchman", new CommandInfo(OnCommand)
@@ -205,13 +205,16 @@ public class Henchman : IDalamudPlugin
     [Keybind("Toggle Status Overlay")]
     private static void ToggleStatusOverlay() => P!.StatusWindow.IsOpen = !P!.StatusWindow.IsOpen;
 
-    internal static string MapLanguage(ClientLanguage lang) => lang switch
-                                                               {
-                                                                       ClientLanguage.German   => "de",
-                                                                       ClientLanguage.French   => "fr",
-                                                                       ClientLanguage.Japanese => "jp",
-                                                                       _                       => "en"
-                                                               };
+    internal static string MapLanguage(UiLanguage lang) => lang switch
+                                                           {
+                                                                   UiLanguage.German    => "de",
+                                                                   UiLanguage.French    => "fr",
+                                                                   UiLanguage.Japanese  => "jp",
+                                                                   UiLanguage.Korean    => "ko",
+                                                                   UiLanguage.Chinese   => "zh",
+                                                                   UiLanguage.Taiwanese => "tw",
+                                                                   _                    => "en"
+                                                           };
 
     private static void Tick(object _)
     {

@@ -1,0 +1,22 @@
+{
+  "HelpText":              "Cliquez sur le bouton \"Démarrer\" pour le journal de chasse souhaité.\nBumpOnALog complétera toutes les entrées de monstres actuelles pour votre rang.\n\nSi votre personnage possède suffisamment de sceaux de la Grande Compagnie et le niveau requis,\n'Bump On A Log' fera progresser vos rangs de Grande Compagnie jusqu'au grade de Sous-lieutenant.\n\nModifiez vos paramètres si vous souhaitez qu'il s'arrête plus tôt.",
+  "TabClass":              "Classe",
+  "TabGrandCompany":       "Grande Compagnie",
+  "TabSettings":           "Paramètres",
+  "NoHuntLogForClass":     "Il n'y a pas de journal de chasse pour votre classe !",
+  "NotInGrandCompany":     "Vous n'appartenez à aucune Grande Compagnie !",
+  "FinishedAllGCRanks":    "Vous avez terminé tous les rangs du journal de chasse pour votre Grande Compagnie !",
+  "GCRankNotUnlocked":     "Le rang requis de la Grande Compagnie n'a pas encore été débloqué !",
+  "FinishedAllRanks":      "Vous avez terminé tous les rangs du journal de chasse !",
+  "CurrentDifficultyFmt":  "- Difficulté actuelle : {0}",
+  "CurrentRankFmt":        "- Rang actuel : {0} {1} - Difficulté : {2}",
+  "ColName":               "Nom",
+  "ColKills":              "Éliminations",
+  "ColFinished":           "Terminé",
+  "StopAfterJobRank":      "Arrêter après le rang du journal de classe",
+  "StopAfterGCRank":       "Arrêter après le rang GC",
+  "OrderByTerritory":      "Trier les monstres par territoire",
+  "SkipDutyMarks":         "Ignorer les marques de donjon",
+  "SoloUnsyncDuty":        "Donjon en solo désynchronisé",
+  "RankUpGC":              "Monter en rang GC"
+}

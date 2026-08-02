@@ -1,0 +1,21 @@
+{
+    "HelpText": "AutoRetainerモード：\n- 海釣りのために切り替えたいすべてのキャラクターを有効にしてください。\n- On A Boatは常に釣り人レベルが最も低いキャラクターにログインします。\n- PostProcessで終了するためのリテイナーを実行しているキャラクターが十分でない場合は、\n  AutoRetainerをタイトル画面で待機するように設定してください。\n\n単一キャラクターモード：\n- キャラクター名を入力してワールドを選択するだけで、On A Boatはそのキャラクターのみでレベリングを行います。\n\nまだ海釣りクエストを完了していない場合は、代わりに完了させます。（Questionableが必要）\n移動時間を短縮するため、次回都市内エーテライトを使用するために魔道士ギルドのエーテライトに接続します。",
+    "TabMain": "メイン",
+    "TabSettings": "設定",
+    "RegistrationOpenFmt": "登録開始まであと{0:D2}:{1:D2}分",
+    "NextVoyageFmt": "次の航海まであと{0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "AutoRetainerのマルチモードと併用：",
+    "StopAt100": "選択したキャラクターがレベル100の場合は停止：",
+    "SelectAll": "すべて選択",
+    "DeselectAll": "すべて選択解除",
+    "SelectAllShown": "表示中のすべてを選択",
+    "DeselectAllShown": "表示中のすべての選択を解除",
+    "CharacterName": "キャラクター名：",
+    "World": "ワールド：",
+    "UseOnlyVersatileLure": "万能ルアーのみを使用",
+    "UseARItemSell": "航海後にARアイテム売却を使用",
+    "UseARItemSellHelp": "下のオプションを有効にしない場合、これはリテイナーの鐘/商人NPCが近くにある目的地に戻った場合のみ機能します。",
+    "UseARDiscard": "航海後にAR破棄を使用",
+    "UseARLocalSell": "港の商人に売却",
+    "UseARLocalSellHelp": "港の現地商人に売却します。他のボッターと重複するリスクが高いため、注意してください！"
+}

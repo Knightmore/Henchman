@@ -1,0 +1,12 @@
+{
+  "CurrentTerritory":      "現在のテリトリー：",
+  "CurrentTargetId":       "現在のターゲットID：",
+  "CurrentTargetName":     "現在のターゲット名：",
+  "CurrentPosition":       "現在の位置：",
+  "None":                  "なし",
+  "CopyAreaMarker":        "新しいエリアマーカーをコピー（現在の位置）",
+  "OverlappingMarkAreas":  "重複するマークエリア：",
+  "ColId":                 "ID",
+  "ColName":               "名前",
+  "ColPosition":           "位置"
+}

@@ -1,0 +1,22 @@
+{
+  "HelpText":          "Cochez les cases Activer pour les feuilles de chasse souhaitées et cliquez sur le bouton 'Démarrer'.\nOnYourMark rassemblera toutes les feuilles de chasse activées et terminera toutes les marques.\n\nCouleurs des feuilles :",
+  "ColorGrey":         "Gris",
+  "ColorGreyDesc":     "-   Non débloquée.",
+  "ColorRed":          "Rouge",
+  "ColorRedDesc":      "-   Non obtenue.",
+  "ColorYellow":       "Jaune",
+  "ColorYellowDesc":   "-   Obtenue, non terminée.",
+  "ColorOrange":       "Orange",
+  "ColorOrangeDesc":   "-   Ancienne marque obtenue, non terminée.",
+  "ColorGreen":        "Vert",
+  "ColorGreenDesc":    "-   Terminée.",
+  "Enable":            "Activer",
+  "TabSettings":       "Paramètres",
+  "ColName":           "Nom",
+  "ColAmount":         "Quantité",
+  "ColFinished":       "Terminé",
+  "DiscardOldBills":   "Jeter les anciennes feuilles de chasse",
+  "DetourForARanks":   "Faire un détour si un rang A est proche",
+  "DetourHelp":        "N'essaiera un détour qu'une seule fois par marque.\nSi votre personnage meurt pendant un détour, il reprendra la recherche de la marque d'origine.\nPar mesure de sécurité, cela ne fonctionnera que jusqu'à Stormblood.",
+  "SkipFateMarks":     "Ignorer les marques FATE"
+}

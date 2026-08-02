@@ -1,5 +1,5 @@
 {
-  "HelpText":             "Klicke den \"Start\"-Knopf für das gewünschte Jagdprotokoll.\nBumpOnALog schließt alle aktuellen Monstereinträge für deinen Rang ab.\n\nWenn dein Charakter genug Gesellschaftssiegel und das entsprechende Level hat,\nwird 'Bump On A Log' deine Gesellschaftsränge bis zum Unterleutnant aufsteigen.\n\nÄndere deine Einstellungen, wenn du früher stoppen möchtest.\n\nWenn du Multiboxing (High-Level-Begleitung) für GC-Protokolle nutzen möchtest,\nprüfe und passe deine allgemeinen Multiboxing-Einstellungen an.",
+  "HelpText":             "Klicke den \"Start\"-Knopf für das gewünschte Jagdprotokoll.\nBumpOnALog schließt alle aktuellen Monstereinträge für deinen Rang ab.\n\nWenn dein Charakter genug Gesellschaftssiegel und das entsprechende Level hat,\nwird 'Bump On A Log' deine Gesellschaftsränge bis zum Unterleutnant aufsteigen.\n\nÄndere deine Einstellungen, wenn du früher stoppen möchtest.",
   "TabClass":             "Klasse",
   "TabGrandCompany":      "Staatliche Gesellschaft",
   "TabSettings":          "Einstellungen",

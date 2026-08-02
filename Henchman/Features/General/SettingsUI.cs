@@ -13,12 +13,15 @@ namespace Henchman.Features.General;
 [Module]
 internal class SettingsUI : ModuleUI
 {
-    private static readonly (string Label, ClientLanguage Lang, string Folder)[] Languages =
+    private static readonly (string Label, UiLanguage Lang, string Folder)[] Languages =
     [
-            ("English", ClientLanguage.English, "en"),
-            ("Deutsch", ClientLanguage.German, "de"),
-            ("Français", ClientLanguage.French, "fr"),
-            ("日本語", ClientLanguage.Japanese, "jp")
+            ("English", UiLanguage.English, "en"),
+            ("Deutsch", UiLanguage.German, "de"),
+            ("Français", UiLanguage.French, "fr"),
+            ("日本語", UiLanguage.Japanese, "ja"),
+            ("한국어", UiLanguage.Korean, "ko"),
+            ("简体中文", UiLanguage.Chinese, "zh"),
+            ("繁體中文", UiLanguage.Taiwanese, "tw")
     ];
 
     public override string          Name     => "Settings";
@@ -109,9 +112,9 @@ internal class SettingsUI : ModuleUI
         if (configChanged) PluginConfig.Save();
     }
 
-    private static (string Label, ClientLanguage Lang, string Folder)[] GetAvailableLanguages()
+    private static (string Label, UiLanguage Lang, string Folder)[] GetAvailableLanguages()
     {
-        var result          = new List<(string Label, ClientLanguage Lang, string Folder)>();
+        var result          = new List<(string Label, UiLanguage Lang, string Folder)>();
         var localizationDir = Path.Combine(Svc.PluginInterface.AssemblyLocation.Directory!.FullName, "Localization");
 
         foreach (var language in Languages)

@@ -1,0 +1,12 @@
+{
+  "HelpText":                      "Cette section contient de vrais hacks ! Utilisez à vos propres risques. Ne venez pas pleurer si vous êtes banni.",
+  "Confirmation":                  "Je confirme par la présente que je suis seul responsable de toutes les conséquences et que j'utilise ces ajustements/hacks à mes propres risques !\n\nUTILISEZ-LES TELS QU'ILS SONT, AUCUN SUPPORT NE SERA FOURNI (NI EN MESSAGE PRIVÉ NI SUR LES SERVEURS DISCORD)",
+  "Section.On Your Mark":          "On Your Mark",
+  "Section.Movement":              "Déplacement",
+  "Section.Grand Company":         "Grande Compagnie",
+  "HacksUI_AcceptanceHack":        "Accepter les feuilles de chasse à distance",
+  "HacksUI_AcceptanceHack_Help":   "Ceci évitera toute téléportation et tout déplacement à pied vers chaque tableau de chasse.\nToutes les feuilles de chasse activées seront acceptées depuis n'importe où vous vous trouvez.",
+  "NoFallDamage":                  "Pas de dégâts de chute",
+  "GetGrandCompanyRank":           "Forcer la livraison experte",
+  "GetGrandCompanyRank_Help":      "Force l'affichage de la fenêtre de livraison experte, quel que soit le rang.\nN'a d'effet que si vous n'avez pas débloqué la livraison experte.\n(Restauré depuis la CBT)"
+}

@@ -1,0 +1,22 @@
+{
+  "HelpText": "勾选你想要的狩猎令的启用复选框，然后点击'开始'按钮。\n狩猎令将收集所有启用的狩猎令并完成所有标记。\n\n狩猎令颜色：",
+  "ColorGrey": "灰色",
+  "ColorGreyDesc": "- 未解锁。",
+  "ColorRed": "红色",
+  "ColorRedDesc": "- 未领取。",
+  "ColorYellow": "黄色",
+  "ColorYellowDesc": "- 已领取未完成。",
+  "ColorOrange": "橙色",
+  "ColorOrangeDesc": "- 已领取的旧标记未完成。",
+  "ColorGreen": "绿色",
+  "ColorGreenDesc": "- 已完成。",
+  "Enable": "启用",
+  "TabSettings": "设置",
+  "ColName": "名称",
+  "ColAmount": "数量",
+  "ColFinished": "已完成",
+  "DiscardOldBills": "丢弃旧狩猎令",
+  "DetourForARanks": "如果附近有A级则绕路",
+  "DetourHelp": "每个标记只会尝试一次绕路。\n如果你的角色在绕路时死亡，它会继续寻找原始标记。\n作为安全措施，这仅适用于直到红莲之狂潮的内容。",
+  "SkipFateMarks": "跳过FATE标记"
+}

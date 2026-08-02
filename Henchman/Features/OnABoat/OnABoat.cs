@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.DutyState;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
@@ -36,6 +37,9 @@ internal class OnABoat : Module
         Sunset,
         Nighttime
     }
+
+    private const float MinFishingSpotDistance = 0.6f;
+    private const float NudgeStepDistance      = 1.2f;
 
     private static readonly Random Rng = new();
 
@@ -520,8 +524,8 @@ internal class OnABoat : Module
     {
 #if PRIVATE
         var positionalData = ReleaseUtils.GetRandomFishingPositionWithRotation();
-        var position       = positionalData.position;
-        var rotation       = positionalData.rotation;
+        var position = positionalData.position;
+        var rotation = positionalData.rotation;
 #else
         var position = GetFishingPosition();
         var rotation = position.X > 0
@@ -532,6 +536,53 @@ internal class OnABoat : Module
         unsafe
         {
             Player.GameObject->SetRotation(rotation);
+        }
+#if !PRIVATE
+        await AvoidStacking(rotation, token);
+#endif
+    }
+
+    private async Task AvoidStacking(float rotation, CancellationToken token, int maxAttempts = 3)
+    {
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var blockers = Svc.Objects.OfType<IPlayerCharacter>()
+                              .Where(x => x.EntityId                                    != Player.Object?.GameObjectId)
+                              .Where(x => Vector3.Distance(Player.Position, x.Position) < MinFishingSpotDistance)
+                              .ToList();
+
+            if (blockers.Count == 0) return;
+
+            var centroid                           = blockers.Aggregate(Vector3.Zero, (sum, x) => sum + x.Position) / blockers.Count;
+            var away                               = Player.Position - centroid;
+            if (away.LengthSquared() < 0.01f) away = new Vector3(1, 0, 0);
+
+            var onLeft = Player.Position.X > 0;
+            var step   = Player.Position + (Vector3.Normalize(away) * NudgeStepDistance);
+            step.X = onLeft
+                             ? Math.Clamp(step.X, 7f, 7.25f)
+                             : Math.Clamp(step.X, -7.25f, -7f);
+            step.Z = onLeft
+                             ? Math.Clamp(step.Z, -14f, 5f)
+                             : Math.Clamp(step.Z, -10f, 5.5f);
+
+            try
+            {
+                await MoveTo(step, token: token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            unsafe
+            {
+                Player.GameObject->SetRotation(rotation);
+            }
         }
     }
 

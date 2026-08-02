@@ -1,0 +1,22 @@
+{
+  "HelpText":              "希望する討伐録の「開始」ボタンをクリックしてください。\nBumpOnALogは、あなたのランクの現在のモンスター項目をすべて完了します。\n\nキャラクターが十分なグランドカンパニーの徽章と適切なレベルを持っている場合、\n『Bump On A Log』は少尉になるまでグランドカンパニーの階級を進めます。\n\nもっと早く止めたい場合は設定を変更してください。",
+  "TabClass":              "クラス",
+  "TabGrandCompany":       "グランドカンパニー",
+  "TabSettings":           "設定",
+  "NoHuntLogForClass":     "あなたのクラスには討伐録がありません！",
+  "NotInGrandCompany":     "あなたはどのグランドカンパニーにも所属していません！",
+  "FinishedAllGCRanks":    "あなたのグランドカンパニーの討伐録の階級をすべて完了しました！",
+  "GCRankNotUnlocked":     "必要なグランドカンパニーの階級はまだ解放されていません！",
+  "FinishedAllRanks":      "討伐録の階級をすべて完了しました！",
+  "CurrentDifficultyFmt":  "- 現在の難易度：{0}",
+  "CurrentRankFmt":        "- 現在の階級：{0} {1} - 難易度：{2}",
+  "ColName":               "名前",
+  "ColKills":              "討伐数",
+  "ColFinished":           "完了",
+  "StopAfterJobRank":      "ジョブ討伐録の階級後に停止",
+  "StopAfterGCRank":       "GC階級後に停止",
+  "OrderByTerritory":      "テリトリー順にモンスターを並べる",
+  "SkipDutyMarks":         "デューティマークをスキップ",
+  "SoloUnsyncDuty":        "ソロ非同期デューティ",
+  "RankUpGC":              "GCの階級を上げる"
+}

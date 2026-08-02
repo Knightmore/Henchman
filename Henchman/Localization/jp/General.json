@@ -1,0 +1,41 @@
+{
+  "_name.BringYourXGameUI": "A/Bランク討伐",
+  "_name.BumpOnALogUI":     "討伐録の記録",
+  "_name.ChocobokeepUI":    "チョコボキープ",
+  "_name.IPCUI":            "IPC",
+  "_name.IntoTheLightUI":   "光の中へ",
+  "_name.MarkDatabaseUI":   "マークデータベース",
+  "_name.MultiboxingUI":    "マルチボクシング",
+  "_name.OnABoatUI":        "船の上で",
+  "_name.RequirementsUI":   "必要条件",
+  "_name.SettingsUI":       "設定",
+  "_name.GeneralTweaksUI":  "全般",
+  "_name.OnYourMarkUI":     "位置について",
+  "_name.TestyTraderUI":    "気難しい商人",
+  "_name.RetainerVocateUI": "リテイナー案内人",
+  "_name.HacksUI":          "ハック",
+
+  "Category.Combat":      "戦闘",
+  "Category.Exploration": "探索",
+  "Category.Economy":     "経済",
+  "Category.Tweaks":      "調整",
+  "Category.System":      "システム",
+
+  "Splash.Attention":          "注意",
+  "Splash.AttentionBody":      "内蔵機能はvnavmeshおよびゲーム内で解放済みの進行度の範囲内で動作します！\n「インテリジェント」な経路探索は（まだ！？）搭載されていません。\n必要なテリトリー/エーテライトをすべて解放していない場合、一部の機能はその時点で停止することがあります。",
+  "Splash.PositionalData":     "モンスターの位置データ",
+  "Splash.PositionalDataBody": "位置データの量が多いため、すべての位置が正しくない場合があります。\n通常のモンスター出現クラスターをすべて収集できるよう、現在作業を進めています！",
+
+  "Requirements.Header":      "必要条件",
+  "Requirements.HeaderText":  "オートローテーションなど一部のオプションプラグインについては、プラグイン設定でお好みのオプションを選択できます。\n設定が用意されていない場合は、オプションプラグインの代替手段を手動で設定する必要があります。\n\nBossModがオプションの場合、AI用にBossModRebornを使用することもできます（オートローテーションではありません）。\n両方を同時に有効にしないでください。Henchmanはあなたが馬鹿なことをするのを積極的に防いではくれません！",
+  "Requirements.Mandatory":   "（必須）",
+  "Requirements.Optional":    "（任意）",
+  "Requirements.Enabled":     "有効",
+  "Requirements.Disabled":    "無効",
+  "Requirements.MissingPlugins": "不足しているプラグイン",
+
+  "UI.ToggleStatus": "プラグインの状態を切り替え",
+  "UI.Confirm":      "確認",
+  "UI.ConfirmCheckboxLabel": "これを読み、同意しました",
+  "UI.PersistentHint": "この設定は保存されます！"
+}

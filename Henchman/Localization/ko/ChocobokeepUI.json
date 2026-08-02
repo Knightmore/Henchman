@@ -1,0 +1,8 @@
+{
+  "HelpText":      "이것은 어떤 완벽주의자 *콜록* Kawaii *콜록* 가 초코보키퍼 해금 도구를 요청했기 때문에 존재합니다.\n\"시작\"을 누르면 해금되지 않은 모든 초코보 택시 정류장이 해금됩니다.",
+  "HideUnlocked":  "해금된 항목 숨기기",
+  "ColKeepId":     "정류장 ID",
+  "ColTerritory":  "지역",
+  "ColPlaceName":  "장소 이름",
+  "ColUnlocked":   "해금됨"
+}

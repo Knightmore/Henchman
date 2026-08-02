@@ -1,0 +1,12 @@
+{
+  "HelpText":                      "このセクションには本物のハックが含まれています！自己責任で使用してください。BANされても泣きつかないでください。",
+  "Confirmation":                  "私は、これによって生じるすべての結果について自らのみが責任を負うこと、およびこれらの調整/ハックを自己責任で使用することをここに確認します！\n\nそのままの状態で使用してください。サポートは一切提供されません（DMでもDiscordサーバーでも）",
+  "Section.On Your Mark":          "On Your Mark",
+  "Section.Movement":              "移動",
+  "Section.Grand Company":         "グランドカンパニー",
+  "HacksUI_AcceptanceHack":        "討伐指令書を遠隔で受け取る",
+  "HacksUI_AcceptanceHack_Help":   "各討伐板へのテレポートおよび徒歩移動をすべてスキップします。\n有効化されたすべての討伐指令書は、あなたがどこにいてもそこから受け取られます。",
+  "NoFallDamage":                  "落下ダメージなし",
+  "GetGrandCompanyRank":           "エキスパート配達を強制",
+  "GetGrandCompanyRank_Help":      "階級にかかわらず、エキスパート配達ウィンドウの表示を強制します。\nエキスパート配達を解放していない場合のみ有効です。\n（CBTから復元）"
+}

@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
-using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using Underlings.GameHelpers;
 
 namespace Henchman.Tasks;
@@ -52,47 +51,7 @@ internal static class WorldTasks
     }
 
     internal static async Task<IGameObject?> GetNearestMobByNameId(uint nameId, bool moveOnTimeout = false, CancellationToken token = default)
-    {
-        IBattleNpc? gameObject = null;
-        var         iterations = 0;
-        while (gameObject == null)
-        {
-            token.ThrowIfCancellationRequested();
-            if (!IsOccupied())
-            {
-                var foundTargets = Svc.Objects.OfType<IBattleNpc>()
-                                      .Where(bnpc => bnpc is { IsTargetable: true, IsDead: false } && bnpc.NameId == nameId && (bnpc.TargetObject == null || bnpc.TargetObject.Equals(Player.Object)))
-                                      .OrderBy(x => Player.DistanceTo(x))
-                                      .ToList();
-
-                if (foundTargets.Count == 1)
-                    gameObject = foundTargets.First();
-                else if (foundTargets.Count > 1)
-                {
-                    var paths = new List<(IBattleNpc target, List<Vector3> pathTo, float pathLength)>();
-                    foreach (var target in foundTargets)
-                    {
-                        var navTask = await Vnavmesh.NavPathfind.Invoke(Player.Position, target.Position, false);
-                        paths.Add(new ValueTuple<IBattleNpc, List<Vector3>, float>(target, navTask, navTask.TotalDistance()));
-                    }
-
-                    var shortestPath = paths.OrderBy(p => p.pathLength)
-                                            .First();
-                    gameObject = shortestPath.target;
-                }
-
-                if (gameObject != null) return gameObject;
-
-                // 120 * 500 ms iterations to move on after 1 minute
-                if (moveOnTimeout && iterations == 120) return null;
-
-                await Task.Delay(GeneralDelayMs * 2, token);
-                iterations++;
-            }
-        }
-
-        return gameObject;
-    }
+            => await ObjectTasks.GetNearestMobByNameId(nameId, moveOnTimeout, token);
 
     internal static Task<bool> IsPlayerInObjectRange(uint baseId, float distance = 5f)
     {
@@ -183,19 +142,8 @@ internal static class WorldTasks
     }
 
     internal static async Task<bool> IsInFate(ushort fateId, CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        await Task.Delay(GeneralDelayMs, token);
-        unsafe
-        {
-            return FateManager.Instance()->CurrentFate != null && FateManager.Instance()->CurrentFate->FateId == fateId;
-        }
-    }
+            => await FateTasks.IsInFate(fateId, token);
 
     internal static async Task<bool> IsFateActive(ushort fateId, CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        await Task.Delay(GeneralDelayMs, token);
-        return Svc.Fates.Any(x => x.FateId == fateId && x.Progress < 50);
-    }
+            => await FateTasks.IsFateActive(fateId, token);
 }

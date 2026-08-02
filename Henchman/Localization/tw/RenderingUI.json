@@ -1,0 +1,12 @@
+{
+    "HelpText": "只是一堆一般性的遊戲調整，讓你的遊戲體驗更好、更輕鬆。\n若需更多資訊，請閱讀各項調整的工具提示。",
+    "SectionPerformance": "效能",
+    "Section.Performance": "效能",
+    "RenderingUI_DisableRender": "停用渲染",
+    "RenderingUI_DisableRender_Help": "這將停用你的3D渲染，以降低GPU負載，但會保持整個介面完好無缺。\n若要獲得最佳效果，請額外加上30 FPS的帧率限制。\n可能有其他插件強制設定此狀態，因此如果此項被設定成你未預期的值，並非我的責任。\n如果你不想讓其他插件將其狀態強加於你，請使用下方的核取方塊！\n\n此設定為非永久性，將於退出遊戲或停用插件時重置！",
+    "RenderingUI_DisableRenderWhenUnfocused": "視窗失焦時停用渲染",
+    "RenderingUI_DisableRenderWhenUnfocused_Help": "每當遊戲視窗失去焦點時自動停用3D渲染，並在重新取得焦點時重新啟用。此功能開啟時，你不需要自行切換停用渲染。",
+    "RenderingUI_ForceRender": "強制渲染狀態",
+    "RenderingUI_ForceRender_Help": "如果你不在乎其他插件試圖設定渲染模式，並希望 Henchman 成為唯一的責任歸屬，請啟用此項！\n\n此設定為非永久性，將於退出遊戲或停用插件時重置！",
+    "AddonFadeMiddleBack_Draw_Help": "跳過所有淡入淡出過場效果，例如切換地圖時。\n\n這可能會與依賴淡出檢查的其他插件產生衝突。"
+}

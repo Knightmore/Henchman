@@ -1,0 +1,12 @@
+{
+  "HelpText":                      "這個區塊包含真正的作弊功能！請自行承擔使用風險。被封號請別來哭訴。",
+  "Confirmation":                  "本人在此確認，將對任何後果負全部責任，並自行承擔使用這些調整/作弊功能的風險！\n\n請按現狀使用，不提供任何支援（無論是私訊還是Discord伺服器）",
+  "Section.On Your Mark":          "On Your Mark",
+  "Section.Movement":              "移動",
+  "Section.Grand Company":         "軍團",
+  "HacksUI_AcceptanceHack":        "遠端接受狩獵令",
+  "HacksUI_AcceptanceHack_Help":   "這將跳過所有傳送與步行至各個狩獵板的過程。\n所有已啟用的狩獵令將可從你所在的任何地方接受。",
+  "NoFallDamage":                  "無墜落傷害",
+  "GetGrandCompanyRank":           "強制專家級配送",
+  "GetGrandCompanyRank_Help":      "強制顯示專家級配送視窗，無論階級為何。\n僅在你尚未解鎖專家級配送時生效。\n（由CBT時期功能復原）"
+}

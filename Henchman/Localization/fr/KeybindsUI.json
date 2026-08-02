@@ -1,0 +1,3 @@
+{
+  "HelpText": "Cliquez sur le crayon pour enregistrer un raccourci. Maintenez votre combinaison (Ctrl, Alt et/ou Shift plus une touche supplémentaire), puis cliquez sur la coche pour l'enregistrer ou appuyez sur Échap pour annuler. L'icône de corbeille supprime un raccourci.\n\nUne bordure rouge signifie que la même combinaison est liée deux fois. Aucune des deux ne se déclenchera jusqu'à ce que vous corrigiez cela, et elle devient rouge dès que vous maintenez une combinaison déjà utilisée, même avant de l'enregistrer.\n\nLes raccourcis fonctionnent tant que le jeu a le focus, même si cette fenêtre est fermée. Ils ne bloquent pas l'appui sur la touche, donc si le jeu utilise déjà cette combinaison, les deux se déclencheront."
+}

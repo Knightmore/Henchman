@@ -1,0 +1,14 @@
+{
+  "HelpText": "配置你想要的角色数据，进入标题画面并点击开始。",
+  "Start": "开始",
+  "NoLoginSkip": "不跳过登录",
+  "NoLoginSkipHelp": "让每个新角色登录。对于在AutoRetainer中注册角色很有用。",
+  "ColFirstName": "名",
+  "ColLastName": "姓",
+  "ColDataCenter": "数据中心",
+  "ColWorld": "世界",
+  "ColClassJob": "职业",
+  "ColPreset": "预设",
+  "Random": "随机",
+  "None": "无"
+}

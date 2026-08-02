@@ -1,0 +1,13 @@
+{
+  "HelpText": "所有功能使用的通用设置。",
+  "UseMount": "使用坐骑",
+  "UseMountRoulette": "使用坐骑轮盘",
+  "Mount": "坐骑",
+  "MountDistance": "距离大于此值时使用坐骑：",
+  "RunDistance": "距离大于此值时跑步：",
+  "ReturnOnceDone": "功能完成后返回：",
+  "AutoRotationPlugin": "自动旋转插件：",
+  "UseChocoboCompanion": "使用陆行鸟伙伴",
+  "ChocoboCompanionHelp": "召唤你的陆行鸟伙伴，或者在剩余时间少于5分钟时喂食。",
+  "UILanguage": "界面语言："
+}

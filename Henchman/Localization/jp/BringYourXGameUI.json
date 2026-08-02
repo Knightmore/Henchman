@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A：\n「開始」を押すだけで、紅蓮のリベレーターまでの利用可能なAランクの目的地をすべて巡回します。\n\nB：\n巡回したいテリトリーを選び、「開始」をクリックして開始してください。\n停止するまで、見つけたBランクをすべて討伐します。",
+  "TabARank":            "Aランク",
+  "TabBRank":            "Bランク",
+  "SelectAll":           "すべて選択",
+  "DeselectAll":         "すべて選択解除",
+  "SelectExpansion":     "拡張パックを選択",
+  "DeselectExpansion":   "拡張パックの選択を解除",
+  "SelectZone":          "ゾーンを選択",
+  "DeselectZone":        "ゾーンの選択を解除",
+  "BRankToFarm":         "討伐するBランク：",
+  "TrackFoundSpots":     "見つけたBランクの出現場所を記録",
+  "WritePositions":      "位置をログに書き込む",
+  "PrintSpawnLocations": "出現場所をチャットに表示",
+  "ColWorld":            "ワールド",
+  "ColMap":              "マップ",
+  "ColTerritory":        "テリトリー",
+  "LeftPositions":		 "残りの可能な位置",
+  "RegisteredPositions": "登録済みの出現位置"
+}

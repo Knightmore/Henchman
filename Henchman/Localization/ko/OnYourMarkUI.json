@@ -1,0 +1,22 @@
+{
+  "HelpText":          "원하는 토벌 지령서의 활성화 체크박스를 선택하고 '시작' 버튼을 클릭하세요.\nOnYourMark는 활성화된 모든 토벌 지령서를 모아 모든 마크를 완료합니다.\n\n지령서 색상:",
+  "ColorGrey":         "회색",
+  "ColorGreyDesc":     "-   미해금.",
+  "ColorRed":          "빨강",
+  "ColorRedDesc":      "-   미획득.",
+  "ColorYellow":       "노랑",
+  "ColorYellowDesc":   "-   획득, 미완료.",
+  "ColorOrange":       "주황",
+  "ColorOrangeDesc":   "-   획득한 이전 마크, 미완료.",
+  "ColorGreen":        "초록",
+  "ColorGreenDesc":    "-   완료.",
+  "Enable":            "활성화",
+  "TabSettings":       "설정",
+  "ColName":           "이름",
+  "ColAmount":         "수량",
+  "ColFinished":       "완료",
+  "DiscardOldBills":   "오래된 토벌 지령서 버리기",
+  "DetourForARanks":   "근처에 A랭크가 있으면 우회하기",
+  "DetourHelp":        "마크당 우회는 한 번만 시도합니다.\n우회 중 캐릭터가 사망하면 원래 마크를 다시 찾습니다.\n안전을 위해 이 기능은 홍련의 해방자까지만 작동합니다.",
+  "SkipFateMarks":     "FATE 마크 건너뛰기"
+}

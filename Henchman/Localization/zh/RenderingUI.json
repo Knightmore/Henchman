@@ -1,0 +1,12 @@
+{
+    "HelpText": "只是一堆通用的游戏优化，让你的游戏体验更好/更轻松。\n更多信息，请阅读每个优化的工具提示。",
+    "SectionPerformance": "性能",
+    "Section.Performance": "性能",
+    "RenderingUI_DisableRender": "禁用渲染",
+    "RenderingUI_DisableRender_Help": "这将禁用你的3D渲染以最小化GPU负载，但保持整个UI完好。\n要获得最佳效果，添加30 FPS的帧率限制。\n可能还有其他插件强制此状态，所以如果这被设置为你没有期望的东西，不是我的错。\n如果你不想让其他插件强制它们的状态给你，使用下面的复选框！\n\n这是非持久的，将在退出游戏或禁用插件时重置！",
+    "RenderingUI_DisableRenderWhenUnfocused": "失去焦点时禁用渲染",
+    "RenderingUI_DisableRenderWhenUnfocused_Help": "每当游戏窗口失去焦点时自动禁用3D渲染，并在重新获得焦点时重新启用它。你不需要在开启此功能时自己切换禁用渲染。",
+    "RenderingUI_ForceRender": "强制渲染状态",
+    "RenderingUI_ForceRender_Help": "如果你不在乎其他插件试图设置渲染模式，并且你希望Henchman成为唯一的责任点，请启用此功能！\n\n这是非持久的，将在退出游戏或禁用插件时重置！",
+    "AddonFadeMiddleBack_Draw_Help": "跳过所有淡入淡出过渡，例如切换区域时。\n\n这可能会干扰其他依赖于检查淡入淡出的插件。"
+}

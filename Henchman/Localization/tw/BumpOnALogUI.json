@@ -1,0 +1,22 @@
+{
+  "HelpText":              "點擊你想要的狩獵日誌的「開始」按鈕。\nBumpOnALog 將完成你目前等級的所有怪物項目。\n\n如果你的角色擁有足夠的軍團徽章與相應等級，\n「Bump On A Log」將推進你的軍團階級，直到少尉為止。\n\n如果你想讓它提早停止，請變更設定。",
+  "TabClass":              "職業",
+  "TabGrandCompany":       "軍團",
+  "TabSettings":           "設定",
+  "NoHuntLogForClass":     "你的職業沒有狩獵日誌！",
+  "NotInGrandCompany":     "你尚未加入任何軍團！",
+  "FinishedAllGCRanks":    "你已完成該軍團的所有狩獵日誌階級！",
+  "GCRankNotUnlocked":     "所需的軍團階級尚未解鎖！",
+  "FinishedAllRanks":      "你已完成所有狩獵日誌階級！",
+  "CurrentDifficultyFmt":  "- 目前難度：{0}",
+  "CurrentRankFmt":        "- 目前階級：{0} {1} - 難度：{2}",
+  "ColName":               "名稱",
+  "ColKills":              "擊殺數",
+  "ColFinished":           "已完成",
+  "StopAfterJobRank":      "職業日誌階級後停止",
+  "StopAfterGCRank":       "軍團階級後停止",
+  "OrderByTerritory":      "依地圖排序怪物",
+  "SkipDutyMarks":         "跳過任務標記",
+  "SoloUnsyncDuty":        "單人非同步任務",
+  "RankUpGC":              "提升軍團階級"
+}

@@ -1,0 +1,22 @@
+{
+  "HelpText": "点击你想要的狩猎日志的\"开始\"按钮。\n狩猎日志将完成你当前等级的所有怪物条目。\n\n如果你的角色有足够的大国防联奖章和相应等级，\n'狩猎日志'将推进你的大国防联等级直到少尉。\n\n如果你想让它更早停止，请更改设置。",
+  "TabClass": "职业",
+  "TabGrandCompany": "大国防联",
+  "TabSettings": "设置",
+  "NoHuntLogForClass": "你的职业没有狩猎日志！",
+  "NotInGrandCompany": "你不在任何大国防联！",
+  "FinishedAllGCRanks": "你已完成大国防联的所有狩猎日志等级！",
+  "GCRankNotUnlocked": "所需的大国防联等级尚未解锁！",
+  "FinishedAllRanks": "你已完成所有狩猎日志等级！",
+  "CurrentDifficultyFmt": "- 当前难度：{0}",
+  "CurrentRankFmt": "- 当前等级：{0} {1} - 难度：{2}",
+  "ColName": "名称",
+  "ColKills": "击杀",
+  "ColFinished": "已完成",
+  "StopAfterJobRank": "在特职日志等级后停止",
+  "StopAfterGCRank": "在大国防联等级后停止",
+  "OrderByTerritory": "按地图排序怪物",
+  "SkipDutyMarks": "跳过副本标记",
+  "SoloUnsyncDuty": "单人无同步副本",
+  "RankUpGC": "提升大国防联等级"
+}

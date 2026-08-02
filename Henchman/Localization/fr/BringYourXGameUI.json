@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A :\nAppuyez simplement sur \"Démarrer\" et il parcourra toutes les destinations de rang A disponibles jusqu'à Stormblood.\n\nB :\nChoisissez le territoire que vous voulez parcourir et cliquez sur \"Démarrer\" pour commencer.\nIl combattra tout rang B qu'il pourra trouver jusqu'à ce que vous l'arrêtiez.",
+  "TabARank":            "Rang A",
+  "TabBRank":            "Rang B",
+  "SelectAll":           "Tout sélectionner",
+  "DeselectAll":         "Tout désélectionner",
+  "SelectExpansion":     "Sélectionner l'extension",
+  "DeselectExpansion":   "Désélectionner l'extension",
+  "SelectZone":          "Sélectionner la zone",
+  "DeselectZone":        "Désélectionner la zone",
+  "BRankToFarm":         "Rang B à farmer :",
+  "TrackFoundSpots":     "Suivre les emplacements de rang B trouvés",
+  "WritePositions":      "Écrire les positions dans le journal",
+  "PrintSpawnLocations": "Afficher les emplacements d'apparition dans le chat",
+  "ColWorld":            "Monde",
+  "ColMap":              "Carte",
+  "ColTerritory":        "Territoire",
+  "LeftPositions":		 "Positions possibles restantes",
+  "RegisteredPositions": "Positions d'apparition enregistrées"
+}

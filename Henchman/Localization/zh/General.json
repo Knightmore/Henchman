@@ -1,0 +1,41 @@
+{
+  "_name.BringYourXGameUI": "带你的A/B级狩猎",
+  "_name.BumpOnALogUI": "狩猎日志",
+  "_name.ChocobokeepUI": "陆行鸟管理员",
+  "_name.IPCUI": "IPC接口",
+  "_name.IntoTheLightUI": "进入光明",
+  "_name.MarkDatabaseUI": "狩猎标记数据库",
+  "_name.MultiboxingUI": "多开",
+  "_name.OnABoatUI": "出海钓鱼",
+  "_name.RequirementsUI": "依赖项",
+  "_name.SettingsUI": "设置",
+  "_name.GeneralTweaksUI": "通用",
+  "_name.OnYourMarkUI": "狩猎令",
+  "_name.TestyTraderUI": "交易助手",
+  "_name.RetainerVocateUI": "雇员管理",
+  "_name.HacksUI": "高级功能",
+
+  "Category.Combat": "战斗",
+  "Category.Exploration": "探索",
+  "Category.Economy": "经济",
+  "Category.Tweaks": "优化",
+  "Category.System": "系统",
+
+  "Splash.Attention": "注意",
+  "Splash.AttentionBody": "内置功能在 vnavmesh 和你已解锁的游戏进度限制内工作！\n目前还没有'智能'寻路功能。\n如果你还没有解锁所有需要的地图/传送点，某些功能可能会在该任务处停止。",
+  "Splash.PositionalData": "怪物位置数据",
+  "Splash.PositionalDataBody": "由于位置数据量很大，可能不是所有位置都正确。\n我正在努力抓取所有常规怪物刷新点集群！",
+
+  "Requirements.Header": "依赖项",
+  "Requirements.HeaderText": "对于某些可选插件（如自动旋转），你可以在插件设置中选择你喜欢的选项。\n如果没有可用的设置，你需要手动配置任何可选插件的替代方案。\n\n如果 BossMod 是可选的，你也可以使用 BossModReborn 的 AI（不是自动旋转）。\n不要同时启用两者。Henchman 不会主动阻止你犯傻！",
+  "Requirements.Mandatory": "（必需）",
+  "Requirements.Optional": "（可选）",
+  "Requirements.Enabled": "已启用",
+  "Requirements.Disabled": "已禁用",
+  "Requirements.MissingPlugins": "缺少插件",
+
+  "UI.ToggleStatus": "切换插件状态",
+  "UI.Confirm": "确认",
+  "UI.ConfirmCheckboxLabel": "我已阅读并接受",
+  "UI.PersistentHint": "此设置将被保存！"
+}

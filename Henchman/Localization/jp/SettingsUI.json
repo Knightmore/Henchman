@@ -1,0 +1,13 @@
+{
+  "HelpText":              "実装されているすべての機能で使用される一般設定です。",
+  "UseMount":              "マウントを使用",
+  "UseMountRoulette":      "マウントルーレットを使用",
+  "Mount":                 "マウント",
+  "MountDistance":         "この距離を超えたらマウントする：",
+  "RunDistance":           "この距離を超えたら走る：",
+  "ReturnOnceDone":        "機能完了後に戻る：",
+  "AutoRotationPlugin":    "オートローテーションプラグイン：",
+  "UseChocoboCompanion":   "チョコボコンパニオンを使用",
+  "ChocoboCompanionHelp":  "チョコボコンパニオンを召喚するか、残り時間が5分未満の場合は餌を与えます。",
+  "UILanguage":            "UI言語："
+}

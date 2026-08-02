@@ -1,0 +1,12 @@
+{
+  "HelpText": "这里有真正的高级功能！使用风险自负。被封号别来哭。",
+  "Confirmation": "我在此确认，我对任何后果负全部责任，并使用这些优化/高级功能风险自负！\n\n按原样使用，不提供支持（既不通过私信也不通过Discord服务器）",
+  "Section.On Your Mark": "狩猎令",
+  "Section.Movement": "移动",
+  "Section.Grand Company": "大国防联",
+  "HacksUI_AcceptanceHack": "远程接受狩猎令",
+  "HacksUI_AcceptanceHack_Help": "这将跳过所有传送到每个狩猎板和走到狩猎板的过程。\n所有启用的狩猎令将从你所在的任何地方接受。",
+  "NoFallDamage": "无坠落伤害",
+  "GetGrandCompanyRank": "强制专家交付",
+  "GetGrandCompanyRank_Help": "强制显示专家交付窗口，无论等级如何。\n仅在你未解锁专家交付时生效。\n（从CBT恢复）"
+}

@@ -1,0 +1,20 @@
+{
+  "HelpText": "A级：\n只需点击\"开始\"，它就会巡游所有可用的A级目的地，直到红莲之狂潮。\n\nB级：\n选择你想巡游的地图，点击\"开始\"开始。\n它会刷任何能找到的B级，直到你停止。",
+  "TabARank": "A级",
+  "TabBRank": "B级",
+  "SelectAll": "全选",
+  "DeselectAll": "取消全选",
+  "SelectExpansion": "选择资料片",
+  "DeselectExpansion": "取消选择资料片",
+  "SelectZone": "选择区域",
+  "DeselectZone": "取消选择区域",
+  "BRankToFarm": "要刷的B级：",
+  "TrackFoundSpots": "追踪找到的B级位置",
+  "WritePositions": "将位置写入日志",
+  "PrintSpawnLocations": "将刷新位置打印到聊天",
+  "ColWorld": "世界",
+  "ColMap": "地图",
+  "ColTerritory": "地图",
+  "LeftPositions": "剩余可能位置",
+  "RegisteredPositions": "已注册的刷新位置"
+}

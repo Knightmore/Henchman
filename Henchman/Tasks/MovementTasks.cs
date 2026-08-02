@@ -18,6 +18,26 @@ internal static class MovementTasks
 {
     private const uint TeleportActionId = 5;
 
+    private static MovementOptions Options => new()
+                                              {
+                                                      UseMount         = C.UseMount,
+                                                      MountId          = C.MountId,
+                                                      UseMountRoulette = C.UseMountRoulette,
+                                                      MinRunDistance   = C.MinRunDistance,
+                                                      MinMountDistance = C.MinMountDistance,
+                                                      HandleCombat     = token => HandleHaters(token: token),
+                                                      EnableCombatAutomation = () =>
+                                                                               {
+                                                                                   AutoRotation.Enable(C.AutoRotationPlugin);
+                                                                                   Bossmod.EnableAI();
+                                                                               },
+                                                      DisableCombatAutomation = () =>
+                                                                                {
+                                                                                    Bossmod.DisableAI();
+                                                                                    AutoRotation.Disable(C.AutoRotationPlugin);
+                                                                                }
+                                              };
+
     private static async Task<bool> IsBusy(CancellationToken token)
     {
         if (Svc.Condition[ConditionFlag.InCombat] && !HandlingHaters)
@@ -347,71 +367,7 @@ internal static class MovementTasks
                              }, "Wait until close to player", token);
     }
 
-    internal static async Task MoveToArea(Vector3 position, CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        using var scope = new TaskDescriptionScope($"Move To Area {position}");
-        await WaitUntilAsync(async () => Vnavmesh.NavIsReady.Invoke() && !await IsBusy(token), "Wait for navmesh", token);
-
-        if (Player.DistanceTo(position) < 5) return;
-        if (C.UseMount      && Player.DistanceTo(position) > C.MinMountDistance) await Mount(token);
-        if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
-
-        var pathTrigger = () =>
-                          {
-                              if (!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(position, Player.Mounted && Player.CanFly))
-                                  throw new InvalidOperationException($"Could not find path to {position}");
-                              return Task.CompletedTask;
-                          };
-
-        Func<bool> MakeNoProgress() => MakePositionStallDetector(TimeSpan.FromSeconds(6));
-
-        var pathStep = new ResilientStep(
-                                         $"Path to area {position}",
-                                         pathTrigger,
-                                         () => Player.DistanceTo(position) < 50,
-                                         MakeNoProgress,
-                                         async () =>
-                                         {
-                                             unsafe
-                                             {
-                                                 ActionManager.Instance()->UseAction(ActionType.GeneralAction, 2);
-                                             }
-
-                                             var positionAfterJump = Player.Position;
-                                             await Task.Delay(TimeSpan.FromSeconds(2), token);
-                                             if (Vector3.Distance(Player.Position, positionAfterJump) < 1f)
-                                                 Vnavmesh.StopCompletely();
-                                         },
-                                         3,
-                                         TimeSpan.FromMinutes(10));
-
-        var teleportLanded = false;
-        var teleportFallback = new ResilientStep(
-                                                 $"Fallback: teleport near {position}",
-                                                 async () =>
-                                                 {
-                                                     Vnavmesh.StopCompletely();
-                                                     var positionBeforeTeleport = Player.Position;
-                                                     await TeleportToCore($"Fallback: teleport near {position}", GetAetheryte(Player.TerritoryId, position),
-                                                                          () => Player.DistanceTo(positionBeforeTeleport) > 10f, token);
-                                                     await WaitWhileAsync(() => IsBusy(token), "Wait for meshing/transition", token);
-                                                     await WaitUntilAsync(() => Vnavmesh.NavIsReady.Invoke(), "Wait for meshing/transition", token);
-                                                     teleportLanded = true;
-                                                 },
-                                                 () => teleportLanded,
-                                                 maxAttempts: 1);
-
-        var repathAfterTeleport = new ResilientStep(
-                                                    $"Repath after teleport near {position}",
-                                                    pathTrigger,
-                                                    () => Player.DistanceTo(position) < 50,
-                                                    MakeNoProgress,
-                                                    maxAttempts: 1,
-                                                    perAttemptTimeout: TimeSpan.FromMinutes(10));
-
-        await new ResilientChain($"Reach area {position}", pathStep, teleportFallback, repathAfterTeleport).RunAsync(token);
-    }
+    internal static async Task MoveToArea(Vector3 position, CancellationToken token = default) => await Underlings.TaskManager.MovementTasks.MoveToArea(position, Options, 50f, token);
 
     internal static async Task TeleportTo(uint territoryId, uint aetheryteTerritoryId, uint aetheryteId, CancellationToken token = default)
     {
@@ -456,7 +412,13 @@ internal static class MovementTasks
                                      name,
                                      () =>
                                      {
-                                         if (!Lifestream.Teleport.Invoke(aetheryteId, 0))
+                                         bool success;
+                                         unsafe
+                                         {
+                                             success = Telepo.Instance()->Teleport(aetheryteId, 0);
+                                         }
+
+                                         if (!success)
                                              throw new InvalidOperationException($"Teleport to Aetheryte {aetheryteId} failed.");
                                          return Task.CompletedTask;
                                      },

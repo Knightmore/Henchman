@@ -1,0 +1,22 @@
+{
+  "HelpText":          "勾選你想要的狩獵令的啟用核取方塊，然後點擊「開始」按鈕。\nOnYourMark 將收集所有已啟用的狩獵令並完成所有標記。\n\n令狀顏色：",
+  "ColorGrey":         "灰色",
+  "ColorGreyDesc":     "-   尚未解鎖。",
+  "ColorRed":          "紅色",
+  "ColorRedDesc":      "-   尚未領取。",
+  "ColorYellow":       "黃色",
+  "ColorYellowDesc":   "-   已領取、未完成。",
+  "ColorOrange":       "橙色",
+  "ColorOrangeDesc":   "-   已領取的舊標記、未完成。",
+  "ColorGreen":        "綠色",
+  "ColorGreenDesc":    "-   已完成。",
+  "Enable":            "啟用",
+  "TabSettings":       "設定",
+  "ColName":           "名稱",
+  "ColAmount":         "數量",
+  "ColFinished":       "已完成",
+  "DiscardOldBills":   "捨棄舊的狩獵令",
+  "DetourForARanks":   "若附近有A級目標則繞路",
+  "DetourHelp":        "每個標記只會嘗試一次繞路。\n如果你的角色在繞路途中死亡，將會繼續尋找原本的標記。\n作為安全措施，此功能僅適用於紅蓮解放者版本以前的內容。",
+  "SkipFateMarks":     "跳過FATE標記"
+}

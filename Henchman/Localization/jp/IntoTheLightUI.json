@@ -1,0 +1,14 @@
+{
+  "HelpText":      "希望するキャラクターデータを設定し、タイトル画面に移動して「開始」を押してください。",
+  "Start":         "開始",
+  "NoLoginSkip":   "ログインをスキップしない",
+  "NoLoginSkipHelp": "各新規キャラクターにログインさせます。AutoRetainerでのキャラクター登録に便利です。",
+  "ColFirstName":  "名",
+  "ColLastName":   "姓",
+  "ColDataCenter": "データセンター",
+  "ColWorld":      "ワールド",
+  "ColClassJob":   "クラス/ジョブ",
+  "ColPreset":     "プリセット",
+  "Random":        "ランダム",
+  "None":          "なし"
+}

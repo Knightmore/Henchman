@@ -1,0 +1,22 @@
+{
+  "HelpText":          "希望する討伐指令書の有効チェックボックスをオンにして、「開始」ボタンをクリックしてください。\nOnYourMarkは有効化されたすべての討伐指令書を収集し、すべてのマークを完了します。\n\n指令書の色：",
+  "ColorGrey":         "灰色",
+  "ColorGreyDesc":     "-   未解放。",
+  "ColorRed":          "赤色",
+  "ColorRedDesc":      "-   未取得。",
+  "ColorYellow":       "黄色",
+  "ColorYellowDesc":   "-   取得済み・未完了。",
+  "ColorOrange":       "オレンジ色",
+  "ColorOrangeDesc":   "-   取得済みの古いマーク・未完了。",
+  "ColorGreen":        "緑色",
+  "ColorGreenDesc":    "-   完了。",
+  "Enable":            "有効",
+  "TabSettings":       "設定",
+  "ColName":           "名前",
+  "ColAmount":         "数量",
+  "ColFinished":       "完了",
+  "DiscardOldBills":   "古い討伐指令書を破棄",
+  "DetourForARanks":   "Aランクが近くにいる場合は迂回する",
+  "DetourHelp":        "迂回は各マークにつき一度だけ試みます。\nキャラクターが迂回中に死亡した場合、元のマークの捜索を再開します。\n安全対策として、これは紅蓮のリベレーターまでの範囲でのみ機能します。",
+  "SkipFateMarks":     "FATEマークをスキップ"
+}

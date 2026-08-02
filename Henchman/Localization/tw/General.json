@@ -1,0 +1,41 @@
+{
+  "_name.BringYourXGameUI": "帶你的A/B級狩獵",
+  "_name.BumpOnALogUI":     "狩獵日誌",
+  "_name.ChocobokeepUI":    "陸行鳥管理員",
+  "_name.IPCUI":            "IPC接口",
+  "_name.IntoTheLightUI":   "進入光明",
+  "_name.MarkDatabaseUI":   "狩獵標記資料庫",
+  "_name.MultiboxingUI":    "多開",
+  "_name.OnABoatUI":        "出海釣魚",
+  "_name.RequirementsUI":   "需求",
+  "_name.SettingsUI":       "設定",
+  "_name.GeneralTweaksUI":  "一般",
+  "_name.OnYourMarkUI":     "狩獵令",
+  "_name.TestyTraderUI":    "交易助手",
+  "_name.RetainerVocateUI": "僱員仲介人",
+  "_name.HacksUI":          "進階功能",
+
+  "Category.Combat":      "戰鬥",
+  "Category.Exploration": "探索",
+  "Category.Economy":     "經濟",
+  "Category.Tweaks":      "調整",
+  "Category.System":      "系統",
+
+  "Splash.Attention":          "注意",
+  "Splash.AttentionBody":      "內建功能在 vnavmesh 與你已解鎖的遊戲進度限制內運作！\n目前尚未包含「智慧型」尋路功能（也許以後會有！？）。\n如果你尚未解鎖所有需要的地圖/乙太之光，某些功能可能會在該任務處停止。",
+  "Splash.PositionalData":     "怪物位置資料",
+  "Splash.PositionalDataBody": "由於位置資料量龐大，可能並非所有位置都正確。\n我正在努力收集所有常規怪物出現的位置群集！",
+
+  "Requirements.Header":      "需求",
+  "Requirements.HeaderText":  "對於某些選用插件（如自動連招），你可以在插件設定中選擇你偏好的選項。\n若沒有可用的設定，你需要手動設定任何選用插件的替代方案。\n\n如果 BossMod 是選用的，你也可以使用 BossModReborn 的 AI（非自動連招）。\n請勿同時啟用兩者。Henchman 不會主動阻止你做傻事！",
+  "Requirements.Mandatory":   "（必須）",
+  "Requirements.Optional":    "（選用）",
+  "Requirements.Enabled":     "已啟用",
+  "Requirements.Disabled":    "已停用",
+  "Requirements.MissingPlugins": "缺少的插件",
+
+  "UI.ToggleStatus": "切換插件狀態",
+  "UI.Confirm":      "確認",
+  "UI.ConfirmCheckboxLabel": "我已閱讀並同意",
+  "UI.PersistentHint": "此設定將會被儲存！"
+}

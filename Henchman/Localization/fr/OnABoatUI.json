@@ -1,0 +1,21 @@
+{
+    "HelpText": "Mode AutoRetainer :\n- Activez tous les personnages que vous voulez faire tourner pour la pêche en mer.\n- On A Boat se connectera toujours au personnage ayant le niveau de pêcheur le plus bas.\n- Si vous n'avez pas assez de personnages avec des servantes en cours pour terminer en PostProcess,\n  configurez votre AutoRetainer pour attendre à l'écran titre.\n\nMode Personnage unique :\n- Entrez simplement le nom de votre personnage, choisissez son monde et On A Boat ne progressera qu'avec ce personnage.\n\nSi vous n'avez pas encore terminé la quête de pêche en mer, elle sera effectuée pour vous. (Nécessite Questionable)\nPour réduire le temps de trajet, il s'accordera à l'éthérite de la guilde des Arcanistes pour utiliser l'éthérite la prochaine fois.",
+    "TabMain": "Principal",
+    "TabSettings": "Paramètres",
+    "RegistrationOpenFmt": "Inscription ouverte pendant {0:D2}:{1:D2} minutes",
+    "NextVoyageFmt": "Prochain voyage dans {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "Utiliser avec le mode multiple d'AutoRetainer :",
+    "StopAt100": "Arrêter si les personnages sélectionnés sont niveau 100 :",
+    "SelectAll": "Tout sélectionner",
+    "DeselectAll": "Tout désélectionner",
+    "SelectAllShown": "Sélectionner tout ce qui est affiché",
+    "DeselectAllShown": "Désélectionner tout ce qui est affiché",
+    "CharacterName": "Nom du personnage :",
+    "World": "Monde :",
+    "UseOnlyVersatileLure": "Utiliser uniquement l'appât polyvalent",
+    "UseARItemSell": "Utiliser la vente d'objets AR après le voyage",
+    "UseARItemSellHelp": "Si vous n'activez pas l'option ci-dessous, cela ne fonctionnera que si vous revenez à une destination avec une cloche de servante/PNJ marchand à proximité.",
+    "UseARDiscard": "Utiliser la mise au rebut AR après le voyage",
+    "UseARLocalSell": "Vendre au marchand des quais",
+    "UseARLocalSellHelp": "Ceci vendra au marchand local des quais. Risque élevé de se retrouver avec d'autres botteurs, alors soyez prudent !"
+}

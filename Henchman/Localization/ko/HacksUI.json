@@ -1,0 +1,12 @@
+{
+  "HelpText":                      "이 섹션에는 진짜 해킹이 포함되어 있습니다! 본인 책임하에 사용하세요. 밴을 당해도 울면서 찾아오지 마세요.",
+  "Confirmation":                  "본인은 이로 인해 발생하는 모든 결과에 대해 전적으로 책임을 지며, 이러한 조정/해킹을 본인 책임하에 사용함을 확인합니다!\n\n있는 그대로 사용하십시오. 어떠한 지원도 제공되지 않습니다(DM으로도, Discord 서버에서도)",
+  "Section.On Your Mark":          "On Your Mark",
+  "Section.Movement":              "이동",
+  "Section.Grand Company":         "총사령부",
+  "HacksUI_AcceptanceHack":        "토벌 지령서를 원격으로 수락",
+  "HacksUI_AcceptanceHack_Help":   "각 토벌판으로의 텔레포트와 도보 이동을 모두 건너뜁니다.\n활성화된 모든 토벌 지령서는 당신이 어디에 있든 그곳에서 수락됩니다.",
+  "NoFallDamage":                  "낙하 피해 없음",
+  "GetGrandCompanyRank":           "전문 배달 강제",
+  "GetGrandCompanyRank_Help":      "계급과 관계없이 전문 배달 창을 강제로 표시합니다.\n전문 배달을 해금하지 않은 경우에만 적용됩니다.\n(CBT에서 복원됨)"
+}

@@ -1,0 +1,8 @@
+{
+  "HelpText":      "これはある完璧主義者*ゴホン*Kawaii*ゴホン*がChocobokeep解放ツールを要望したためだけに存在します。\n「開始」を押すと、未解放のすべてのチョコボ発着所を解放します。",
+  "HideUnlocked":  "解放済みを隠す",
+  "ColKeepId":     "駅ID",
+  "ColTerritory":  "テリトリー",
+  "ColPlaceName":  "地名",
+  "ColUnlocked":   "解放済み"
+}

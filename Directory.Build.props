@@ -5,22 +5,22 @@
     <PropertyGroup>
         <LocalCS Condition="!$(MSBuildProjectName.EndsWith('Generators'))">$(LocalCSOverride)</LocalCS>
         <LocalCS Condition="$(MSBuildProjectName.EndsWith('Generators'))">false</LocalCS>
+        <UnderlingsProjectPath Condition="'$(UnderlingsProjectPath)' == ''">$(MSBuildThisFileDirectory)Underlings/Underlings/Underlings.csproj</UnderlingsProjectPath>
+        <UnderlingsGeneratorsProjectPath Condition="'$(UnderlingsGeneratorsProjectPath)' == ''">$(MSBuildThisFileDirectory)Underlings/Underlings.Generators/Underlings.Generators.csproj</UnderlingsGeneratorsProjectPath>
+        <ClientStructsRoot Condition="'$(Configuration)' != 'Private'">$(MSBuildThisFileDirectory)..\..\FFXIVClientStructs</ClientStructsRoot>
+        <ClientStructsRoot Condition="'$(Configuration)' == 'Private'">$(MSBuildThisFileDirectory)..\..\FFXIVClientStructs-RE</ClientStructsRoot>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(LocalCS)'=='true' AND '$(Configuration)' != 'Release'">
-        <Reference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll" Private="true" />
-        <Reference
-            Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator.Runtime\bin\Debug\net10.0\InteropGenerator.Runtime.dll"
-            Private="true" />
-    </ItemGroup>
+    <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props.user"
+            Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.props.user')" />
 
-    <ItemGroup Condition="'$(LocalCS)'=='true' AND '$(Configuration)'=='Release'">
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="true" />
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="true" />
+    <ItemGroup Condition="'$(LocalCS)'=='true'">
+        <ProjectReference Include="$(ClientStructsRoot)\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="true" />
+        <ProjectReference Include="$(ClientStructsRoot)\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="true" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(LocalCS)'=='true'">
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\FFXIVClientStructs\InteropGenerator\InteropGenerator.csproj"
+        <ProjectReference Include="$(ClientStructsRoot)\InteropGenerator\InteropGenerator.csproj"
                           OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 

@@ -1,0 +1,21 @@
+{
+    "HelpText": "AutoRetainer 模式：\n- 啟用所有你想要輪流進行海釣的角色。\n- On A Boat 會一律登入釣魚等級最低的角色。\n- 如果你沒有足夠的角色正在執行僱員任務以於 PostProcess 結束，\n  請將你的 AutoRetainer 設定為在標題畫面等待。\n\n單一角色模式：\n- 只需輸入你的角色名稱、選擇伺服器，On A Boat 就只會用該角色進行升級。\n\n如果你尚未完成海釣任務，系統將會為你完成。（需要 Questionable）\n為縮短移動時間，它會連接秘術師公會的乙太之光，以便下次使用城內乙太之晶。",
+    "TabMain": "主要",
+    "TabSettings": "設定",
+    "RegistrationOpenFmt": "報名開放剩餘 {0:D2}:{1:D2} 分鐘",
+    "NextVoyageFmt": "下次出航還有 {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "與 AutoRetainer 多重模式一起使用：",
+    "StopAt100": "若所選角色達到100級則停止：",
+    "SelectAll": "全部選取",
+    "DeselectAll": "取消全部選取",
+    "SelectAllShown": "選取所有顯示項目",
+    "DeselectAllShown": "取消選取所有顯示項目",
+    "CharacterName": "角色名稱：",
+    "World": "伺服器：",
+    "UseOnlyVersatileLure": "僅使用萬能誘餌",
+    "UseARItemSell": "出航後使用AR物品出售",
+    "UseARItemSellHelp": "如果你未啟用下方選項，此功能僅在你返回附近有僱員鈴/商人NPC的目的地時才會生效。",
+    "UseARDiscard": "出航後使用AR丟棄",
+    "UseARLocalSell": "賣給碼頭的商人",
+    "UseARLocalSellHelp": "這會賣給碼頭當地的商人。與其他外掛使用者重疊的風險較高，請務必小心！"
+}

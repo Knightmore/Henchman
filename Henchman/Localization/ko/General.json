@@ -1,0 +1,41 @@
+{
+  "_name.BringYourXGameUI": "A/B등급 토벌",
+  "_name.BumpOnALogUI":     "토벌록 진행",
+  "_name.ChocobokeepUI":    "초코보키퍼",
+  "_name.IPCUI":            "IPC",
+  "_name.IntoTheLightUI":   "빛 속으로",
+  "_name.MarkDatabaseUI":   "마크 데이터베이스",
+  "_name.MultiboxingUI":    "멀티박싱",
+  "_name.OnABoatUI":        "배 위에서",
+  "_name.RequirementsUI":   "요구 사항",
+  "_name.SettingsUI":       "설정",
+  "_name.GeneralTweaksUI":  "일반",
+  "_name.OnYourMarkUI":     "제자리에",
+  "_name.TestyTraderUI":    "예민한 상인",
+  "_name.RetainerVocateUI": "리테이너 안내인",
+  "_name.HacksUI":          "해크",
+
+  "Category.Combat":      "전투",
+  "Category.Exploration": "탐사",
+  "Category.Economy":     "경제",
+  "Category.Tweaks":      "조정",
+  "Category.System":      "시스템",
+
+  "Splash.Attention":          "주의",
+  "Splash.AttentionBody":      "포함된 기능은 vnavmesh와 게임 내에서 해금된 진행 상황의 한계 내에서 동작합니다!\n'지능형' 경로 탐색은 (아직!?) 포함되어 있지 않습니다.\n필요한 모든 지역/에테라이트를 해금하지 않은 경우, 일부 기능은 해당 작업에서 멈출 수 있습니다.",
+  "Splash.PositionalData":     "몬스터 위치 데이터",
+  "Splash.PositionalDataBody": "위치 데이터의 양이 많기 때문에 일부 위치가 정확하지 않을 수 있습니다.\n모든 일반 몬스터 출현 군집을 수집하기 위해 계속 작업 중입니다!",
+
+  "Requirements.Header":      "요구 사항",
+  "Requirements.HeaderText":  "Auto Rotations와 같은 일부 선택적 플러그인의 경우, 플러그인 설정에서 원하는 옵션을 선택할 수 있습니다.\n사용 가능한 설정이 없는 경우, 선택적 플러그인의 대체 수단을 직접 설정해야 합니다.\n\nBossMod가 선택 사항인 경우, AI용으로 BossModReborn을 사용할 수도 있습니다(오토 로테이션 아님).\n두 가지를 동시에 활성화하지 마세요. Henchman은 당신이 어리석은 행동을 하는 것을 적극적으로 막아주지 않습니다!",
+  "Requirements.Mandatory":   "(필수)",
+  "Requirements.Optional":    "(선택)",
+  "Requirements.Enabled":     "활성화됨",
+  "Requirements.Disabled":    "비활성화됨",
+  "Requirements.MissingPlugins": "누락된 플러그인",
+
+  "UI.ToggleStatus": "플러그인 상태 전환",
+  "UI.Confirm":      "확인",
+  "UI.ConfirmCheckboxLabel": "이를 읽고 동의합니다",
+  "UI.PersistentHint": "이 설정은 저장됩니다!"
+}

@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A:\n\"시작\"만 누르면 홍련의 해방자까지의 모든 이용 가능한 A랭크 목적지를 순회합니다.\n\nB:\n순회하고 싶은 지역을 선택하고 \"시작\"을 클릭하여 시작하세요.\n멈출 때까지 찾을 수 있는 모든 B랭크를 처치합니다.",
+  "TabARank":            "A랭크",
+  "TabBRank":            "B랭크",
+  "SelectAll":           "전체 선택",
+  "DeselectAll":         "전체 선택 해제",
+  "SelectExpansion":     "확장팩 선택",
+  "DeselectExpansion":   "확장팩 선택 해제",
+  "SelectZone":          "지역 선택",
+  "DeselectZone":        "지역 선택 해제",
+  "BRankToFarm":         "파밍할 B랭크:",
+  "TrackFoundSpots":     "발견한 B랭크 위치 추적",
+  "WritePositions":      "위치를 로그에 기록",
+  "PrintSpawnLocations": "출현 위치를 채팅에 출력",
+  "ColWorld":            "월드",
+  "ColMap":              "맵",
+  "ColTerritory":        "지역",
+  "LeftPositions":		 "남은 가능한 위치",
+  "RegisteredPositions": "등록된 출현 위치"
+}

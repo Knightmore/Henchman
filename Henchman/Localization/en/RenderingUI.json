@@ -7,6 +7,6 @@
     "RenderingUI_DisableRenderWhenUnfocused": "Disable Render When Unfocused",
     "RenderingUI_DisableRenderWhenUnfocused_Help": "Automatically disables 3D rendering whenever the game window loses focus, and re-enables it once it regains focus. You don't need to toggle Disable Render yourself while this is on.",
     "RenderingUI_ForceRender": "Force Renderstate",
-    "RenderingUI_ForceRender_Help": "Enable this if you don't give a shit about other plugins trying to set the render mode and you want Henchman to be the single point of responsiblity!\n\nTHIS IS NON-PERSISTENT AND WILL RESET ON EXITING THE GAME OR DISABLING THE PLUGIN!",
+    "RenderingUI_ForceRender_Help": "Enable this if you don't give a shit about other plugins trying to set the render mode and you want Henchman to be the single point of responsibility!\n\nTHIS IS NON-PERSISTENT AND WILL RESET ON EXITING THE GAME OR DISABLING THE PLUGIN!",
     "AddonFadeMiddleBack_Draw_Help": "Skips all fade transitions, such as when changing zones.\n\nThis could mess with other plugins which rely on checking fading."
 }

@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>3.0.1.2</Version>
+        <Version>3.0.1.5</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -72,15 +72,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Underlings\Underlings\Underlings.csproj" />
+        <ProjectReference Include="$(UnderlingsProjectPath)" AdditionalProperties="ClientStructsRoot=$(ClientStructsRoot);LocalCS=$(LocalCS)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="Exists('$(UnderlingsGeneratorsProjectPath)')">
+        <ProjectReference Include="$(UnderlingsGeneratorsProjectPath)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup Condition="Exists('..\Henchman.Generators\Henchman.Generators.csproj')">
         <ProjectReference Include="..\Henchman.Generators\Henchman.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    </ItemGroup>
-
-    <ItemGroup Condition="Exists('..\Underlings\Underlings.Generators\Underlings.Generators.csproj')">
-        <ProjectReference Include="..\Underlings\Underlings.Generators\Underlings.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>

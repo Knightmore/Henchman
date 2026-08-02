@@ -1,0 +1,20 @@
+{
+  "HelpText":            "A級：\n只要點擊「開始」，它就會巡遊所有可用的A級目標地點，直到紅蓮解放者版本為止。\n\nB級：\n選擇你想巡遊的地圖，點擊「開始」開始執行。\n它會持續討伐找到的任何B級目標，直到你停止為止。",
+  "TabARank":            "A級",
+  "TabBRank":            "B級",
+  "SelectAll":           "全部選取",
+  "DeselectAll":         "取消全部選取",
+  "SelectExpansion":     "選擇擴展包",
+  "DeselectExpansion":   "取消選擇擴展包",
+  "SelectZone":          "選擇區域",
+  "DeselectZone":        "取消選擇區域",
+  "BRankToFarm":         "要討伐的B級：",
+  "TrackFoundSpots":     "追蹤已找到的B級位置",
+  "WritePositions":      "將位置寫入紀錄",
+  "PrintSpawnLocations": "將出現位置顯示於聊天",
+  "ColWorld":            "伺服器",
+  "ColMap":              "地圖",
+  "ColTerritory":        "地圖",
+  "LeftPositions":		 "剩餘可能位置",
+  "RegisteredPositions": "已登錄的出現位置"
+}

@@ -1,0 +1,13 @@
+{
+  "HelpText":              "Paramètres généraux utilisés dans toutes les fonctionnalités implémentées.",
+  "UseMount":              "Utiliser une monture",
+  "UseMountRoulette":      "Utiliser la roulette de montures",
+  "Mount":                 "Monture",
+  "MountDistance":         "Monter à cheval quand la distance est supérieure à :",
+  "RunDistance":           "Courir quand la distance est supérieure à :",
+  "ReturnOnceDone":        "Retourner à une fois la fonctionnalité terminée :",
+  "AutoRotationPlugin":    "Plugin de rotation automatique :",
+  "UseChocoboCompanion":   "Utiliser le chocobo compagnon",
+  "ChocoboCompanionHelp":  "Invoque votre chocobo compagnon ou le nourrit si le temps restant est inférieur à 5 minutes.",
+  "UILanguage":            "Langue de l'interface :"
+}

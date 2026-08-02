@@ -1,0 +1,12 @@
+{
+    "HelpText": "Juste un tas d'ajustements généraux du jeu pour rendre votre expérience de jeu meilleure/plus facile.\nPour plus d'informations, lisez l'infobulle de chaque ajustement.",
+    "SectionPerformance": "Performance",
+    "Section.Performance": "Performance",
+    "RenderingUI_DisableRender": "Désactiver le rendu",
+    "RenderingUI_DisableRender_Help": "Ceci désactivera votre rendu 3D pour minimiser la charge de votre GPU tout en gardant l'interface intacte.\nPour un meilleur résultat, ajoutez une limite de fréquence d'images de 30 FPS.\nIl peut y avoir d'autres plugins qui forcent cet état, donc si ceci est réglé sur quelque chose que vous n'attendiez pas, ce n'est pas ma faute.\nSi vous ne voulez pas que d'autres plugins forcent leur état sur le vôtre, utilisez la case ci-dessous !\n\nCECI EST NON-PERSISTANT ET SERA RÉINITIALISÉ EN QUITTANT LE JEU OU EN DÉSACTIVANT LE PLUGIN !",
+    "RenderingUI_DisableRenderWhenUnfocused": "Désactiver le rendu quand la fenêtre n'est pas active",
+    "RenderingUI_DisableRenderWhenUnfocused_Help": "Désactive automatiquement le rendu 3D chaque fois que la fenêtre du jeu perd le focus, et le réactive une fois qu'elle le retrouve. Vous n'avez pas besoin de basculer vous-même Désactiver le rendu tant que ceci est activé.",
+    "RenderingUI_ForceRender": "Forcer l'état de rendu",
+    "RenderingUI_ForceRender_Help": "Activez ceci si vous n'en avez rien à foutre que d'autres plugins essaient de définir le mode de rendu et que vous voulez que Henchman soit le seul point de responsabilité !\n\nCECI EST NON-PERSISTANT ET SERA RÉINITIALISÉ EN QUITTANT LE JEU OU EN DÉSACTIVANT LE PLUGIN !",
+    "AddonFadeMiddleBack_Draw_Help": "Ignore toutes les transitions de fondu, comme lors du changement de zone.\n\nCeci pourrait interférer avec d'autres plugins qui dépendent de la vérification du fondu."
+}

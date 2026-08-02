@@ -1,0 +1,6 @@
+{
+  "HelpText":       "현재 제공되는 IPC 목록",
+  "ColReturn":      "반환값",
+  "ColFunction":    "함수",
+  "ColDescription": "설명"
+}

@@ -1,7 +1,7 @@
 <Project>
 
     <PropertyGroup>
-        <LocalCSOverride>true</LocalCSOverride>
+        <LocalCSOverride>false</LocalCSOverride>
     </PropertyGroup>
 
 </Project>

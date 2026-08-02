@@ -1,0 +1,14 @@
+{
+  "HelpText":      "원하는 캐릭터 데이터를 설정하고, 타이틀 화면으로 이동하여 시작을 누르세요.",
+  "Start":         "시작",
+  "NoLoginSkip":   "로그인 건너뛰지 않기",
+  "NoLoginSkipHelp": "각 신규 캐릭터를 로그인시킵니다. AutoRetainer에서 캐릭터를 등록할 때 유용합니다.",
+  "ColFirstName":  "이름",
+  "ColLastName":   "성",
+  "ColDataCenter": "데이터 센터",
+  "ColWorld":      "월드",
+  "ColClassJob":   "클래스/직업",
+  "ColPreset":     "프리셋",
+  "Random":        "무작위",
+  "None":          "없음"
+}

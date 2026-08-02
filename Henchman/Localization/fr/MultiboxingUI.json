@@ -1,0 +1,10 @@
+{
+  "HelpText":           "Paramètres pour les connexions multiboxing.",
+  "NetworkWarning":     "Vous êtes responsable de vos propres paramètres réseau. Aucun support informatique général ne sera fourni.",
+  "UseOnlyLocally":     "Utiliser uniquement en local :",
+  "LocalOnlyHelp":      "Si vous ne prévoyez pas d'utiliser le multiboxing sur plusieurs machines mais seulement en local, vous pouvez garder cette option activée.\nLe multiboxing en réseau peut déclencher une demande de pare-feu sur votre machine boss (serveur).",
+  "IPAddress":          "Adresse IP (Boss) à laquelle se connecter",
+  "IPAddressHelp":      "Vous n'avez besoin de définir ceci que sur vos henchmen (clients) si vous ne l'utilisez pas uniquement en local.",
+  "Port":               "Port :",
+  "PortHelp":           "Si vous n'exécutez pas plusieurs instances boss (serveurs) sur votre réseau, vous pouvez garder le port par défaut.\nSinon, vous devez changer le port pour chaque groupe boss/henchmen (serveur/client) distinct vers un port différent."
+}

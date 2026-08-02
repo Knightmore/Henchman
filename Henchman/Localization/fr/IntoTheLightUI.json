@@ -1,0 +1,14 @@
+{
+  "HelpText":      "Configurez les données de personnage souhaitées, allez à l'écran titre et appuyez sur Démarrer.",
+  "Start":         "Démarrer",
+  "NoLoginSkip":   "Ne pas ignorer la connexion",
+  "NoLoginSkipHelp": "Laisse chaque nouveau personnage se connecter. Utile pour l'enregistrement des personnages dans AutoRetainer.",
+  "ColFirstName":  "Prénom",
+  "ColLastName":   "Nom",
+  "ColDataCenter": "Centre de données",
+  "ColWorld":      "Monde",
+  "ColClassJob":   "Classe/Job",
+  "ColPreset":     "Préréglage",
+  "Random":        "Aléatoire",
+  "None":          "Aucun"
+}

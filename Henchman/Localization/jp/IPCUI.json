@@ -1,0 +1,6 @@
+{
+  "HelpText":       "現在提供されているIPCの一覧",
+  "ColReturn":      "戻り値",
+  "ColFunction":    "関数",
+  "ColDescription": "説明"
+}

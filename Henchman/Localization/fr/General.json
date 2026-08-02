@@ -1,0 +1,41 @@
+{
+  "_name.BringYourXGameUI": "Ramène ta force A/B",
+  "_name.BumpOnALogUI":     "Journal de chasse",
+  "_name.ChocobokeepUI":    "Chocobokeep",
+  "_name.IPCUI":            "IPC",
+  "_name.IntoTheLightUI":   "Vers la lumière",
+  "_name.MarkDatabaseUI":   "Base de données des marques",
+  "_name.MultiboxingUI":    "Multiboxing",
+  "_name.OnABoatUI":        "En bateau",
+  "_name.RequirementsUI":   "Prérequis",
+  "_name.SettingsUI":       "Paramètres",
+  "_name.GeneralTweaksUI":  "Général",
+  "_name.OnYourMarkUI":     "À vos marques",
+  "_name.TestyTraderUI":    "Assistant de commerce",
+  "_name.RetainerVocateUI": "Régisseuse des servantes",
+  "_name.HacksUI":          "Hacks",
+
+  "Category.Combat":      "COMBAT",
+  "Category.Exploration": "EXPLORATION",
+  "Category.Economy":     "ÉCONOMIE",
+  "Category.Tweaks":      "AJUSTEMENTS",
+  "Category.System":      "SYSTÈME",
+
+  "Splash.Attention":          "ATTENTION",
+  "Splash.AttentionBody":      "Les fonctionnalités incluses fonctionnent dans les limites de vnavmesh et de votre progression débloquée en jeu !\nAucun cheminement 'intelligent' n'est inclus (pour l'instant !?).\nSi vous n'avez pas débloqué tous les territoires/éthérites nécessaires, certaines fonctionnalités peuvent s'arrêter à cette étape.",
+  "Splash.PositionalData":     "Données de position des monstres",
+  "Splash.PositionalDataBody": "En raison de la quantité de données de position, il peut arriver que certaines positions ne soient pas correctes.\nJe travaille dessus, pour récupérer tous les groupes d'apparition de monstres réguliers !",
+
+  "Requirements.Header":      "PRÉREQUIS",
+  "Requirements.HeaderText":  "Pour certains plugins optionnels comme Auto Rotations, vous pouvez sélectionner votre option préférée dans les paramètres du plugin.\nSi aucun paramètre n'est disponible, vous devrez configurer manuellement des alternatives pour tout plugin optionnel.\n\nSi BossMod est optionnel, vous pouvez aussi utiliser BossModReborn pour l'IA (pas la rotation automatique).\nN'activez pas les deux en même temps. Henchman ne vous empêche pas activement d'être stupide !",
+  "Requirements.Mandatory":   "(obligatoire)",
+  "Requirements.Optional":    "(optionnel)",
+  "Requirements.Enabled":     "activé",
+  "Requirements.Disabled":    "désactivé",
+  "Requirements.MissingPlugins": "Plugins manquants",
+
+  "UI.ToggleStatus": "Basculer l'état du plugin",
+  "UI.Confirm":      "Confirmer",
+  "UI.ConfirmCheckboxLabel": "J'ai lu et j'accepte ceci",
+  "UI.PersistentHint": "Ce paramètre sera sauvegardé !"
+}

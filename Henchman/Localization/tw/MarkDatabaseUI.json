@@ -1,0 +1,12 @@
+{
+  "CurrentTerritory":      "目前地圖：",
+  "CurrentTargetId":       "目前目標ID：",
+  "CurrentTargetName":     "目前目標名稱：",
+  "CurrentPosition":       "目前位置：",
+  "None":                  "無",
+  "CopyAreaMarker":        "複製新區域標記（目前位置）",
+  "OverlappingMarkAreas":  "重疊的標記區域：",
+  "ColId":                 "ID",
+  "ColName":               "名稱",
+  "ColPosition":           "位置"
+}

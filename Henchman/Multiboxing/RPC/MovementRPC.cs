@@ -19,7 +19,11 @@ internal static class MovementRPC
         if (Player.CurrentWorldName != world)
         {
             if (Lifestream.ChangeWorld.Invoke(world, false))
+            {
                 await WaitPulseConditionAsync(() => Lifestream.IsBusy.Invoke(), "Waiting for World change", token);
+                await WaitUntilAsync(() => Player.Available && !Player.IsBusy && IsScreenAndPlayerReady(),
+                                      "Waiting for world change to settle", token);
+            }
             else
                 return false;
         }

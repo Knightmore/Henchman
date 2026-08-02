@@ -1,0 +1,21 @@
+{
+    "HelpText": "自动雇员模式：\n- 启用所有你想要循环进行海钓的角色。\n- 出海钓鱼将始终登录钓鱼等级最低的角色。\n- 如果你没有足够的角色运行雇员在后期处理中结束，\n  设置你的AutoRetainer在标题画面等待。\n\n单角色模式：\n- 只需输入你的角色名称，选择它的世界，出海钓鱼将只使用该角色升级。\n\n如果你还没有完成海钓任务，它会为你完成。（需要Questionable）\n为了减少旅行时间，它会附魔到秘术师行会的传送点，下次使用以太之光。",
+    "TabMain": "主要",
+    "TabSettings": "设置",
+    "RegistrationOpenFmt": "注册开放还有 {0:D2}:{1:D2} 分钟",
+    "NextVoyageFmt": "下次航行还有 {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "与AutoRetainer多模式一起使用：",
+    "StopAt100": "如果选择的角色达到100级则停止：",
+    "SelectAll": "全选",
+    "DeselectAll": "取消全选",
+    "SelectAllShown": "选择所有显示的",
+    "DeselectAllShown": "取消选择所有显示的",
+    "CharacterName": "角色名称：",
+    "World": "世界：",
+    "UseOnlyVersatileLure": "仅使用万能诱饵",
+    "UseARItemSell": "航行后使用AR物品出售",
+    "UseARItemSellHelp": "如果你不启用下面的选项，这只在你返回到有雇员钟/商人NPC附近的目的地时有效。",
+    "UseARDiscard": "航行后使用AR丢弃",
+    "UseARLocalSell": "卖给码头的商人",
+    "UseARLocalSellHelp": "这将卖给码头当地的商人。与其他脚本堆积的高风险，所以要小心！"
+}

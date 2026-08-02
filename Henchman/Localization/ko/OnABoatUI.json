@@ -1,0 +1,21 @@
+{
+    "HelpText": "AutoRetainer 모드:\n- 바다 낚시를 위해 순환시키고 싶은 모든 캐릭터를 활성화하세요.\n- On A Boat는 항상 낚시 레벨이 가장 낮은 캐릭터로 로그인합니다.\n- PostProcess에서 종료할 만큼 리테이너를 운영 중인 캐릭터가 충분하지 않다면,\n  AutoRetainer가 타이틀 화면에서 대기하도록 설정하세요.\n\n단일 캐릭터 모드:\n- 캐릭터 이름을 입력하고 월드를 선택하기만 하면, On A Boat는 그 캐릭터로만 레벨업을 진행합니다.\n\n아직 바다 낚시 퀘스트를 완료하지 않았다면, 대신 완료해 드립니다. (Questionable 필요)\n이동 시간을 줄이기 위해, 다음번에 도시 내 에테라이트를 사용할 수 있도록 비법학자 길드의 에테라이트에 접속합니다.",
+    "TabMain": "메인",
+    "TabSettings": "설정",
+    "RegistrationOpenFmt": "등록이 {0:D2}:{1:D2}분 동안 열려 있습니다",
+    "NextVoyageFmt": "다음 항해까지 {0:D2}:{1:D2}:{2:D2}",
+    "UseWithARMultimode": "AutoRetainer 멀티모드와 함께 사용:",
+    "StopAt100": "선택한 캐릭터가 100레벨이면 정지:",
+    "SelectAll": "전체 선택",
+    "DeselectAll": "전체 선택 해제",
+    "SelectAllShown": "표시된 항목 전체 선택",
+    "DeselectAllShown": "표시된 항목 전체 선택 해제",
+    "CharacterName": "캐릭터 이름:",
+    "World": "월드:",
+    "UseOnlyVersatileLure": "만능 루어만 사용",
+    "UseARItemSell": "항해 후 AR 아이템 판매 사용",
+    "UseARItemSellHelp": "아래 옵션을 활성화하지 않으면, 근처에 리테이너 종/상인 NPC가 있는 목적지로 돌아왔을 때만 작동합니다.",
+    "UseARDiscard": "항해 후 AR 폐기 사용",
+    "UseARLocalSell": "부두의 상인에게 판매",
+    "UseARLocalSellHelp": "부두의 현지 상인에게 판매합니다. 다른 봇 사용자와 겹칠 위험이 높으니 주의하세요!"
+}
