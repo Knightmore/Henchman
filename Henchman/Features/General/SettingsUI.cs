@@ -1,6 +1,5 @@
 using System.IO;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
@@ -18,7 +17,7 @@ internal class SettingsUI : ModuleUI
             ("English", UiLanguage.English, "en"),
             ("Deutsch", UiLanguage.German, "de"),
             ("Français", UiLanguage.French, "fr"),
-            ("日本語", UiLanguage.Japanese, "ja"),
+            ("日本語", UiLanguage.Japanese, "jp"),
             ("한국어", UiLanguage.Korean, "ko"),
             ("简体中文", UiLanguage.Chinese, "zh"),
             ("繁體中文", UiLanguage.Taiwanese, "tw")

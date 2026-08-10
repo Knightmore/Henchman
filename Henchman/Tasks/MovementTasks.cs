@@ -269,7 +269,7 @@ internal static class MovementTasks
         await WaitUntilAsync(async () => Vnavmesh.NavIsReady.Invoke() && !await IsBusy(token), "Wait for navmesh", token);
         var position = gameObject.Position;
 
-        ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(position, Player.DistanceTo(position) > 25 && Player.Mounted && Player.CanFly), $"Could not find path to {gameObject.Position}");
+        ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(position, Svc.Condition[ConditionFlag.InFlight] || (Player.DistanceTo(position) > 25 && Player.Mounted && Player.CanFly)), $"Could not find path to {gameObject.Position}");
         await WaitUntilAsync(() => Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
 
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
@@ -367,7 +367,8 @@ internal static class MovementTasks
                              }, "Wait until close to player", token);
     }
 
-    internal static async Task MoveToArea(Vector3 position, CancellationToken token = default) => await Underlings.TaskManager.MovementTasks.MoveToArea(position, Options, 50f, token);
+    internal static async Task MoveToArea(Vector3 position, CancellationToken token                             = default) => await Underlings.TaskManager.MovementTasks.MoveToArea(position, Options, 50f, token);
+    internal static async Task MoveToArea(Vector3 position, float             distance, CancellationToken token = default) => await Underlings.TaskManager.MovementTasks.MoveToArea(position, Options, distance, token);
 
     internal static async Task TeleportTo(uint territoryId, uint aetheryteTerritoryId, uint aetheryteId, CancellationToken token = default)
     {

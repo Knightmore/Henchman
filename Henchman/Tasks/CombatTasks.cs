@@ -13,6 +13,7 @@ using Henchman.Models;
 using Lumina.Excel.Sheets;
 using Underlings.GameHelpers;
 using Underlings.TaskManager;
+using AutoDuty = Underlings.IPC.AutoDuty;
 
 namespace Henchman.Tasks;
 
@@ -72,7 +73,8 @@ internal static class CombatTasks
                                     if (markPosition.ToVector2()
                                                     .IsWithinRadius(new Vector2(175f, 223f)))
                                     {
-                                        await MoveToNextZone(new Vector3(198.923f, -161.5932f, 115.7771f), Player.TerritoryId, token);
+                                        await MoveToArea(new Vector3(198.923f, -161.5932f, 115.7771f), 0.6f, token);
+                                        //await MoveToNextZone(new Vector3(198.923f, -161.5932f, 115.7771f), Player.TerritoryId, token);
                                         await WaitUntilAsync(() => IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                                     }
                                     else
@@ -80,7 +82,8 @@ internal static class CombatTasks
                                         if (Player.Position.ToVector2()
                                                   .IsWithinRadius(new Vector2(175f, 223f)))
                                         {
-                                            await MoveToNextZone(new Vector3(201f, -162f, 118f), Player.TerritoryId, token);
+                                            await MoveToArea(new Vector3(201f, -162f, 118f), 0.6f, token);
+                                            //await MoveToNextZone(new Vector3(201f, -162f, 118f), Player.TerritoryId, token);
                                             await WaitUntilAsync(() => IsScreenAndPlayerReady(), "Waiting for Area transistion", token);
                                         }
                                     }
@@ -90,7 +93,7 @@ internal static class CombatTasks
                                     if (markPosition.ToVector2()
                                                     .IsWithinRadius(new Vector2(-300f, 600f), 300f))
                                     {
-                                        await MoveTo(new Vector3(-317f, -36.2f, 351f), true, token);
+                                        await MoveTo(new Vector3(317f, -36.2f, 351f), true, token);
                                         await UseFerry(1003584, Lang.SelectStringWarpIsleOfUmbra, Lang.SelectYesnoPassageToIsleOfUmbra, "Isle of Umbra", token);
                                     }
                                 }
@@ -196,16 +199,16 @@ internal static class CombatTasks
                               .ToList();
         foreach (var duty in duties)
         {
-            var ADPathAvailable = Underlings.IPC.AutoDuty.ContentHasPath.Invoke(duty);
+            var ADPathAvailable = AutoDuty.ContentHasPath.Invoke(duty);
             var dutyUnlocked    = UIState.IsInstanceContentUnlocked(duty);
 
             if (dutyUnlocked && ADPathAvailable)
             {
                 if (C.SoloUnsyncLogDuty)
-                    global::Henchman.IPC.AutoDuty.RunDutyUnsync(duty);
+                    IPC.AutoDuty.RunDutyUnsync(duty);
                 else
-                    Underlings.IPC.AutoDuty.RunDutySupport(duty);
-                await WaitUntilAsync(() => Underlings.IPC.AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
+                    AutoDuty.RunDutySupport(duty);
+                await WaitUntilAsync(() => AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
             }
             else if (!dutyUnlocked && ADPathAvailable)
             {
@@ -215,10 +218,10 @@ internal static class CombatTasks
                     await UnlockDuty(duty, token);
 
                     if (C.SoloUnsyncLogDuty)
-                        global::Henchman.IPC.AutoDuty.RunDutyUnsync(duty);
+                        IPC.AutoDuty.RunDutyUnsync(duty);
                     else
-                        Underlings.IPC.AutoDuty.RunDutySupport(duty);
-                    await WaitUntilAsync(() => Underlings.IPC.AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
+                        AutoDuty.RunDutySupport(duty);
+                    await WaitUntilAsync(() => AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
                 }
 
                 huntMarks.ForEach(x => x.IsCurrentTarget = false);
