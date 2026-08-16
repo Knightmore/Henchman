@@ -7,6 +7,7 @@ using Henchman.Data;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
 using Underlings.GameHelpers;
+using AutoDuty = Underlings.IPC.AutoDuty;
 using GrandCompany = Lumina.Excel.Sheets.GrandCompany;
 using Module = Underlings.Modules.Module;
 
@@ -76,6 +77,8 @@ public partial class BumpOnALog : Module
             Chat.Warning("You do not have equipped a combat class!");
             return;
         }
+
+        if (!AutoRotation.CheckForAvailability(C.AutoRotationPlugin)) return;
 
         if (!gcLog)
         {
@@ -244,8 +247,11 @@ public partial class BumpOnALog : Module
         var seq = QuestManager.GetQuestSequence(questId);
         if (seq == 2)
         {
-            Underlings.IPC.AutoDuty.RunDutySupport(dutyId);
-            await WaitUntilAsync(() => Underlings.IPC.AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
+            if (C.SoloUnsyncLogDuty)
+                IPC.AutoDuty.RunDutyUnsync(dutyId);
+            else
+                AutoDuty.RunDutySupport(dutyId);
+            await WaitUntilAsync(() => AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
             seq = QuestManager.GetQuestSequence(questId);
         }
 

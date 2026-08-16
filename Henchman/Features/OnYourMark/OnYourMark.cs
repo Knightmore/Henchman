@@ -27,6 +27,8 @@ public class OnYourMark : Module
             return;
         }
 
+        if (!AutoRotation.CheckForAvailability(C.AutoRotationPlugin)) return;
+
         var mobHuntOrderType = GetCorrectedMobHuntOrderTypes()
                .ToList();
 

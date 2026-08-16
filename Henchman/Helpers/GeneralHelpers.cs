@@ -222,7 +222,7 @@ public static class GeneralHelpers
     internal static void CleanupCombatAutomation()
     {
         Bossmod.DisableAI();
-        AutoRotation.Disable(C.AutoRotationPlugin);
+        AutoRotation.DisableActive();
         ResetCurrentTarget();
     }
 }

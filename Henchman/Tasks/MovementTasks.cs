@@ -28,13 +28,13 @@ internal static class MovementTasks
                                                       HandleCombat     = token => HandleHaters(token: token),
                                                       EnableCombatAutomation = () =>
                                                                                {
-                                                                                   AutoRotation.Enable(C.AutoRotationPlugin);
+                                                                                   AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
                                                                                    Bossmod.EnableAI();
                                                                                },
                                                       DisableCombatAutomation = () =>
                                                                                 {
                                                                                     Bossmod.DisableAI();
-                                                                                    AutoRotation.Disable(C.AutoRotationPlugin);
+                                                                                    AutoRotation.DisableActive();
                                                                                 }
                                               };
 
@@ -42,11 +42,11 @@ internal static class MovementTasks
     {
         if (Svc.Condition[ConditionFlag.InCombat] && !HandlingHaters)
         {
-            AutoRotation.Enable(C.AutoRotationPlugin);
+            AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
             Bossmod.EnableAI();
             await HandleHaters(token: token);
             Bossmod.DisableAI();
-            AutoRotation.Disable(C.AutoRotationPlugin);
+            AutoRotation.DisableActive();
         }
 
         return Player.IsBusy;
@@ -161,11 +161,11 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             AutoRotation.Enable(C.AutoRotationPlugin);
+                                             AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
                                              Bossmod.EnableAI();
                                              await HandleHaters(token: token);
                                              Bossmod.DisableAI();
-                                             AutoRotation.Disable(C.AutoRotationPlugin);
+                                             AutoRotation.DisableActive();
                                          }
 
                                          await WaitWhileAsync(() => Player.IsBusy, "Wait while Player is busy", token);
@@ -434,11 +434,11 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             AutoRotation.Enable(C.AutoRotationPlugin);
+                                             AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
                                              Bossmod.EnableAI();
                                              await HandleHaters(token: token);
                                              Bossmod.DisableAI();
-                                             AutoRotation.Disable(C.AutoRotationPlugin);
+                                             AutoRotation.DisableActive();
                                          }
                                      },
                                      3,
@@ -512,12 +512,12 @@ internal static class MovementTasks
                            .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
                                                    .Any(y => y.BNpcBase.RowId == x.BaseId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
                     {
-                        AutoRotation.Enable(C.AutoRotationPlugin);
+                        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
                         Bossmod.EnableAI();
 
                         if (!await KillTarget(detourTarget, token))
                         {
-                            AutoRotation.Disable(C.AutoRotationPlugin);
+                            AutoRotation.DisableActive();
                             Bossmod.DisableAI();
                             return false;
                         }
@@ -532,12 +532,12 @@ internal static class MovementTasks
                         if ((isDummyTarget && exVersion == 0 && killedARanks == 1) ||
                             (isDummyTarget && exVersion > 0  && killedARanks == 2))
                         {
-                            AutoRotation.Disable(C.AutoRotationPlugin);
+                            AutoRotation.DisableActive();
                             Bossmod.DisableAI();
                             return true;
                         }
 
-                        AutoRotation.Disable(C.AutoRotationPlugin);
+                        AutoRotation.DisableActive();
                         Bossmod.DisableAI();
                     }
                 }

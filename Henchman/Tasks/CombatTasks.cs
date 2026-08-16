@@ -269,7 +269,7 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        AutoRotation.Enable(C.AutoRotationPlugin);
+        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
         Bossmod.EnableAI();
 
         using var scope = new TaskDescriptionScope($"Hunting Mark: {huntMark.Name}");
@@ -299,7 +299,7 @@ internal static class CombatTasks
         await HandleHaters(token: token);
 
         Bossmod.DisableAI();
-        AutoRotation.Disable(C.AutoRotationPlugin);
+        AutoRotation.DisableActive();
 
         return KillResult.Success;
     }
@@ -308,7 +308,7 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        AutoRotation.Enable(C.AutoRotationPlugin);
+        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
         Bossmod.EnableAI();
 
         using var scope = new TaskDescriptionScope($"Killing Counted Hunt Mark: {huntMark.Name}");
@@ -365,7 +365,7 @@ internal static class CombatTasks
         }
 
         Bossmod.DisableAI();
-        AutoRotation.Disable(C.AutoRotationPlugin);
+        AutoRotation.DisableActive();
 
         return KillResult.Success;
     }

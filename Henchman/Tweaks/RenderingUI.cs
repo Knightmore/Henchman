@@ -44,6 +44,5 @@ public partial class RenderingUI : ModuleUI
     public override void Dispose()
     {
         DisposeSigHooks();
-        Teardown_VfxResourceInstanceCreate();
     }
 }

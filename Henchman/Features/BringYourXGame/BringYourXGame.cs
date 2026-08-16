@@ -21,10 +21,11 @@ public class BringYourXGame : Module
             return;
         }
 
-        if (runA)
-            TryStartTask(new TaskRecord(StartA, "Bring Your A/B Game", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
-        else
-            TryStartTask(new TaskRecord(StartB, "Bring Your A/B Game", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+        if (!AutoRotation.CheckForAvailability(C.AutoRotationPlugin)) return;
+
+        TryStartTask(runA
+                             ? new TaskRecord(StartA, "Bring Your A/B Game", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation)
+                             : new TaskRecord(StartB, "Bring Your A/B Game", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
     }
 
     internal async Task StartA(CancellationToken token = default)

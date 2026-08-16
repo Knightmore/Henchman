@@ -23,9 +23,6 @@ internal static unsafe partial class Rendering
     {
         ForcedRenderFlag = !enabled;
         RenderDisabled   = ForcedRenderFlag;
-
-        if (enabled) Disable_VfxResourceInstanceCreate();
-        else Enable_VfxResourceInstanceCreate();
     }
 
     internal static void SetForceRenderEnabled(bool enabled)
@@ -86,7 +83,4 @@ internal static unsafe partial class Rendering
         LastWindowInactive = windowInactive;
         SetRender(!windowInactive);
     }
-
-    [SigHook("48 89 5C 24 ?? 57 48 83 EC ?? 81 3D", "Performance", "Disable VFX", "Disable all VFX", BuildRestriction.Public)]
-    private static nint VfxResourceInstanceCreate(nint resourceHandle, nint ownerVfxObject) => nint.Zero;
 }

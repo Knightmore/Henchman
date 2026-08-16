@@ -104,9 +104,9 @@ internal static class Lang
                                                                .GetRow(111)
                                                                .Text;
 
-    internal static string TradeText => Svc.Data.GetExcelSheet<Addon>()
-                                           .GetRow(102223)
-                                           .Text.ExtractText();
+    internal static ReadOnlySeString TradeText => Svc.Data.GetExcelSheet<Addon>()
+                                                     .GetRow(102223)
+                                                     .Text;
 
     internal static string SelectStringBoardOCShip => Svc.Data.GetExcelSheet<RawRow>(name: "custom/006/CtsIkdEntrance_00663")
                                                          .GetRow(4)
