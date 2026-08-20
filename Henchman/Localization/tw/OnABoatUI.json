@@ -5,7 +5,7 @@
     "RegistrationOpenFmt": "報名開放剩餘 {0:D2}:{1:D2} 分鐘",
     "NextVoyageFmt": "下次出航還有 {0:D2}:{1:D2}:{2:D2}",
     "UseWithARMultimode": "與 AutoRetainer 多重模式一起使用：",
-    "StopAt100": "若所選角色達到100級則停止：",
+    "StopAt": "所選角色的停止等級：",
     "SelectAll": "全部選取",
     "DeselectAll": "取消全部選取",
     "SelectAllShown": "選取所有顯示項目",

@@ -269,12 +269,8 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-        Bossmod.EnableAI();
-
+        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
         using var scope = new TaskDescriptionScope($"Hunting Mark: {huntMark.Name}");
-
-
         if (huntMark.FateId > 0)
         {
             await WaitUntilAsync(() => IsInFate((ushort)huntMark.FateId, token),
@@ -288,7 +284,6 @@ internal static class CombatTasks
             }
         }
 
-
         if (await GetNearestMobByNameId(huntMark.BNpcNameRowId, true, token) is not { } targetedMark)
             return KillResult.NoSpawns;
 
@@ -298,9 +293,6 @@ internal static class CombatTasks
         await Task.Delay(GeneralDelayMs * 2, token);
         await HandleHaters(token: token);
 
-        Bossmod.DisableAI();
-        AutoRotation.DisableActive();
-
         return KillResult.Success;
     }
 
@@ -308,11 +300,8 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-        Bossmod.EnableAI();
-
+        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
         using var scope = new TaskDescriptionScope($"Killing Counted Hunt Mark: {huntMark.Name}");
-
         TaskLog.Verbose($"HuntLog: {huntLog}");
         TaskLog.Verbose($"Open Kills: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
         TaskLog.Verbose($"Killing Hunt Mark: {huntMark.Name} ({huntMark.BNpcNameRowId} {huntMark.MobHuntRowId} {huntMark.MobHuntSubRowId} {huntMark.GetCurrentMobHuntKills} {huntMark.GetOpenMobHuntKills})");
@@ -336,7 +325,6 @@ internal static class CombatTasks
                     }
                 }
             }
-
 
             if (await GetNearestMobByNameId(huntMark.BNpcNameRowId, true, token) is not { } targetedMark)
                 return KillResult.NoSpawns;
@@ -364,9 +352,6 @@ internal static class CombatTasks
             }
         }
 
-        Bossmod.DisableAI();
-        AutoRotation.DisableActive();
-
         return KillResult.Success;
     }
 
@@ -383,6 +368,7 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
         var       mobName = mob.Name.TextValue;
+        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
         using var scope   = new TaskDescriptionScope($"Killing Mob: {mobName}");
 
         if (Player.DistanceTo(mob.Position) >= C.MinMountDistance)

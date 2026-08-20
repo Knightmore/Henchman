@@ -22,6 +22,7 @@ using Henchman.Features.OnABoat;
 using Henchman.Features.OnYourMark;
 using Henchman.Features.RetainerVocate;
 using Henchman.Tweaks;
+using Serilog.Events;
 using Underlings.Configuration;
 using Underlings.Keybinds;
 using Underlings.Modules;
@@ -84,6 +85,7 @@ public class Henchman : IDalamudPlugin
 
 
         CancelAllTasks();
+        CombatAutomation.ForceCleanup();
         Wrath.DisableWrath();
         Rendering.SetDisableRenderWhenUnfocused(false);
         Rendering.SetForceRenderEnabled(false);
@@ -121,6 +123,7 @@ public class Henchman : IDalamudPlugin
 
     private void Initialize()
     {
+        Svc.Log.MinimumLogLevel = LogEventLevel.Verbose;
         HuntDatabase.Initialize();
         PluginConfig.Migrate<Configuration>();
         Config = PluginConfig.Init<Configuration>();

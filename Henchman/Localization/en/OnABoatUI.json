@@ -5,7 +5,7 @@
     "RegistrationOpenFmt": "Registration open for {0:D2}:{1:D2} minutes",
     "NextVoyageFmt": "Next Voyage in {0:D2}:{1:D2}:{2:D2}",
     "UseWithARMultimode": "Use with AutoRetainer Multimode:",
-    "StopAt100": "Stop if selected chars are lvl 100:",
+    "StopAt": "Stop if selected chars are lvl:",
     "SelectAll": "Select All",
     "DeselectAll": "Deselect All",
     "SelectAllShown": "Select All Shown",

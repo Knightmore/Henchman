@@ -161,10 +161,13 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
 
             DrawCentered("##boatArStopAt100", () =>
                                               {
-                                                  ImGui.Text(T("StopAt100"));
+                                                  ImGui.Text(T("StopAt"));
                                                   //ImGui.SameLine(200 * GlobalFontScale);
                                                   ImGui.SameLine();
-                                                  ConfigChanged |= ImGui.Checkbox("##stopAt100", ref Configuration.OCFishingStop100);
+                                                  ImGui.SetNextItemWidth(40 * GlobalFontScale);
+                                                  ImGui.InputInt("##fisherMaxLevel", ref Configuration.MaxLevel);
+                                                  ImGui.SameLine();
+                                                  ConfigChanged |= ImGui.Checkbox("##stopAt", ref Configuration.OCFishingStopLevel);
                                               });
         }
 

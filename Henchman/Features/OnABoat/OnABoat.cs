@@ -210,7 +210,7 @@ internal class OnABoat : Module
                                            .OrderBy(x => x.ClassJobLevelArray[17])
                                            .First();
 
-                if (lowestFisherCharacter.ClassJobLevelArray[17] == 100 && Configuration!.OCFishingStop100)
+                if (lowestFisherCharacter.ClassJobLevelArray[17] == Configuration.MaxLevel && Configuration!.OCFishingStopLevel)
                 {
                     AutoRetainer.FinishCharacterPostprocessRequest.Invoke();
                     AutoRetainer.SetMultiModeEnabled.Invoke(true);
@@ -514,6 +514,23 @@ internal class OnABoat : Module
 
                 if (InPostProcess || CachedMultiMode)
                     AutoRetainer.SetMultiModeEnabled.Invoke(true);
+                else
+                {
+                    while (true)
+                    {
+                        unsafe
+                        {
+                            if (TryGetAddonByName<AtkUnitBase>("SelectYesno", out _))
+                                break;
+
+                            UIModule.Instance()->SendChatCommand("/logout");
+                        }
+
+                        await Task.Delay(8 * GeneralDelayMs, token);
+                    }
+
+                    await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoLogout), "Confirm logout", token);
+                }
 
                 InPostProcess = false;
             }
@@ -524,8 +541,8 @@ internal class OnABoat : Module
     {
 #if PRIVATE
         var positionalData = ReleaseUtils.GetRandomFishingPositionWithRotation();
-        var position = positionalData.position;
-        var rotation = positionalData.rotation;
+        var position       = positionalData.position;
+        var rotation       = positionalData.rotation;
 #else
         var position = GetFishingPosition();
         var rotation = position.X > 0

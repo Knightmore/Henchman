@@ -18,35 +18,35 @@ internal static class MovementTasks
 {
     private const uint TeleportActionId = 5;
 
-    private static MovementOptions Options => new()
-                                              {
-                                                      UseMount         = C.UseMount,
-                                                      MountId          = C.MountId,
-                                                      UseMountRoulette = C.UseMountRoulette,
-                                                      MinRunDistance   = C.MinRunDistance,
-                                                      MinMountDistance = C.MinMountDistance,
-                                                      HandleCombat     = token => HandleHaters(token: token),
-                                                      EnableCombatAutomation = () =>
-                                                                               {
-                                                                                   AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-                                                                                   Bossmod.EnableAI();
-                                                                               },
-                                                      DisableCombatAutomation = () =>
-                                                                                {
-                                                                                    Bossmod.DisableAI();
-                                                                                    AutoRotation.DisableActive();
-                                                                                }
-                                              };
+    private static MovementOptions Options
+    {
+        get
+        {
+            IDisposable? automation = null;
+            return new MovementOptions
+                   {
+                           UseMount         = C.UseMount,
+                           MountId          = C.MountId,
+                           UseMountRoulette = C.UseMountRoulette,
+                           MinRunDistance   = C.MinRunDistance,
+                           MinMountDistance = C.MinMountDistance,
+                           HandleCombat     = token => HandleHaters(token: token),
+                           EnableCombatAutomation = () => automation ??= CombatAutomation.Acquire(C.AutoRotationPlugin),
+                           DisableCombatAutomation = () =>
+                                                     {
+                                                         automation?.Dispose();
+                                                         automation = null;
+                                                     }
+                   };
+        }
+    }
 
     private static async Task<bool> IsBusy(CancellationToken token)
     {
         if (Svc.Condition[ConditionFlag.InCombat] && !HandlingHaters)
         {
-            AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-            Bossmod.EnableAI();
+            using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
             await HandleHaters(token: token);
-            Bossmod.DisableAI();
-            AutoRotation.DisableActive();
         }
 
         return Player.IsBusy;
@@ -161,11 +161,8 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-                                             Bossmod.EnableAI();
+                                             using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
                                              await HandleHaters(token: token);
-                                             Bossmod.DisableAI();
-                                             AutoRotation.DisableActive();
                                          }
 
                                          await WaitWhileAsync(() => Player.IsBusy, "Wait while Player is busy", token);
@@ -434,11 +431,8 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-                                             Bossmod.EnableAI();
+                                             using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
                                              await HandleHaters(token: token);
-                                             Bossmod.DisableAI();
-                                             AutoRotation.DisableActive();
                                          }
                                      },
                                      3,
@@ -512,15 +506,10 @@ internal static class MovementTasks
                            .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
                                                    .Any(y => y.BNpcBase.RowId == x.BaseId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
                     {
-                        AutoRotation.EnableByAvailability(C.AutoRotationPlugin);
-                        Bossmod.EnableAI();
+                        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
 
                         if (!await KillTarget(detourTarget, token))
-                        {
-                            AutoRotation.DisableActive();
-                            Bossmod.DisableAI();
                             return false;
-                        }
 
                         killedARanks++;
 
@@ -531,14 +520,7 @@ internal static class MovementTasks
 
                         if ((isDummyTarget && exVersion == 0 && killedARanks == 1) ||
                             (isDummyTarget && exVersion > 0  && killedARanks == 2))
-                        {
-                            AutoRotation.DisableActive();
-                            Bossmod.DisableAI();
                             return true;
-                        }
-
-                        AutoRotation.DisableActive();
-                        Bossmod.DisableAI();
                     }
                 }
             }
@@ -591,7 +573,7 @@ internal static class MovementTasks
     // TODO: Replace with Mapping The Realm
     internal static async Task HandleTeleportDetour(uint closestAetheryte, uint destinationTerritoryId, Vector3 destinationPosition, CancellationToken token = default)
     {
-        if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && destinationTerritoryId is 139 or 152 or 154 or 155 or 180)
+        if (closestAetheryte > 0 && !IsAetheryteUnlocked(closestAetheryte) && destinationTerritoryId is 139 or 146 or 152 or 154 or 155 or 180)
         {
             switch (destinationTerritoryId)
             {
@@ -624,6 +606,16 @@ internal static class MovementTasks
                         }
                     }
 
+                    break;
+                }
+                case 146:
+                {
+                    ErrorThrowIf(!IsAetheryteUnlocked(18), $"You aren't attuned to Camp Drybone Aetheryte for rerouting to territory {Svc.Data.GetExcelSheet<TerritoryType>().GetRow(destinationTerritoryId).PlaceName.Value.Name.ExtractText()} ({destinationTerritoryId})");
+                    await TeleportTo(18, token);
+                    await MoveToNextZone(new Vector3(-170f, -46f, 500f), 146, token);
+                    await MoveTo(new Vector3(-153.345f, 26.138f, -418.237f), true, token);
+                    await InteractWithByBaseId(19, token);
+                    await WaitPulseConditionAsync(() => Svc.Condition[ConditionFlag.OccupiedInEvent], "Wait for attunement", token);
                     break;
                 }
                 case 152:
