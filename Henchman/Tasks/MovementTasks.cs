@@ -18,34 +18,20 @@ internal static class MovementTasks
 {
     private const uint TeleportActionId = 5;
 
-    private static MovementOptions Options
+    private static MovementOptions Options => new()
     {
-        get
-        {
-            IDisposable? automation = null;
-            return new MovementOptions
-                   {
-                           UseMount         = C.UseMount,
-                           MountId          = C.MountId,
-                           UseMountRoulette = C.UseMountRoulette,
-                           MinRunDistance   = C.MinRunDistance,
-                           MinMountDistance = C.MinMountDistance,
-                           HandleCombat     = token => HandleHaters(token: token),
-                           EnableCombatAutomation = () => automation ??= CombatAutomation.Acquire(C.AutoRotationPlugin),
-                           DisableCombatAutomation = () =>
-                                                     {
-                                                         automation?.Dispose();
-                                                         automation = null;
-                                                     }
-                   };
-        }
-    }
+            UseMount         = C.UseMount,
+            MountId          = C.MountId,
+            UseMountRoulette = C.UseMountRoulette,
+            MinRunDistance   = C.MinRunDistance,
+            MinMountDistance = C.MinMountDistance,
+            HandleCombat     = token => HandleHaters(token: token)
+    };
 
     private static async Task<bool> IsBusy(CancellationToken token)
     {
         if (Svc.Condition[ConditionFlag.InCombat] && !HandlingHaters)
         {
-            using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
             await HandleHaters(token: token);
         }
 
@@ -161,7 +147,6 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
                                              await HandleHaters(token: token);
                                          }
 
@@ -431,7 +416,6 @@ internal static class MovementTasks
                                      {
                                          if (Svc.Condition[ConditionFlag.InCombat])
                                          {
-                                             using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
                                              await HandleHaters(token: token);
                                          }
                                      },
@@ -506,8 +490,6 @@ internal static class MovementTasks
                            .FirstOrDefault(x => Svc.Data.GetExcelSheet<NotoriousMonster>()
                                                    .Any(y => y.BNpcBase.RowId == x.BaseId && y.Rank == 2)) is { Level: <= 70, IsDead: false } detourTarget)
                     {
-                        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-
                         if (!await KillTarget(detourTarget, token))
                             return false;
 

@@ -75,7 +75,8 @@ public partial class TestyTrader
 
         var statusMessage = new TestyTraderMessage
                             {
-                                    Type = TestyTraderMessageType.ServerStatusCheck
+                                    Type = TestyTraderMessageType.ServerStatusCheck,
+                                    CrystalInventory = TestyTraderTasks.GetCrystalInventory()
                             };
 
         await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, statusMessage.ToJson(), token);
@@ -148,7 +149,8 @@ public partial class TestyTrader
                             await ProcessServerTrade(client, clientEntityId, askDict, token);
                             await MessageHandler.WriteMessageAsync(client.Pipe, CommandType.Feature, new TestyTraderMessage
                                                                                                      {
-                                                                                                             Type = TestyTraderMessageType.ServerStatusCheck
+                                                                                                             Type = TestyTraderMessageType.ServerStatusCheck,
+                                                                                                             CrystalInventory = TestyTraderTasks.GetCrystalInventory()
                                                                                                      }.ToJson(), token);
                             break;
                         }

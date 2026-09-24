@@ -41,13 +41,24 @@ internal static class CombatTasks
                 TaskLog.Debug($"Try: {retries}");
                 if (Player.TerritoryId != mark.TerritoryId)
                 {
-                    if (!mark.Positions.TryGetFirst(out var markPosition))
+                    if (mark.Positions.Count == 0)
                     {
                         FullError($"HuntMark {mark.Name} has no valid position!");
                         break;
                     }
 
-                    var closestAetheryte = GetAetheryte(mark.TerritoryId, markPosition);
+                    var closestAetheryte = GetAetheryte(mark.TerritoryId, mark.Positions);
+                    if (closestAetheryte == 0)
+                    {
+                        FullError($"HuntMark {mark.Name} has no reachable Aetheryte in territory {mark.TerritoryId}!");
+                        break;
+                    }
+
+                    var aetherytePosition = GetAetherytePosition(closestAetheryte)
+                           .ToVector2();
+                    var markPosition = mark.Positions
+                                           .OrderBy(p => Vector2.DistanceSquared(p.ToVector2(), aetherytePosition))
+                                           .First();
                     await HandleTeleportDetour(closestAetheryte, mark.TerritoryId, markPosition, token);
                 }
 
@@ -241,6 +252,9 @@ internal static class CombatTasks
 
         switch (dutyId)
         {
+            case 159 when !IsDutyUnlocked(159): // Wanderers Palace
+                await Questionable.CompleteQuest(66406, token);
+                break;
             case 1245 when !IsDutyUnlocked(1245): // Halatali
                 await Questionable.CompleteQuest(66233, token);
                 break;
@@ -269,8 +283,7 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-        using var scope = new TaskDescriptionScope($"Hunting Mark: {huntMark.Name}");
+        using var scope      = new TaskDescriptionScope($"Hunting Mark: {huntMark.Name}");
         if (huntMark.FateId > 0)
         {
             await WaitUntilAsync(() => IsInFate((ushort)huntMark.FateId, token),
@@ -300,8 +313,7 @@ internal static class CombatTasks
     {
         token.ThrowIfCancellationRequested();
 
-        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-        using var scope = new TaskDescriptionScope($"Killing Counted Hunt Mark: {huntMark.Name}");
+        using var scope      = new TaskDescriptionScope($"Killing Counted Hunt Mark: {huntMark.Name}");
         TaskLog.Verbose($"HuntLog: {huntLog}");
         TaskLog.Verbose($"Open Kills: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
         TaskLog.Verbose($"Killing Hunt Mark: {huntMark.Name} ({huntMark.BNpcNameRowId} {huntMark.MobHuntRowId} {huntMark.MobHuntSubRowId} {huntMark.GetCurrentMobHuntKills} {huntMark.GetOpenMobHuntKills})");
@@ -367,15 +379,15 @@ internal static class CombatTasks
             CancellationToken token   = default)
     {
         token.ThrowIfCancellationRequested();
-        var       mobName = mob.Name.TextValue;
-        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-        using var scope   = new TaskDescriptionScope($"Killing Mob: {mobName}");
+        var       mobName    = mob.Name.TextValue;
+        using var scope      = new TaskDescriptionScope($"Killing Mob: {mobName}");
 
         if (Player.DistanceTo(mob.Position) >= C.MinMountDistance)
             await Mount(token);
         await MoveToMovingObject(mob, recheckPosition: true, token: token);
         await Dismount(token);
         Svc.Targets.Target = mob;
+        using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
         TaskLog.Debug($"Targeted Hunt Mark: {mobName} ({mob.Position})");
 
         unsafe
@@ -464,6 +476,8 @@ internal static class CombatTasks
                     if (hater.IsDead) continue;
                     Svc.Targets.Target = hater;
                     await MoveToMovingObject(hater, recheckPosition: true, token: token);
+                    await Dismount(token);
+                    using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
                     await IsTargetDead(hater, token);
                 }
             }
@@ -496,6 +510,8 @@ internal static class CombatTasks
             if (hater.IsDead) continue;
             Svc.Targets.Target = hater;
             await MoveToMovingObject(hater, recheckPosition: true, token: token);
+            await Dismount(token);
+            using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
             await IsTargetDead(hater, token);
             await Task.Delay(GeneralDelayMs * 2, token);
             if (((IBattleNpc)hater).NameId == nameId) killedRegistered = true;

@@ -101,6 +101,8 @@ public partial class TestyTrader : Module
                             }
 
                             GetTradingDictionaries(out tradeDict, out askDict);
+                            TestyTraderTasks.LimitCrystalsToReceiverSpace(tradeDict, responseData.CrystalInventory);
+                            TestyTraderTasks.LimitCrystalsToReceiverSpace(askDict, TestyTraderTasks.GetCrystalInventory());
                             TaskLog.Verbose($"Calculated trades - trade: {tradeDict.Count} | ask: {askDict.Count}");
                             var tradeDone = tradeDict.Count == 0;
                             var askDone   = askDict.Count   == 0;
@@ -338,6 +340,7 @@ public partial class TestyTrader : Module
         public uint                   EntityID     { get; init; }
         public bool?                  IsTradeDone  { get; init; }
         public Dictionary<uint, uint> TradeList    { get; init; }
+        public Dictionary<uint, int>  CrystalInventory { get; init; } = [];
         public TestyTraderMessageType Type         { get; init; }
         public string?                TradingWorld { get; init; }
     }

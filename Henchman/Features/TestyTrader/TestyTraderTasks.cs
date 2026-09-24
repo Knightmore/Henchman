@@ -220,6 +220,19 @@ internal static class TestyTraderTasks
         return Items;
     }
 
+    internal static Dictionary<uint, int> GetCrystalInventory() =>
+            Enumerable.Range(2, 18).ToDictionary(id => (uint)id, id => InventoryHelper.GetInventoryItemCount((uint)id));
+
+    internal static void LimitCrystalsToReceiverSpace(Dictionary<uint, uint> tradeList, Dictionary<uint, int> receiverCrystals)
+    {
+        foreach (var itemId in tradeList.Keys.Where(id => id is >= 2 and <= 19).ToArray())
+        {
+            var space = (uint)Math.Max(0, 9999 - receiverCrystals.GetValueOrDefault(itemId));
+            if (space == 0) tradeList.Remove(itemId);
+            else tradeList[itemId] = Math.Min(tradeList[itemId], space);
+        }
+    }
+
     internal static void CalculateInventoryDifference(Dictionary<uint, int> oldInventory, Dictionary<uint, int> diffLog, int oldGil, bool includeArmory)
     {
         var newInventory = GetCurrentInventory(includeArmory);

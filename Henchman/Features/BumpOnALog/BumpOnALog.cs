@@ -127,43 +127,87 @@ public partial class BumpOnALog : Module
         }
         else
         {
-            TaskLog.Verbose($"GrandCompanyRank {GetGrandCompanyRank()} | {Configuration.StopAfterGCRank + 1}");
-            while (GetGrandCompanyRank() <= Configuration!.StopAfterGCRank + 1)
+            const int maxAutomatedGcRank  = 9;
+            const int maxGcLoopIterations = 10;
+
+            var configuredStopRank = Math.Min(Configuration!.StopAfterGCRank + 1, maxAutomatedGcRank);
+            var currentGcRank      = GetGrandCompanyRank();
+
+            TaskLog.Verbose($"GrandCompanyRank {currentGcRank} | {configuredStopRank}");
+
+            if (currentGcRank > maxAutomatedGcRank)
             {
-                Log.Information($"{Configuration!.StopAfterGCRank + 1} -> {GetRankInfo(gcLog)} | {GetGrandCompanyRank() < Configuration!.StopAfterGCRank + 1}");
-                TaskLog.Verbose("Below second threshold");
-                var rank      = GetRankInfo(gcLog);
-                var huntMarks = GetHuntMarks(gcLog, rank);
-
-                var overworldMarks = huntMarks
-                                    .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: false, FateId: 0 })
-                                    .ToList();
-
-                var dutyMarks = huntMarks
-                               .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: true })
-                               .OrderBy(x => x.TerritoryId)
-                               .ToList();
-
-                var gcRank = GetGrandCompanyRank();
-
-                if (gcRank is >= 1 and <= 9)
+                await ProcessOverRankedGcLogAsync(currentGcRank, doDutyMarks, token);
+            }
+            else
+            {
+                var gcLoopIterations = 0;
+                while (GetGrandCompanyRank() <= configuredStopRank && gcLoopIterations++ < maxGcLoopIterations)
                 {
-                    var handled = await HandleGcRankAsync(gcRank, overworldMarks, dutyMarks, doDutyMarks, token);
-                    if (handled)
+                    Log.Information($"{configuredStopRank} -> {GetRankInfo(gcLog)} | {GetGrandCompanyRank() < configuredStopRank}");
+                    TaskLog.Verbose("Below second threshold");
+                    var rank      = GetRankInfo(gcLog);
+                    var huntMarks = GetHuntMarks(gcLog, rank);
+
+                    var overworldMarks = huntMarks
+                                        .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: false, FateId: 0 })
+                                        .ToList();
+
+                    var dutyMarks = huntMarks
+                                   .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: true })
+                                   .OrderBy(x => x.TerritoryId)
+                                   .ToList();
+
+                    var gcRank = GetGrandCompanyRank();
+
+                    if (gcRank is >= 1 and <= 9)
+                    {
+                        var handled = await HandleGcRankAsync(gcRank, overworldMarks, dutyMarks, doDutyMarks, token);
+                        if (handled)
+                            break;
+                    }
+                    else
+                    {
+                        TaskLog.Warning($"Unsupported GC rank {gcRank}; stopping GC rank processing");
                         break;
+                    }
                 }
 
-                /*if (gcRank > 8)
-                {
-                    await ProcessAllMarks(overworldMarks, dutyMarks, gcLog, doDutyMarks, token);
-                    break;
-
-                }*/
+                if (gcLoopIterations > maxGcLoopIterations)
+                    TaskLog.Warning("Stopped GC rank processing after reaching the safety iteration limit");
             }
         }
 
         Chat.Info("Completed all selected mob entries!");
         await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
+    }
+
+    private async Task ProcessOverRankedGcLogAsync(int gcRank, bool doDutyMarks, CancellationToken token)
+    {
+        var currentGcLogRank = GetCurrentGcLogRank();
+        var requiredGcRank = currentGcLogRank switch
+                             {
+                                     0 => 1,
+                                     1 => 5,
+                                     2 => 9,
+                                     _ => int.MaxValue
+                             };
+
+        if (gcRank < requiredGcRank)
+            return;
+
+        TaskLog.Verbose($"Processing overdue GC hunt log {currentGcLogRank + 1} at GC rank {gcRank}");
+
+        var huntMarks = GetHuntMarks(true, currentGcLogRank);
+        var overworldMarks = huntMarks
+                            .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: false, FateId: 0 })
+                            .ToList();
+        var dutyMarks = huntMarks
+                       .Where(x => x is { GetOpenMonsterNoteKills: > 0, IsDuty: true })
+                       .OrderBy(x => x.TerritoryId)
+                       .ToList();
+
+        await ProcessAllMarks(overworldMarks, dutyMarks, true, doDutyMarks, token);
     }
 
     private async Task<bool> HandleGcRankAsync(

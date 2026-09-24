@@ -156,6 +156,7 @@ public class Henchman : IDalamudPlugin
                                                                    /henchman SetupRetainer <Name> <PresetId> → Runs retainer setup for retainer fantasia. Keep presetId and/or name empty to randomize them.
                                                                    /henchman OnABoat → Run On A Boat (also works when you are already on a voyage)
                                                                    /henchman ToggleRender [On|Off] → De-/activate 3D rendering (safes A LOT of GPU load).
+                                                                   /henchman ToggleUnfocusedRender [On|Off] → Toggle disabling 3D rendering while the game is unfocused.
                                                                    /henchman Stop
                                                                    """,
                                                      ShowInHelp = true
@@ -353,6 +354,22 @@ public class Henchman : IDalamudPlugin
                                           };
 
             Rendering.SetRender(renderEnabled);
+        }
+        else if (args.StartsWith("ToggleUnfocusedRender", StringComparison.InvariantCultureIgnoreCase))
+        {
+            var parameters = args.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+            var disableRenderWhenUnfocused = parameters.Length == 1
+                                                      ? !Rendering.DisableRenderWhenUnfocused
+                                                      : parameters[1] switch
+                                                        {
+                                                                var s when s.EqualsIgnoreCase("on")  => true,
+                                                                var s when s.EqualsIgnoreCase("off") => false,
+                                                                _                                    => !Rendering.DisableRenderWhenUnfocused
+                                                        };
+
+            RenderingUI.DisableRenderWhenUnfocused = disableRenderWhenUnfocused;
+            PersistedToggles.Set("global::Henchman.Tweaks.RenderingUI.DisableRenderWhenUnfocused", disableRenderWhenUnfocused);
         }
         else if (args.EqualsIgnoreCase("Stop"))
             CancelAllTasks();
