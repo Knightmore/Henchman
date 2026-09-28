@@ -5,7 +5,7 @@ using Underlings.TaskManager;
 
 namespace Henchman.IPC;
 
-internal static class IPCProvider
+internal static partial class IPCProvider
 {
     private const string Prefix = "Henchman";
 
@@ -80,36 +80,14 @@ internal static class IPCProvider
 
     internal static void Init()
     {
-        Svc.PluginInterface.GetIpcProvider<bool>($"{Prefix}.{nameof(IsBusy)}")
-           .RegisterFunc(IsBusy);
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(CancelAllTasks)}")
-           .RegisterAction(CancelAllTasks);
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(StartOnABoat)}")
-           .RegisterAction(StartOnABoat);
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(StartOnYourMark)}")
-           .RegisterAction(StartOnYourMark);
-        Svc.PluginInterface.GetIpcProvider<bool, object>($"{Prefix}.{nameof(SetRender)}")
-           .RegisterAction(SetRender);
-        Svc.PluginInterface.GetIpcProvider<bool, object>($"{Prefix}.{nameof(ForceRender)}")
-           .RegisterAction(ForceRender);
+        InitGenerated();
         Svc.PluginInterface.GetIpcProvider<int, string, object>($"{Prefix}.{nameof(WrathComboCallback)}")
            .RegisterAction(WrathComboCallback);
     }
 
     internal static void Dispose()
     {
-        Svc.PluginInterface.GetIpcProvider<bool>($"{Prefix}.{nameof(IsBusy)}")
-           .UnregisterFunc();
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(CancelAllTasks)}")
-           .UnregisterAction();
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(StartOnABoat)}")
-           .UnregisterAction();
-        Svc.PluginInterface.GetIpcProvider<object>($"{Prefix}.{nameof(StartOnYourMark)}")
-           .UnregisterAction();
-        Svc.PluginInterface.GetIpcProvider<bool, object>($"{Prefix}.{nameof(SetRender)}")
-           .UnregisterAction();
-        Svc.PluginInterface.GetIpcProvider<bool, object>($"{Prefix}.{nameof(ForceRender)}")
-           .UnregisterAction();
+        DisposeGenerated();
         Svc.PluginInterface.GetIpcProvider<int, string, object>($"{Prefix}.{nameof(WrathComboCallback)}")
            .UnregisterAction();
     }
