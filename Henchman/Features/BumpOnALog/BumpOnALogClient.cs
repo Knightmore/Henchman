@@ -96,6 +96,7 @@ public partial class BumpOnALog
                                 var gcRank = GetGrandCompanyRank();
                                 var gcQuest = GetGcQuest()
                                        .questId;
+                                await CompleteGcDungeonUnlockAsync(GetGcQuest().dutyId, token);
                                 if (gcQuest > 0 && IsQuestAccepted(gcQuest) && QuestManager.GetQuestSequence(gcQuest) == 255) await Questionable.CompleteQuest(gcQuest, token);
 
                                 while ((gcRank is 4 && HuntLogHelper.GetGrandCompanyRankInfo() is 1) || gcRank is 5 or 6)
@@ -117,6 +118,7 @@ public partial class BumpOnALog
                                 {
                                     gcQuest = GetGcQuest()
                                            .questId;
+                                    await CompleteGcDungeonUnlockAsync(GetGcQuest().dutyId, token);
                                     if (!IsQuestAccepted(gcQuest) && !IsQuestCompleted(gcQuest))
                                     {
                                         var (questId, dutyId) = GetGcQuest();

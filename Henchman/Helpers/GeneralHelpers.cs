@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
@@ -107,14 +108,16 @@ public static class GeneralHelpers
                   .FirstOrDefault();
     }
 
-    internal static async Task IsTargetDead(IGameObject? target, CancellationToken token = default)
+    internal static async Task<bool> IsTargetDead(IGameObject? target, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        while (target is { IsDead: false })
+        while (target is { IsDead: false } && !Svc.Condition[ConditionFlag.Unconscious])
         {
-            if (Svc.Targets.Target == null) return;
+            if (Svc.Targets.Target == null) break;
             await Task.Delay(GeneralDelayMs, token);
         }
+
+        return !await HandlePlayerDeath(token);
     }
 
     private static float DistanceToHitboxEdge(Vector3 targetPos, float hitboxRadius) => Player.DistanceTo(targetPos) - hitboxRadius;

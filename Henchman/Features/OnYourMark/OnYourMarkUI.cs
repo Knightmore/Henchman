@@ -100,6 +100,26 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
                 {
                     if (tab)
                     {
+                        ImGui.NewLine();
+                        LineCentered("##ExpansionButtons", () =>
+                                                           {
+                                                               if (ImGui.Button(T("SelectExpansion")))
+                                                               {
+                                                                   foreach (var (key, _) in group)
+                                                                       Configuration.EnableHuntBills[key] = true;
+                                                                   configChanged = true;
+                                                               }
+
+                                                               ImGui.SameLine();
+                                                               if (ImGui.Button(T("DeselectExpansion")))
+                                                               {
+                                                                   foreach (var (key, _) in group)
+                                                                       Configuration.EnableHuntBills[key] = false;
+                                                                   configChanged = true;
+                                                               }
+                                                           });
+                        ImGui.NewLine();
+
                         var indexInEnumerator = HuntBoardOptions
                                                .Select((key, index) => new { key, index })
                                                .FirstOrDefault(x => x.key.Contains(group.Key))

@@ -11,6 +11,8 @@
   "ColorGreen": "绿色",
   "ColorGreenDesc": "- 已完成。",
   "Enable": "启用",
+  "SelectExpansion": "选择资料片",
+  "DeselectExpansion": "取消选择资料片",
   "TabSettings": "设置",
   "ColName": "名称",
   "ColAmount": "数量",

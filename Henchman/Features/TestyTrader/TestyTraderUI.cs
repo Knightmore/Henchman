@@ -32,6 +32,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                .ToDictionary(x => x.Name.ExtractText(), x => x);
 
     private readonly Table<OfflineCharacterData> ARTable;
+    private readonly TableReorderable<TestyTraderCharacterData, Guid> manualTable;
 
     private readonly List<(Item Item, uint RowId, string DisplayName)> expandedItems = TradableItems
                                                                                       .SelectMany(x =>
@@ -124,6 +125,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                   x => x.CID == Player.CID,
                                                   new Vector2(585, 0)
                                                  );
+        manualTable = CreateManualTable();
     }
 
     public sealed override required Configuration   Configuration { get; init; }
@@ -239,7 +241,9 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
         }
     }
 
-    private void DrawManualTable()
+    private void DrawManualTable() => manualTable.Draw();
+
+    private TableReorderable<TestyTraderCharacterData, Guid> CreateManualTable()
     {
         var characterColumns = new List<TableColumn<TestyTraderCharacterData>>
                                {
@@ -270,16 +274,20 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                                                                                  })
                                };
 
-        var table = new Table<TestyTraderCharacterData>(
+        return new TableReorderable<TestyTraderCharacterData, Guid>(
                                                         "##ManualTraderTable",
                                                         characterColumns,
-                                                        () => Configuration.TestyTraderImportedCharacters,
-                                                        h => Svc.Objects.LocalPlayer != null && h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
-                                                        new Vector2(450, 0),
-                                                        () =>
+                                                        () => Configuration.TestyTraderImportedCharacters.ToArray(),
+                                                        x => x.Id,
+                                                        x => Configuration.TestyTraderImportedCharacters.FindIndex(h => h.Id == x.Id),
+                                                        MoveManualCharacter,
+                                                        size: new Vector2(474, 0),
+                                                        highlightPredicate: h => Svc.Objects.LocalPlayer != null && h.Name == Player.Name && h.WorldId == Player.HomeWorld.RowId,
+                                                        drawExtraRow: () =>
                                                         {
                                                             ImGui.TableNextRow();
-                                                            using var row = new ColumnScope(characterColumns.Count);
+                                                            using var row = new ColumnScope(characterColumns.Count + 1);
+                                                            row.TableNextColumn();
                                                             row.TableNextColumn();
                                                             row.TableNextColumn();
                                                             DrawCentered("##TraderNewCharacterName", () =>
@@ -323,8 +331,18 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                                                                     });
                                                         }
                                                        );
+    }
 
-        table.Draw();
+    private void MoveManualCharacter(Guid id, int targetIndex)
+    {
+        var characters = Configuration.TestyTraderImportedCharacters;
+        var sourceIndex = characters.FindIndex(x => x.Id == id);
+        if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= characters.Count || sourceIndex == targetIndex) return;
+
+        var character = characters[sourceIndex];
+        characters.RemoveAt(sourceIndex);
+        characters.Insert(targetIndex, character);
+        ConfigChanged = true;
     }
 
     private void DrawCharacterTab()
@@ -629,6 +647,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
 
     public class TestyTraderCharacterData : IEquatable<TestyTraderCharacterData>
     {
+        public Guid   Id           = Guid.NewGuid();
         public uint   DataCenterId = 7;
         public bool   Enabled      = true;
         public string Name         = "";

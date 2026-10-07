@@ -1,13 +1,19 @@
+using System.IO;
 using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Henchman.Models;
 using Lumina.Excel.Sheets;
 using Underlings.Configuration;
+using Underlings.GameHelpers;
 using Underlings.Keybinds;
 using Underlings.Modules;
 using Underlings.TaskManager;
@@ -26,8 +32,44 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
     private           int                 currentGcLogRank;
     private           int                 gcMonsterNoteId;
     private           MonsterNoteRankInfo gcMonsterNoteRankInfo;
+    private readonly Table<OfflineCharacterData> characterTable;
+    private readonly Cached<List<OfflineCharacterData>> characters = new(
+            () => SubscriptionManager.IsLoaded(IPCNames.AutoRetainer)
+                          ? AutoRetainer.GetRegisteredCIDs.Invoke([])
+                                        .Select(cid => AutoRetainer.GetOfflineCharacterData.Invoke(cid)).ToList()
+                          : [], TimeSpan.FromMilliseconds(500));
+    private readonly Cached<Dictionary<ulong, (List<CharacterGearsets.Gearset> Gearsets, string? Error)>> offlineGearsets;
+    private static readonly Dictionary<string, string> dataCenters = Svc.Data.GetExcelSheet<World>()
+            .DistinctBy(x => x.Name.ExtractText())
+            .ToDictionary(x => x.Name.ExtractText(), x => x.DataCenter.Value.Name.ExtractText());
 
-    public BumpOnALogUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
+    public BumpOnALogUI()
+    {
+        Configuration = LoadConfig<Configuration>() ?? new Configuration();
+        offlineGearsets = new(() => characters.Value.ToDictionary(x => x.CID, x => ReadOfflineGearsets(x.CID)),
+                             TimeSpan.FromSeconds(5));
+        characterTable = new Table<OfflineCharacterData>("##LogCharacters",
+                [
+                    new("##Enabled", Width: 35, Alignment: ColumnAlignment.Center, DrawCustom: (x, _) =>
+                    {
+                        var enabled = Configuration.EnableCharacter.GetValueOrDefault(x.CID);
+                        using var color = ImRaii.PushColor(ImGuiCol.Button, 0xFF097000, enabled);
+                        if (IconButton($"\uf021##LogCharacter{x.CID}"))
+                        {
+                            Configuration.EnableCharacter[x.CID] = !enabled;
+                            SaveConfig(Configuration);
+                        }
+                    }),
+                    new(T("ColName"), x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
+                    new(T("ColWorld"), x => x.World, 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                    new(T("ColDataCenter"), x => dataCenters.GetValueOrDefault(x.World, ""),
+                        90, FilterType.MultiSelect, ColumnAlignment.Center),
+                    new(T("ColGCRank"), x => Configuration.CharacterGCRanks.TryGetValue(x.CID, out var rank) && rank >= 0 ? rank.ToString() : "-",
+                        70, Alignment: ColumnAlignment.Center),
+                    new(T("ColGearsets"), Width: 280, DrawCustom: (x, _) => DrawGearsetSelector(x.CID))
+                ], () => characters.Value, x => Svc.ClientState.IsLoggedIn && x.CID == Player.CID);
+        Svc.Framework.Update += CaptureGCRank;
+    }
 
     public override string          Name     => "Bump On A Log";
     public override Enum            Category => Henchman.Category.Combat;
@@ -44,6 +86,7 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
     [
             (IPCNames.vnavmesh, true),
             (IPCNames.Lifestream, true),
+            (IPCNames.AutoRetainer, false),
             (IPCNames.AutoDuty, false),
             (IPCNames.Questionable, false),
             (IPCNames.BossMod, false),
@@ -51,27 +94,142 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
             (IPCNames.RotationSolverReborn, false)
     ];
 
-    public override bool LoginNeeded => true;
+    public override bool LoginNeeded => false;
 
     public sealed override required Configuration Configuration { get; init; }
 
     [Keybind("Bump On A Log - Start Rank Log")]
     private void StartRankLog()
     {
-        if (IsTaskRunning(Name)) return;
+        if (!Svc.ClientState.IsLoggedIn || IsTaskRunning(Name)) return;
         TryStartTask(new TaskRecord(Feature.StartClassRank, "Bump On A Log - Rank Log", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
     }
 
     [Keybind("Bump On A Log - Start GC Log")]
     private void StartGcLog()
     {
-        if (Feature.server != null || IsTaskRunning(Name)) return;
+        if (!Svc.ClientState.IsLoggedIn || Feature.server != null || IsTaskRunning(Name)) return;
         TryStartTask(new TaskRecord(token => Feature.StartGCRank(token), "Bump On A Log - GC Log", onDone: CleanupCombatAutomation, onAbort: CleanupCombatAutomation));
+    }
+
+    public override void Dispose()
+    {
+        Svc.Framework.Update -= CaptureGCRank;
+        Feature.CleanupCycle();
+    }
+
+    private unsafe void CaptureGCRank(IFramework _)
+    {
+        if (!Svc.ClientState.IsLoggedIn || !Player.Available || !IsScreenAndPlayerReady()) return;
+        var playerState = PlayerState.Instance();
+        if (playerState == null || !playerState->IsLoaded || playerState->ContentId == 0 || playerState->ContentId != Player.CID) return;
+        if (Configuration.RecordGCRank(playerState->ContentId, GetGrandCompanyRank())) SaveConfig(Configuration);
+    }
+
+    private void DrawCharacterTab()
+    {
+        if (!SubscriptionManager.IsLoaded(IPCNames.AutoRetainer))
+        {
+            ImGui.TextUnformatted(T("AutoRetainerUnavailable"));
+            return;
+        }
+        var configChanged = false;
+        foreach (var character in characters.Value)
+            if (character.GCRank > 0)
+                configChanged |= Configuration.CharacterGCRanks.TryAdd(character.CID, (int)character.GCRank);
+        if (configChanged) SaveConfig(Configuration);
+        DrawCentered("##LogAllCharacterSelector", () =>
+        {
+            if (ImGui.Button(T("SelectAll"))) SetCharactersEnabled(characters.Value, true);
+            ImGui.SameLine();
+            if (ImGui.Button(T("DeselectAll"))) SetCharactersEnabled(characters.Value, false);
+        });
+        DrawCentered("##LogShownCharacterSelector", () =>
+        {
+            if (ImGui.Button(T("SelectAllShown"))) SetCharactersEnabled(characterTable.FilteredItems, true);
+            ImGui.SameLine();
+            if (ImGui.Button(T("DeselectAllShown"))) SetCharactersEnabled(characterTable.FilteredItems, false);
+        });
+        characterTable.Draw();
+    }
+
+    private void SetCharactersEnabled(IEnumerable<OfflineCharacterData> selectedCharacters, bool enabled)
+    {
+        Configuration.SetCharactersEnabled(selectedCharacters.Select(x => x.CID), enabled);
+        SaveConfig(Configuration);
+    }
+
+    private unsafe void StartCharacterCycle(bool gcLog)
+    {
+        if (Running || Feature.server != null) return;
+        if (!Player.Available && !(TryGetAddonByName<AtkUnitBase>("_TitleMenu", out var titleMenu) && titleMenu->IsVisible))
+        {
+            FullWarning(T("CycleNeedsTitleScreen"));
+            return;
+        }
+        try
+        {
+            var plan = Configuration.CreateCyclePlan(characters.Value.Select(x => (x.CID, x.Name, x.World)), gcLog);
+            foreach (var character in plan)
+            {
+                if (character.GearsetId == null) continue;
+                var (gearsets, error) = Svc.ClientState.IsLoggedIn && character.CID == Player.CID
+                                               ? ReadCurrentGearsets() : ReadOfflineGearsets(character.CID);
+                var index = gearsets.FindIndex(x => x.Id == character.GearsetId);
+                if (error != null || index < 0)
+                {
+                    FullWarning($"{character.Name}@{character.World}: {error ?? string.Format(T("SelectedGearsetMissingFmt"), character.GearsetId + 1)}");
+                    return;
+                }
+                var gearset = gearsets[index];
+                var classJob = Svc.Data.GetExcelSheet<ClassJob>().GetRowOrDefault(gearset.ClassJob);
+                if (classJob == null || !IsCombat(gearset.ClassJob) || (!gcLog && !ClassHuntRanks.ContainsKey(classJob.Value.MonsterNote.RowId)))
+                {
+                    FullWarning(string.Format(T("InvalidCycleGearsetFmt"), character.Name, character.World, character.GearsetId + 1));
+                    return;
+                }
+            }
+            TryStartTask(new TaskRecord(token => Feature.RunCharacterCycle(plan, gcLog, token),
+                                       $"{Name} - {(gcLog ? "GC" : "Class")} Cycle", onDone: Feature.CleanupCycle, onAbort: Feature.CleanupCycle));
+        }
+        catch (InvalidOperationException ex)
+        {
+            FullWarning(ex.Message);
+        }
+    }
+
+    private void DrawLogActions(bool gcLog, bool canStart, Action? description = null)
+    {
+        var hasAutoRetainer = SubscriptionManager.IsLoaded(IPCNames.AutoRetainer);
+        var count = hasAutoRetainer ? characters.Value.Count(x => Configuration.EnableCharacter.GetValueOrDefault(x.CID) &&
+                                                                 (!gcLog || !Configuration.ShouldSkipGCCharacter(x.CID))) : 0;
+        var cycleLabel = string.Format(T("CycleFmt"), count);
+        var cycleWidth = Math.Max(70 * GlobalFontScale, ImGui.CalcTextSize(cycleLabel).X + 2 * ImGui.GetStyle().FramePadding.X);
+        var shift = cycleWidth - 70 * GlobalFontScale;
+        Layout.DrawInfoBox(() =>
+        {
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - shift);
+            using (ImRaii.Disabled(Running || Feature.server != null || !hasAutoRetainer || count == 0))
+                if (ImGui.Button(cycleLabel, new Vector2(cycleWidth, 30 * GlobalFontScale))) StartCharacterCycle(gcLog);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip(string.Format(T("CycleTooltipFmt"), count));
+        }, description, () =>
+        {
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - shift);
+            using (ImRaii.Disabled(Running || Feature.server != null || !canStart))
+                if (StartButton())
+                {
+                    if (gcLog) StartGcLog();
+                    else StartRankLog();
+                }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(T("StartTooltip"));
+        });
+        ImGui.Spacing();
     }
 
     public override void Draw()
     {
-        using var tabs = ImRaii.TabBar("Tabs");
+        using var tabs = ImRaii.TabBar("##BumpOnALogTabs", ImGuiTabBarFlags.None);
         if (tabs)
         {
             using (var tab = ImRaii.TabItem(T("TabClass")))
@@ -87,6 +245,11 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
             }
 
 
+            using (var tab = ImRaii.TabItem(T("TabCharacters")))
+            {
+                if (tab) DrawCharacterTab();
+            }
+
             using (var tab = ImRaii.TabItem(T("TabSettings")))
             {
                 if (tab)
@@ -95,15 +258,82 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         }
     }
 
+    private string FormatGearset(CharacterGearsets.Gearset gearset) =>
+            $"{gearset.Id + 1}. {gearset.Name} ({Svc.Data.GetExcelSheet<ClassJob>().GetRowOrDefault(gearset.ClassJob)?.Abbreviation.ExtractText() ?? "?"})";
+
+    private void DrawGearsetSelector(ulong cid)
+    {
+        var (gearsets, error) = Svc.ClientState.IsLoggedIn && cid == Player.CID
+                                       ? ReadCurrentGearsets()
+                                       : offlineGearsets.Value.GetValueOrDefault(cid, ([], T("GearsetsUnavailable")));
+        var hasSelection = Configuration.SelectedGearset.TryGetValue(cid, out var selectedId);
+        var selectedIndex = hasSelection ? gearsets.FindIndex(x => x.Id == selectedId) : -1;
+        var preview = selectedIndex >= 0 ? FormatGearset(gearsets[selectedIndex])
+                      : hasSelection ? error ?? string.Format(T("SelectedGearsetMissingFmt"), selectedId + 1)
+                      : T("None");
+        ImGui.SetNextItemWidth(-1);
+        if (!ImGui.BeginCombo($"##LogGearset{cid}", preview)) return;
+        if (ImGui.Selectable(T("None"), !hasSelection) && Configuration.SelectedGearset.Remove(cid))
+            SaveConfig(Configuration);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(T("NoneGearsetTooltip"));
+        if (gearsets.Count == 0) ImGui.TextUnformatted(error ?? T("NoGearsets"));
+        foreach (var gearset in gearsets)
+        {
+            var selected = hasSelection && gearset.Id == selectedId;
+            if (ImGui.Selectable($"{FormatGearset(gearset)}##Gearset{gearset.Id}", selected))
+            {
+                Configuration.SelectedGearset[cid] = gearset.Id;
+                SaveConfig(Configuration);
+            }
+            if (selected) ImGui.SetItemDefaultFocus();
+        }
+        ImGui.EndCombo();
+    }
+
+    private unsafe (List<CharacterGearsets.Gearset> Gearsets, string? Error) ReadCurrentGearsets()
+    {
+        var module = RaptureGearsetModule.Instance();
+        if (module == null || module->CharacterContentId != Player.CID) return ([], T("GearsetsUnavailable"));
+        return (module->Entries.ToArray()
+                                    .Where(x => x.Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists))
+                                    .Select(x => new CharacterGearsets.Gearset(x.Id, x.NameString, x.ClassJob)).ToList(), null);
+    }
+
+    private unsafe (List<CharacterGearsets.Gearset> Gearsets, string? Error) ReadOfflineGearsets(ulong cid)
+    {
+        var framework = Framework.Instance();
+        if (framework == null) return ([], T("GearsetsUnavailable"));
+        var configPath = Path.GetDirectoryName(framework->ConfigPath.ToString());
+        if (string.IsNullOrWhiteSpace(configPath)) return ([], T("GearsetsUnavailable"));
+        try
+        {
+            var path = Path.Combine(configPath, $"FFXIV_CHR{cid:X16}", "GEARSET.DAT");
+            return (CharacterGearsets.Parse(File.ReadAllBytes(path)), null);
+        }
+        catch (FileNotFoundException) { return ([], T("GearsetsMissing")); }
+        catch (DirectoryNotFoundException) { return ([], T("GearsetsMissing")); }
+        catch (InvalidDataException) { return ([], T("GearsetsUnsupported")); }
+        catch (IOException) { return ([], T("GearsetsUnavailable")); }
+        catch (UnauthorizedAccessException) { return ([], T("GearsetsUnavailable")); }
+    }
+
     private unsafe void DrawJobHuntLog()
     {
+        if (!Svc.ClientState.IsLoggedIn)
+        {
+            DrawLogActions(false, false);
+            ImGui.TextUnformatted(T("LoginForLog"));
+            return;
+        }
+
         var classJobRow = Svc.Data.Excel.GetSheet<ClassJob>()
                              .GetRow(PlayerState.Instance()->CurrentClassJobId);
 
         classMonsterNoteId = classJobRow.MonsterNote.RowId.ToInt();
 
-        if (classMonsterNoteId is -1 or 127)
+        if (!ClassHuntRanks.ContainsKey((uint)classMonsterNoteId))
         {
+            DrawLogActions(false, false);
             TextCentered(ImGuiColors.DalamudRed, T("NoHuntLogForClass"));
             return;
         }
@@ -111,11 +341,7 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
         currentClassLogRank      = classMonsterNoteRankInfo.Rank;
 
-        Layout.DrawInfoBox(() =>
-                           {
-                               if (StartButton()) StartRankLog();
-                           },
-                           () =>
+        DrawLogActions(false, true, () =>
                            {
                                ImGui.Text(classJobRow.NameEnglish.ExtractText());
                                ImGui.SameLine();
@@ -123,19 +349,25 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
                                using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentDifficultyFmt"), currentClassLogRank + 1));
                            });
 
-        ImGui.Spacing();
-
         DrawHuntLog(classMonsterNoteRankInfo, ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks, false);
     }
 
     private unsafe void DrawGcHuntLog()
     {
+        if (!Svc.ClientState.IsLoggedIn)
+        {
+            DrawLogActions(true, false);
+            ImGui.TextUnformatted(T("LoginForLog"));
+            return;
+        }
+
         gcMonsterNoteId = (int)Svc.Data.GetExcelSheet<GrandCompany>()
                                   .GetRow(PlayerState.Instance()->GrandCompany)
                                   .MonsterNote.RowId;
 
-        if (gcMonsterNoteId == 127)
+        if (!GcHuntRanks.ContainsKey(PlayerState.Instance()->GrandCompany))
         {
+            DrawLogActions(true, false);
             TextCentered(ImGuiColors.DalamudRed, T("NotInGrandCompany"));
             return;
         }
@@ -146,38 +378,13 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
         currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
 
-        Layout.DrawInfoBox(() =>
-                           {
-                               if (Feature.server == null && StartButton()) StartGcLog();
-                               /*else if (Feature.server != null && StartButton())
-                               {
-                                   if (!Feature.server!.StartRequested)
-                                       Feature.server.StartRequested = true;
-
-                               }*/
-                           }, () =>
+        DrawLogActions(true, true, () =>
                               {
                                   ImGui.Text(gcRow.Name.ExtractText());
                                   ImGui.SameLine();
 
                                   using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentRankFmt"), GetGrandCompanyRank(), GetGCRankTitle(), currentGcLogRank));
-                              }, () =>
-                                 {
-                                     /*if (AdditionalButton("Connect") && !IsTaskRunning(Name))
-                                     {
-                                         TryStartTask(new TaskRecord(token => Feature.Client(token), "Bump On A Log - Client",
-                                                                    onDone: CleanupCombatAutomation,
-                                                                    onAbort: CleanupCombatAutomation));
-                                     }
-                                     if (AdditionalButton("Host") && !IsTaskRunning(Name))
-                                     {
-                                         TryStartTask(new TaskRecord(token => Feature.Server(token), "Bump On A Log - Server",
-                                                                    onDone: CleanupCombatAutomation,
-                                                                    onAbort: CleanupCombatAutomation));
-                                     }*/
-                                 });
-
-        ImGui.Spacing();
+                              });
 
         if (currentGcLogRank > 2)
         {

@@ -11,6 +11,8 @@
   "ColorGreen":        "초록",
   "ColorGreenDesc":    "-   완료.",
   "Enable":            "활성화",
+  "SelectExpansion":     "확장팩 선택",
+  "DeselectExpansion":   "확장팩 선택 해제",
   "TabSettings":       "설정",
   "ColName":           "이름",
   "ColAmount":         "수량",

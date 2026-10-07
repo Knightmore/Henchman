@@ -11,6 +11,8 @@
   "ColorGreen":        "綠色",
   "ColorGreenDesc":    "-   已完成。",
   "Enable":            "啟用",
+  "SelectExpansion":     "選擇擴展包",
+  "DeselectExpansion":   "取消選擇擴展包",
   "TabSettings":       "設定",
   "ColName":           "名稱",
   "ColAmount":         "數量",

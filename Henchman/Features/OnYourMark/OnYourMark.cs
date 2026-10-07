@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Henchman.Data;
@@ -63,15 +62,16 @@ public class OnYourMark : Module
 
         var huntTargets = new List<HuntMark>();
 
-        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>(ClientLanguage.English))
+        foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>())
         {
+            if (HuntExpansion.GetKey(expansion.RowId) is not { } expansionKey) continue;
             TaskLog.Verbose($"############### {expansion.Name.ExtractText()} ###############");
             TaskLog.Verbose($"InExpansion Type: {mobHuntOrderTypeEnumerator.Current.RowId}");
 
             TaskLog.Verbose($"Current mobHuntTypeOrder: {mobHuntOrderTypeEnumerator.Current.RowId}");
             var enabledBillsSelectString = new List<string>();
 
-            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.StartsWith(expansionKey, StringComparison.Ordinal));
 
             TaskLog.Verbose("--------------- BILLS ---------------");
             foreach (var expansionCategory in configExpansionBills)
@@ -161,10 +161,11 @@ public class OnYourMark : Module
 
         foreach (var expansion in Svc.Data.GetExcelSheet<ExVersion>())
         {
+            if (HuntExpansion.GetKey(expansion.RowId) is not { } expansionKey) continue;
             TaskLog.Verbose($"############### {expansion.Name.ExtractText()} ###############");
             var enabledBillsSelectString = new List<string>();
 
-            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.Contains(expansion.Name.ExtractText()));
+            var configExpansionBills = Configuration!.EnableHuntBills.Where(x => x.Key.StartsWith(expansionKey, StringComparison.Ordinal));
 
             TaskLog.Verbose("--------------- BILLS ---------------");
             foreach (var expansionCategory in configExpansionBills)
@@ -221,12 +222,12 @@ public class OnYourMark : Module
             Location location;
             unsafe
             {
-                location = expansion.Name.ExtractText() == "A Realm Reborn"
+                location = expansion.RowId == 0
                                    ? ArrHuntBoardLocations[(HuntDatabase.GrandCompany)PlayerState.Instance()->GrandCompany]
-                                   : ExpansionHuntBoardLocations[expansion.Name.ExtractText()];
+                                   : ExpansionHuntBoardLocations[expansionKey];
             }
 
-            await GoToHuntboard(location, expansion.Name.ExtractText(), enabledBillsSelectString, token);
+            await GoToHuntboard(location, expansion.RowId, enabledBillsSelectString, token);
         }
     }
 
@@ -289,12 +290,13 @@ public class OnYourMark : Module
                                           MobHunt.Instance()->GetKillCount(mobHuntOrderType, (byte)mark.SubrowId) >= mark.NeededKills);
     }
 
-    private async Task GoToHuntboard(Location location, string expansion, List<string> billsSelectString, CancellationToken token)
+    private async Task GoToHuntboard(Location location, uint expansionRowId, List<string> billsSelectString, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        var expansion = HuntExpansion.GetKey(expansionRowId)!;
         if (Player.TerritoryId != location.TerritoryId)
         {
-            if (expansion == "A Realm Reborn" && Player.GrandCompany == (byte)GrandCompany.Maelstrom)
+            if (expansionRowId == 0 && Player.GrandCompany == (byte)GrandCompany.Maelstrom)
             {
                 Lifestream.ExecuteCommand.Invoke("gc");
                 await WaitPulseConditionAsync(() => Lifestream.IsBusy.Invoke(), "Moving To GC", token);
@@ -321,7 +323,7 @@ public class OnYourMark : Module
         }
 
         uint huntBoardId;
-        if (expansion == "A Realm Reborn")
+        if (expansionRowId == 0)
         {
             huntBoardId = (GrandCompany)Player.GrandCompany switch
                           {
@@ -333,10 +335,7 @@ public class OnYourMark : Module
         else
             huntBoardId = HuntBoardIds[expansion];
 
-        var mobhuntNum = Svc.Data.GetExcelSheet<ExVersion>()
-                            .First(x => x.Name.ExtractText() == expansion)
-                            .RowId +
-                         1;
+        var mobhuntNum = expansionRowId + 1;
         await MoveToStationaryObject(location.Position, huntBoardId, token: token);
         foreach (var bill in billsSelectString)
         {

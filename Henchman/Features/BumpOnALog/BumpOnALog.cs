@@ -78,11 +78,21 @@ public partial class BumpOnALog : Module
             return;
         }
 
+        var logId = gcLog ? GetGrandCompany() : Player.ClassJob.Value.MonsterNote.RowId;
+        var logs = gcLog ? GcHuntRanks : ClassHuntRanks;
+        if (!logs.TryGetValue(logId, out var huntLog))
+        {
+            FullWarning(gcLog ? "This character has no Grand Company hunting log." : "This class or job has no hunting log.");
+            return;
+        }
+        var rankCount = huntLog.HuntMarks.GetLength(0);
+        if (GetRankInfo(gcLog) >= rankCount) return;
+
         if (!AutoRotation.CheckForAvailability(C.AutoRotationPlugin)) return;
 
         if (!gcLog)
         {
-            while (GetRankInfo(gcLog) < Configuration!.StopAfterJobRank + 1)
+            while (GetRankInfo(gcLog) < Math.Min(Configuration!.StopAfterJobRank + 1, rankCount))
             {
                 var rank = GetRankInfo(gcLog);
 
@@ -135,6 +145,12 @@ public partial class BumpOnALog : Module
 
             TaskLog.Verbose($"GrandCompanyRank {currentGcRank} | {configuredStopRank}");
 
+            if (Configuration.IsAboveGCStoppingRank(currentGcRank))
+            {
+                FullWarning($"Current GC rank {currentGcRank} is above the configured stopping rank {configuredStopRank}. Increase 'Stop after GC rank' to run promotion prerequisites.");
+                return;
+            }
+
             if (currentGcRank > maxAutomatedGcRank)
             {
                 await ProcessOverRankedGcLogAsync(currentGcRank, doDutyMarks, token);
@@ -147,6 +163,7 @@ public partial class BumpOnALog : Module
                     Log.Information($"{configuredStopRank} -> {GetRankInfo(gcLog)} | {GetGrandCompanyRank() < configuredStopRank}");
                     TaskLog.Verbose("Below second threshold");
                     var rank      = GetRankInfo(gcLog);
+                    if (rank >= rankCount) break;
                     var huntMarks = GetHuntMarks(gcLog, rank);
 
                     var overworldMarks = huntMarks
@@ -223,7 +240,7 @@ public partial class BumpOnALog : Module
 
         if ((currentGcLogRank == 0 && GetGrandCompanyRank() <= 4) || (currentGcLogRank == 1 && GetGrandCompanyRank() is >= 5 and <= 8) || (currentGcLogRank == 2 && GetGrandCompanyRank() >= 9)) await ProcessAllMarks(overworldMarks, dutyMarks, true, doDutyMarks, token);
 
-        if (Configuration!.AutoGCRankUp)
+        if (Configuration!.AutoGCRankUp && gcRank < Math.Min(Configuration.StopAfterGCRank + 1, 9))
         {
             if (gcRank is 7 or 8) await HandleGcQuestAsync(token);
 
@@ -278,28 +295,82 @@ public partial class BumpOnALog : Module
 
     private async Task HandleGcQuestAsync(CancellationToken token)
     {
-        bool accepted;
         var (questId, dutyId) = GetGcQuest();
-        if (questId == 0) return;
-        unsafe
-        {
-            accepted = QuestManager.Instance()->IsQuestAccepted(questId);
-        }
+        if (questId == 0 || QuestManager.IsQuestComplete(questId)) return;
 
-        var completed = QuestManager.IsQuestComplete(questId);
-        if (!accepted && !completed) await Questionable.GetAndProgressQuest(questId, token);
-        var seq = QuestManager.GetQuestSequence(questId);
-        if (seq == 2)
+        ErrorThrowIf(!SubscriptionManager.IsLoaded(IPCNames.Questionable), "Questionable not enabled! Cannot complete GC promotion quests.");
+        await CompleteGcDungeonUnlockAsync(dutyId, token);
+        while (!QuestManager.IsQuestComplete(questId))
         {
-            if (C.SoloUnsyncLogDuty)
-                IPC.AutoDuty.RunDutyUnsync(dutyId);
+            token.ThrowIfCancellationRequested();
+            if (QuestManager.GetQuestSequence(questId) == 2)
+            {
+                ErrorThrowIf(!SubscriptionManager.IsLoaded(IPCNames.AutoDuty), "AutoDuty not enabled! Cannot run the GC promotion dungeon.");
+                ErrorThrowIf(!Questionable.Stop.Invoke("GC promotion dungeon handoff"), "Could not stop Questionable before starting AutoDuty.");
+                if (AutoDuty.IsStopped.Invoke())
+                {
+                    if (C.SoloUnsyncLogDuty)
+                        IPC.AutoDuty.RunDutyUnsync(dutyId);
+                    else
+                        AutoDuty.RunDutySupport(dutyId);
+                    await WaitUntilAsync(() => !AutoDuty.IsStopped.Invoke() || QuestManager.IsQuestComplete(questId) ||
+                                               QuestManager.GetQuestSequence(questId) != 2,
+                                         "Waiting for AutoDuty to start GC promotion dungeon", token, TimeSpan.FromSeconds(15));
+                }
+                await WaitUntilAsync(() => AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
+                ErrorThrowIf(!QuestManager.IsQuestComplete(questId) && QuestManager.GetQuestSequence(questId) == 2,
+                             $"AutoDuty stopped before completing GC promotion quest {questId}'s dungeon objective.");
+            }
             else
-                AutoDuty.RunDutySupport(dutyId);
-            await WaitUntilAsync(() => AutoDuty.IsStopped.Invoke(), "Waiting for Duty to finish", token);
-            seq = QuestManager.GetQuestSequence(questId);
+                await ProgressGcQuestAsync(questId, token);
         }
+    }
 
-        if (seq == 255) await Questionable.CompleteQuest(questId, token);
+    private static async Task CompleteGcDungeonUnlockAsync(uint dutyId, CancellationToken token)
+    {
+        var unlockQuest = dutyId switch
+                               {
+                                       1330 => 66515u,
+                                       1331 => 66550u,
+                                       _ => 0u
+                               };
+        if (unlockQuest == 0 || QuestManager.IsQuestComplete(unlockQuest)) return;
+
+        // GC quest scripts accept this prerequisite again if it is only abandoned.
+        ErrorThrowIf(!SubscriptionManager.IsLoaded(IPCNames.Questionable), "Questionable not enabled! Cannot complete GC dungeon unlock quests.");
+        try
+        {
+            TextAdvance.SetTemporary();
+            ErrorThrowIf(!Questionable.StartSingleQuest.Invoke((unlockQuest - 65536).ToString()),
+                         $"Questionable could not start dungeon unlock quest {unlockQuest}.");
+            await WaitUntilAsync(() => QuestManager.IsQuestComplete(unlockQuest), $"Completing GC dungeon unlock quest {unlockQuest}", token);
+        }
+        finally
+        {
+            Questionable.Stop.Invoke("GC dungeon unlock handoff");
+            TextAdvance.UnsetTemporary();
+        }
+    }
+
+    private async Task ProgressGcQuestAsync(uint questId, CancellationToken token)
+    {
+        var sequence = QuestManager.GetQuestSequence(questId);
+        TextAdvance.SetTemporary();
+        try
+        {
+            ErrorThrowIf(!Questionable.StartSingleQuest.Invoke((questId - 65536).ToString()),
+                         $"Questionable could not start GC promotion quest {questId}.");
+            await WaitUntilAsync(() => QuestManager.IsQuestComplete(questId) || QuestManager.GetQuestSequence(questId) == 2 ||
+                                       !Questionable.IsRunning.Invoke(),
+                                 $"Questionable progressing GC promotion quest {questId}", token);
+            ErrorThrowIf(!QuestManager.IsQuestComplete(questId) && QuestManager.GetQuestSequence(questId) == sequence,
+                         $"Questionable stopped without advancing GC promotion quest {questId} (sequence {sequence}).");
+        }
+        finally
+        {
+            Questionable.Stop.Invoke("GC promotion quest handoff");
+            TextAdvance.UnsetTemporary();
+        }
     }
 
     private unsafe int GetCurrentGcLogRank()
@@ -313,6 +384,11 @@ public partial class BumpOnALog : Module
 
     private bool CanRankUp()
     {
+        var questId = GetGcQuest().questId;
+        if (questId != 0 && !QuestManager.IsQuestComplete(questId)) return false;
+        if ((GetGrandCompanyRank() == 4 && GetCurrentGcLogRank() < 1) ||
+            (GetGrandCompanyRank() == 8 && GetCurrentGcLogRank() < 2)) return false;
+
         var seals = InventoryHelper.GetGCSealAmount();
         return GetGrandCompanyRank() switch
                {

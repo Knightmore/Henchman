@@ -11,6 +11,8 @@
   "ColorGreen":        "緑色",
   "ColorGreenDesc":    "-   完了。",
   "Enable":            "有効",
+  "SelectExpansion":     "拡張パックを選択",
+  "DeselectExpansion":   "拡張パックの選択を解除",
   "TabSettings":       "設定",
   "ColName":           "名前",
   "ColAmount":         "数量",

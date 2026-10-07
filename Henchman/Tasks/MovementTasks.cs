@@ -35,6 +35,18 @@ internal static class MovementTasks
             await HandleHaters(token: token);
         }
 
+        // Hater cleanup must approach its target before it can end combat.
+        if (HandlingHaters)
+        {
+            unsafe
+            {
+                return Underlings.Helpers.Utils.IsOccupied() ||
+                       (Player.Object?.IsCasting ?? false) ||
+                       Player.IsMoving || Player.IsAnimationLocked ||
+                       GameMain.Instance()->TerritoryLoadState != 2;
+            }
+        }
+
         return Player.IsBusy;
     }
 
@@ -100,6 +112,7 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         if (Player.Mounted) return true;
+        if (!C.UseMount || !Player.RidingUnlocked) return false;
         using var scope = new TaskDescriptionScope("Mounting");
         await WaitWhileAsync(() => IsBusy(token), "Waiting for Player Status not busy!", token);
         if (!Player.CanMount)
@@ -162,6 +175,7 @@ internal static class MovementTasks
     internal static async Task<bool> Mount(uint mountId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        if (!Player.RidingUnlocked) return false;
         unsafe
         {
             if (Player.Mounted && Player.BattleChara->Mount.MountId == mountId) return true;
@@ -239,7 +253,21 @@ internal static class MovementTasks
         }
     }
 
-    internal static async Task MoveToMovingObject(
+    internal static async Task<bool> MoveToMovingObject(
+            IGameObject       gameObject,
+            float             distance        = 3f,
+            bool              recheckPosition = false,
+            CancellationToken token           = default)
+    {
+        await MoveToMovingObjectInternal(gameObject, distance, recheckPosition, token);
+        if (!Svc.Condition[ConditionFlag.Unconscious]) return true;
+
+        Vnavmesh.StopCompletely();
+        await HandlePlayerDeath(token);
+        return false;
+    }
+
+    private static async Task MoveToMovingObjectInternal(
             IGameObject       gameObject,
             float             distance        = 3f,
             bool              recheckPosition = false,
@@ -247,12 +275,16 @@ internal static class MovementTasks
     {
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Move To moving Object");
+        if (Svc.Condition[ConditionFlag.Unconscious]) return;
         if (Player.DistanceTo(gameObject.Position) < distance) return;
-        await WaitUntilAsync(async () => Vnavmesh.NavIsReady.Invoke() && !await IsBusy(token), "Wait for navmesh", token);
+        await WaitUntilAsync(async () => Svc.Condition[ConditionFlag.Unconscious] ||
+                                        (Vnavmesh.NavIsReady.Invoke() && !await IsBusy(token)), "Wait for navmesh", token);
+        if (Svc.Condition[ConditionFlag.Unconscious]) return;
         var position = gameObject.Position;
 
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(position, Svc.Condition[ConditionFlag.InFlight] || (Player.DistanceTo(position) > 25 && Player.Mounted && Player.CanFly)), $"Could not find path to {gameObject.Position}");
-        await WaitUntilAsync(() => Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+        if (Svc.Condition[ConditionFlag.Unconscious]) return;
 
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         if (recheckPosition)
@@ -260,7 +292,7 @@ internal static class MovementTasks
             var stuckDetector = MakePositionStallDetector(TimeSpan.FromSeconds(6));
             var stallCount    = 0;
 
-            while (true)
+            while (!Svc.Condition[ConditionFlag.Unconscious])
             {
                 token.ThrowIfCancellationRequested();
                 if (gameObject is IBattleNpc { IsDead: true }) return;
@@ -274,7 +306,8 @@ internal static class MovementTasks
                 {
                     if (Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(gameObject.Position, Player.Mounted && Player.CanFly))
                     {
-                        await WaitUntilAsync(() => Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+                        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+                        if (Svc.Condition[ConditionFlag.Unconscious]) return;
                         position = gameObject.Position;
                     }
                     else
@@ -294,11 +327,13 @@ internal static class MovementTasks
 
                     var positionAfterJump = Player.Position;
                     await Task.Delay(TimeSpan.FromSeconds(2), token);
+                    if (Svc.Condition[ConditionFlag.Unconscious]) return;
                     if (Vector3.Distance(Player.Position, positionAfterJump) < 1f)
                         Vnavmesh.StopCompletely();
 
                     ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(gameObject.Position, Player.Mounted && Player.CanFly), $"Could not find path to {gameObject.Position}");
-                    await WaitUntilAsync(() => Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+                    await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
+                    if (Svc.Condition[ConditionFlag.Unconscious]) return;
                     position      = gameObject.Position;
                     stuckDetector = MakePositionStallDetector(TimeSpan.FromSeconds(6));
                 }
@@ -307,7 +342,7 @@ internal static class MovementTasks
             }
         }
         else
-            await WaitUntilAsync(() => IsPlayerInPositionRange2D(new Vector2(position.X, position.Z), distance), "Check for distance", token);
+            await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || IsPlayerInPositionRange2D(new Vector2(position.X, position.Z), distance), "Check for distance", token);
     }
 
     internal static async Task MoveTo(Vector3 position, bool mount = false, CancellationToken token = default)

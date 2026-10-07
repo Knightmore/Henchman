@@ -304,7 +304,8 @@ internal static class CombatTasks
             return KillResult.Died;
 
         await Task.Delay(GeneralDelayMs * 2, token);
-        await HandleHaters(token: token);
+        if ((await HandleHatersWithResult(token: token)).Died)
+            return KillResult.Died;
 
         return KillResult.Success;
     }
@@ -351,8 +352,9 @@ internal static class CombatTasks
 
             TaskLog.Debug($"Mobs to kill left: {(huntLog ? huntMark.GetOpenMonsterNoteKills : huntMark.GetOpenMobHuntKills)}");
             await Task.Delay(GeneralDelayMs * 4, token);
-            var haterRegistered = await HandleHaters(huntMark.BNpcNameRowId, token);
-            if (haterRegistered) await Task.Delay(GeneralDelayMs * 6, token);
+            var haterResult = await HandleHatersWithResult(huntMark.BNpcNameRowId, token);
+            if (haterResult.Died) return KillResult.Died;
+            if (haterResult.KilledRegistered) await Task.Delay(GeneralDelayMs * 6, token);
             await Task.Delay(GeneralDelayMs * 2, token);
 
             if (huntLog)
@@ -384,7 +386,7 @@ internal static class CombatTasks
 
         if (Player.DistanceTo(mob.Position) >= C.MinMountDistance)
             await Mount(token);
-        await MoveToMovingObject(mob, recheckPosition: true, token: token);
+        if (!await MoveToMovingObject(mob, recheckPosition: true, token: token)) return false;
         await Dismount(token);
         Svc.Targets.Target = mob;
         using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
@@ -423,21 +425,31 @@ internal static class CombatTasks
         else
             await WaitUntilAsync(() => mob.IsDead || Svc.Condition[ConditionFlag.Unconscious], "Wait for kill or unconscious", token);
 
-        if (Svc.Condition[ConditionFlag.Unconscious])
-        {
-            FullWarning("Player died!");
-            await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoReturnTo), "Waiting for resurrection yesno", token);
-            await WaitWhileAsync(() => Svc.Condition[ConditionFlag.Unconscious], "Waiting for resurrection", token);
-            return false;
-        }
+        if (await HandlePlayerDeath(token)) return false;
 
         if (logKill) Chat.Info($"Killed mob {mobName}");
         return true;
     }
 
-    internal static async Task<bool> HandleHaters(uint nameId = 0, CancellationToken token = default)
+    internal static async Task<bool> HandlePlayerDeath(CancellationToken token = default)
     {
-        if (HandlingHaters) return false;
+        token.ThrowIfCancellationRequested();
+        if (!Svc.Condition[ConditionFlag.Unconscious]) return false;
+
+        FullWarning("Player died!");
+        await WaitUntilAsync(async () => !Svc.Condition[ConditionFlag.Unconscious] ||
+                                        await RegexYesNo(true, Lang.SelectYesNoReturnTo), "Waiting for resurrection yesno", token);
+        await WaitWhileAsync(() => Svc.Condition[ConditionFlag.Unconscious], "Waiting for resurrection", token);
+        await WaitUntilAsync(() => IsScreenAndPlayerReady(), "Waiting for return to finish", token);
+        return true;
+    }
+
+    internal static async Task<bool> HandleHaters(uint nameId = 0, CancellationToken token = default)
+        => (await HandleHatersWithResult(nameId, token)).KilledRegistered;
+
+    private static async Task<(bool KilledRegistered, bool Died)> HandleHatersWithResult(uint nameId = 0, CancellationToken token = default)
+    {
+        if (HandlingHaters) return (false, false);
         HandlingHaters = true;
         try
         {
@@ -448,8 +460,10 @@ internal static class CombatTasks
         }
     }
 
-    private static async Task<bool> HandleHatersInternal(uint nameId, CancellationToken token)
+    private static async Task<(bool KilledRegistered, bool Died)> HandleHatersInternal(uint nameId, CancellationToken token)
     {
+        if (await HandlePlayerDeath(token)) return (false, true);
+
         bool isGrouped;
         var  killedRegistered = false;
         unsafe
@@ -475,10 +489,10 @@ internal static class CombatTasks
                 {
                     if (hater.IsDead) continue;
                     Svc.Targets.Target = hater;
-                    await MoveToMovingObject(hater, recheckPosition: true, token: token);
+                    if (!await MoveToMovingObject(hater, recheckPosition: true, token: token)) return (killedRegistered, true);
                     await Dismount(token);
                     using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-                    await IsTargetDead(hater, token);
+                    if (!await IsTargetDead(hater, token)) return (killedRegistered, true);
                 }
             }
         }
@@ -509,15 +523,15 @@ internal static class CombatTasks
             using var scope = new TaskDescriptionScope($"Killing Hater: {hater.Name}");
             if (hater.IsDead) continue;
             Svc.Targets.Target = hater;
-            await MoveToMovingObject(hater, recheckPosition: true, token: token);
+            if (!await MoveToMovingObject(hater, recheckPosition: true, token: token)) return (killedRegistered, true);
             await Dismount(token);
             using var automation = CombatAutomation.Acquire(C.AutoRotationPlugin);
-            await IsTargetDead(hater, token);
+            if (!await IsTargetDead(hater, token)) return (killedRegistered, true);
             await Task.Delay(GeneralDelayMs * 2, token);
             if (((IBattleNpc)hater).NameId == nameId) killedRegistered = true;
         }
 
-        return killedRegistered;
+        return (killedRegistered, false);
     }
 
     internal static async Task CheckChocobo(CancellationToken token = default)

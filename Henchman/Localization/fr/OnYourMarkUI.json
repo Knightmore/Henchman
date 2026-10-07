@@ -11,6 +11,8 @@
   "ColorGreen":        "Vert",
   "ColorGreenDesc":    "-   Terminée.",
   "Enable":            "Activer",
+  "SelectExpansion":     "Sélectionner l'extension",
+  "DeselectExpansion":   "Désélectionner l'extension",
   "TabSettings":       "Paramètres",
   "ColName":           "Nom",
   "ColAmount":         "Quantité",

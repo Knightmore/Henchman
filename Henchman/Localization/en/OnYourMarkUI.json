@@ -11,6 +11,8 @@
   "ColorGreen":        "Green",
   "ColorGreenDesc":    "-   Completed.",
   "Enable":            "Enable",
+  "SelectExpansion":   "Select Expansion",
+  "DeselectExpansion": "Deselect Expansion",
   "TabSettings":       "Settings",
   "ColName":           "Name",
   "ColAmount":         "Amount",
