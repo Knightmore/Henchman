@@ -1,6 +1,7 @@
 using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Lumina.Excel.Sheets;
 using Underlings.GameHelpers;
@@ -21,10 +22,17 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                .ToDictionary(x => x.Name.ExtractText(), x => x);
 
     private readonly Table<OfflineCharacterData> ARTable;
+    private readonly TableReorderable<BoatCharacter, Guid> manualTable;
+    private BoatCharacter? characterToRemove;
+    private string newCharacterName = string.Empty;
+    private string newCharacterWorld = string.Empty;
 
     public OnABoatUI()
     {
         Configuration = LoadConfig<Configuration>() ?? new Configuration();
+        var migrateCharacters = Configuration.ManualCharacters is null;
+        Configuration.GetManualCharacters();
+        if (migrateCharacters) SaveConfig(Configuration);
 
         ARTable = new Table<OfflineCharacterData>(
                                                   "##ARFisherTable",
@@ -60,6 +68,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                   x => x.CID == Player.CID,
                                                   new Vector2(500, 0)
                                                  );
+        manualTable = CreateManualTable();
     }
 
     public sealed override Configuration   Configuration { get; init; }
@@ -77,7 +86,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
     [
             (IPCNames.vnavmesh, true),
             (IPCNames.Lifestream, true),
-            (IPCNames.AutoHook, true),
+            (IPCNames.WahTools, true),
             (IPCNames.AutoRetainer, false),
             (IPCNames.Questionable, false)
     ];
@@ -159,7 +168,8 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                    ConfigChanged |= ImGui.Checkbox("##HandleAR", ref Configuration.OCFishingHandleAR);
                                                });
 
-            DrawCentered("##boatArStopAt100", () =>
+            if (Configuration.OCFishingHandleAR)
+                DrawCentered("##boatArStopAt100", () =>
                                               {
                                                   ImGui.Text(T("StopAt"));
                                                   //ImGui.SameLine(200 * GlobalFontScale);
@@ -207,36 +217,109 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
         }
         else
         {
-            DrawCentered("##boatSingleCharName", () =>
-                                                 {
-                                                     ImGui.Text(T("CharacterName"));
-                                                     //ImGui.SameLine(200 * GlobalFontScale);
-                                                     ImGui.SameLine();
-                                                     ImGui.SetNextItemWidth(150f * GlobalFontScale);
-                                                     ConfigChanged |= ImGui.InputText("##character", ref Configuration.OceanChar, 21);
-                                                 });
-            DrawCentered("##boatWorld", () =>
-                                        {
-                                            ImGui.Text(T("World"));
-                                            //ImGui.SameLine(200 * GlobalFontScale);
-                                            ImGui.SameLine();
-                                            ImGui.SetNextItemWidth(150f * GlobalFontScale);
-                                            if (ExcelSheetCombo<World>("##world", out var selectedWorld, s => s.FirstOrDefault(x => x.Name.ExtractText() == Configuration.OceanWorld) is { } row
-                                                                                                                      ? row.Name.ExtractText()
-                                                                                                                      : string.Empty, x => x.Name.ExtractText(), x => x is { IsPublic: true, RowId: < 500 }))
-                                            {
-                                                Configuration.OceanWorld = selectedWorld.Name.ExtractText();
-                                                ConfigChanged            = true;
-                                            }
-                                        });
+            using var disabled = ImRaii.Disabled(IsTaskRunning(Name));
+            DrawManualCharacters();
         }
 
         if (ConfigChanged) SaveConfig(Configuration);
     }
 
+    private TableReorderable<BoatCharacter, Guid> CreateManualTable() => new(
+            "##ManualBoatTable",
+            [
+                    new(T("CharacterName"), x => x.Name, 150, FilterType.String, ColumnAlignment.Center),
+                    new(T("World"), x => x.World, 110, FilterType.MultiSelect, ColumnAlignment.Center),
+                    new(T("DataCenter"), x => Worlds.TryGetValue(x.World, out var world) ? world.DataCenter.Value.Name.ExtractText() : string.Empty,
+                        110, FilterType.MultiSelect, ColumnAlignment.Center),
+                    new("##Remove", Width: 40, Alignment: ColumnAlignment.Center, DrawCustom: (x, _) =>
+                                                                                           {
+                                                                                               if (ImGuiComponents.IconButton($"##RemoveBoat{x.Id}", FontAwesomeIcon.Trash))
+                                                                                                   characterToRemove = x;
+                                                                                           })
+            ],
+            () => Configuration.GetManualCharacters().ToArray(),
+            x => x.Id,
+            x => Configuration.GetManualCharacters().FindIndex(h => h.Id == x.Id),
+            MoveManualCharacter,
+            size: new Vector2(500, 0),
+            highlightPredicate: x => Player.Available && x.Name == Player.Name && x.World == Player.HomeWorld.Value.Name.ExtractText(),
+            drawExtraRow: DrawNewCharacterRow);
+
+    private void MoveManualCharacter(Guid id, int targetIndex)
+    {
+        var characters = Configuration.GetManualCharacters();
+        var sourceIndex = characters.FindIndex(x => x.Id == id);
+        if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= characters.Count || sourceIndex == targetIndex) return;
+        var character = characters[sourceIndex];
+        characters.RemoveAt(sourceIndex);
+        characters.Insert(targetIndex, character);
+        ConfigChanged = true;
+    }
+
+    private void DrawManualCharacters()
+    {
+        DrawCentered("##boatManualCharacters", manualTable.Draw);
+        if (characterToRemove is not null)
+        {
+            Configuration.GetManualCharacters().Remove(characterToRemove);
+            characterToRemove = null;
+            ConfigChanged = true;
+        }
+    }
+
+    private void DrawNewCharacterRow()
+    {
+        ImGui.TableNextRow();
+        ImGui.TableSetColumnIndex(1);
+        DrawCentered("##boatNewCharacter", () =>
+                                          {
+                                              ImGui.SetNextItemWidth(150f * GlobalFontScale);
+                                              ImGui.InputText("##boatNewName", ref newCharacterName, 21);
+                                          });
+        ImGui.TableSetColumnIndex(2);
+        DrawCentered("##boatNewWorld", () =>
+                                      {
+                                          ImGui.SetNextItemWidth(110f * GlobalFontScale);
+                                          if (ExcelSheetCombo<World>("##boatNewWorld", out var selectedWorld,
+                                                                    _ => newCharacterWorld, x => x.Name.ExtractText(),
+                                                                    x => x.IsPublic && x.RowId != 3000 && x.RowId != 3001))
+                                              newCharacterWorld = selectedWorld.Name.ExtractText();
+                                      });
+        ImGui.TableSetColumnIndex(3);
+        DrawCentered("##boatNewDataCenter", () =>
+                                             {
+                                                 ImGui.AlignTextToFramePadding();
+                                                 ImGui.TextUnformatted(Worlds.TryGetValue(newCharacterWorld, out var world)
+                                                                               ? world.DataCenter.Value.Name.ExtractText()
+                                                                               : string.Empty);
+                                             });
+        ImGui.TableSetColumnIndex(4);
+        DrawCentered("##boatAddCharacter", () =>
+                                          {
+                                              var name = newCharacterName.Trim();
+                                              var valid = !string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(newCharacterWorld) &&
+                                                          !Configuration.GetManualCharacters().Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && x.World == newCharacterWorld);
+                                              using var disabled = ImRaii.Disabled(!valid);
+                                              var add = ImGuiComponents.IconButton("##boatAddCharacter", FontAwesomeIcon.Plus);
+                                              if (ImGui.IsItemHovered()) ImGui.SetTooltip(T("AddCharacter"));
+                                              if (!add) return;
+                                              Configuration.GetManualCharacters().Add(new BoatCharacter { Name = name, World = newCharacterWorld });
+                                              newCharacterName = string.Empty;
+                                              ConfigChanged = true;
+                                          });
+    }
+
     private void DrawSettings()
     {
-        DrawCentered("##boatVersatile", () => { ConfigChanged |= ImGui.Checkbox(T("UseOnlyVersatileLure"), ref Configuration.UseOnlyVersatile); });
+        DrawCentered("##boatRoute", () =>
+                                    {
+                                        var route = Configuration.PreferRuby ? 1 : 0;
+                                        if (ImGui.Combo(T("Route"), ref route, new[] { "Indigo", "Ruby" }, 2))
+                                        {
+                                            Configuration.PreferRuby = route == 1;
+                                            ConfigChanged = true;
+                                        }
+                                    });
 
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
@@ -254,8 +337,21 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                      HelpMarker(() => ImGui.Text(T("UseARLocalSellHelp")));
                                                  });
 
-            DrawCentered("##boatArDiscard", () => { ConfigChanged |= ImGui.Checkbox(T("UseARDiscard"), ref Configuration.DiscardAfterVoyage); });
+
         }
+
+        DrawCentered("##boatDiscard", () => { ConfigChanged |= ImGui.Checkbox(T("DiscardAfterVoyage"), ref Configuration.DiscardAfterVoyage); });
+        DrawCentered("##boatDiscardProvider", () =>
+                                              {
+                                                  var provider = Configuration.UseFeeshDiscard ? 1 : 0;
+                                                  if (ImGui.Combo(T("DiscardProvider"), ref provider, new[] { "AutoRetainer", "WahTools (Feesh)" }, 2))
+                                                  {
+                                                      Configuration.UseFeeshDiscard = provider == 1;
+                                                      ConfigChanged = true;
+                                                  }
+                                                  ImGui.SameLine();
+                                                  HelpMarker(() => ImGui.Text(T("DiscardProviderHelp")));
+                                              });
 
         if (ConfigChanged) SaveConfig(Configuration);
     }
