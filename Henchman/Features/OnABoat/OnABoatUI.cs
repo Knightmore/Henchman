@@ -102,6 +102,15 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
 
     public override void Draw()
     {
+        ConfigChanged = false;
+        if (!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            ConfigChanged = Configuration.OCFishingHandleAR || Configuration.SellAfterVoyage || Configuration.SellAtLocalVendor;
+            Configuration.OCFishingHandleAR = false;
+            Configuration.SellAfterVoyage = false;
+            Configuration.SellAtLocalVendor = false;
+        }
+
         using var tabs = ImRaii.TabBar("Tabs");
         if (tabs)
         {
@@ -117,11 +126,11 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                     DrawSettings();
             }
         }
+        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private void DrawMain()
     {
-        ConfigChanged = false;
         var utcNow = DateTime.UtcNow;
         var hour   = utcNow.Hour;
         var minute = utcNow.Minute;
@@ -159,7 +168,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                   }
                               });
 
-        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
         {
             DrawCentered("##boatArCharacters", () =>
                                                {
@@ -220,8 +229,6 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
             using var disabled = ImRaii.Disabled(IsTaskRunning(Name));
             DrawManualCharacters();
         }
-
-        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private TableReorderable<BoatCharacter, Guid> CreateManualTable() => new(
@@ -321,7 +328,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                         }
                                     });
 
-        if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
         {
             DrawCentered("##boatArSelling", () =>
                                             {
@@ -352,8 +359,6 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                   ImGui.SameLine();
                                                   HelpMarker(() => ImGui.Text(T("DiscardProviderHelp")));
                                               });
-
-        if (ConfigChanged) SaveConfig(Configuration);
     }
 
     private void DrawARTable()

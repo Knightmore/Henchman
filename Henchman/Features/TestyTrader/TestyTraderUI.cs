@@ -176,6 +176,12 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
     public override void Draw()
     {
         ConfigChanged = false;
+        if (!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        {
+            ConfigChanged = Configuration.TestyTraderARSupport || Configuration.UseARItemSell;
+            Configuration.TestyTraderARSupport = false;
+            Configuration.UseARItemSell = false;
+        }
         DrawCentered("###TraderStart", () => Layout.DrawButton(() =>
                                                                {
                                                                    if (StartButton()) StartTask();
@@ -206,7 +212,8 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
         }
         else
         {
-            DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.UseARItemSell));
+            using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
+                DrawCentered("##UseARItemSell", () => ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.UseARItemSell));
             DrawCentered("##BossToHenchmanWorld", () =>
                                                   {
                                                       ConfigChanged |= ImGui.Checkbox(T("TransferBossToHenchman"), ref Configuration.MoveBossToHenchman);
@@ -347,9 +354,10 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
 
     private void DrawCharacterTab()
     {
+        using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
+            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox(T("ARSupport"), ref Configuration.TestyTraderARSupport));
         if (SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            DrawCentered("##TraderARSupport", () => ConfigChanged |= ImGui.Checkbox(T("ARSupport"), ref Configuration.TestyTraderARSupport));
             if (Configuration.TestyTraderARSupport)
             {
                 DrawCentered("##TradeCharSelector", () =>
@@ -385,9 +393,6 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                 DrawCentered("##CenteredARTraderTable", () => DrawARTable());
             }
         }
-        else
-            Configuration.TestyTraderARSupport = false;
-
         if (!Configuration.TestyTraderARSupport)
         {
             DrawCentered("##ImportTraders", () =>

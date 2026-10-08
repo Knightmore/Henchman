@@ -43,7 +43,7 @@ public partial class TestyTrader : Module
     internal async Task Client(CancellationToken token = default)
     {
         List<MultiboxClient.CharacterData> characters;
-        if (Configuration!.TestyTraderARSupport)
+        if (Configuration!.TestyTraderARSupport && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
             var enabledCharacters = GetCurrentARCharacterData()
                    .Where(x => Configuration!.EnableCharacterForTrade[x.CID]);

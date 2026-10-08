@@ -59,6 +59,7 @@ internal class OnABoat : Module
 
     internal async Task Start(CancellationToken token = default)
     {
+        Configuration!.OCFishingHandleAR &= SubscriptionManager.IsInitialized(IPCNames.AutoRetainer);
         ErrorThrowIf(!Feesh.Route.IsAvailable || !Feesh.CatchTheBoat.IsAvailable || !Feesh.AutoOcean.IsAvailable ||
                      !Feesh.AutoClean.IsAvailable || !Feesh.Stop.IsAvailable,
                 "Enable Feesh in WahTools to use On A Boat.");
