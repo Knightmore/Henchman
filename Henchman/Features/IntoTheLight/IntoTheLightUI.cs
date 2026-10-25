@@ -118,14 +118,15 @@ public class IntoTheLightUI : ModuleUI<IntoTheLight, Configuration>
                                                                                                                                      : 15);
                                                                 row.TableNextColumn();
                                                                 ImGui.SetNextItemWidth(100f * GlobalFontScale);
+                                                                // World.DataCenter retains the old Japanese grouping; Unknown0 has the current data center ID.
                                                                 if (ExcelSheetCombo<WorldDCGroupType>("##newdc", out var selectedDC, s => s.GetRowOrDefault(newCharacter.DataCenterId) is { } row
                                                                                                                                                   ? row.Name.ExtractText()
-                                                                                                                                                  : string.Empty, x => x.Name.ExtractText(), x => x.RowId is > 0 and < 12))
+                                                                                                                                                  : string.Empty, x => x.Name.ExtractText(), x => x.RowId is > 0 and < 12 && Svc.Data.GetExcelSheet<World>().Any(y => y.Unknown0 == x.RowId && y.IsPublic)))
                                                                 {
                                                                     newCharacter.DataCenterId = selectedDC.RowId;
                                                                     newCharacter.WorldId = Svc.Data
                                                                                               .GetExcelSheet<World>()
-                                                                                              .First(x => x.DataCenter.Value.RowId == selectedDC.RowId && x.IsPublic)
+                                                                                              .First(x => x.Unknown0 == selectedDC.RowId && x.IsPublic)
                                                                                               .RowId;
                                                                 }
 
@@ -133,7 +134,7 @@ public class IntoTheLightUI : ModuleUI<IntoTheLight, Configuration>
                                                                 ImGui.SetNextItemWidth(110f * GlobalFontScale);
                                                                 if (ExcelSheetCombo<World>("##newworld", out var selectedWorld, s => s.GetRowOrDefault(newCharacter.WorldId) is { } row
                                                                                                                                              ? row.Name.ExtractText()
-                                                                                                                                             : string.Empty, y => y.Name.ExtractText(), y => y.IsPublic && y.DataCenter.RowId == newCharacter.DataCenterId))
+                                                                                                                                             : string.Empty, y => y.Name.ExtractText(), y => y.IsPublic && y.Unknown0 == newCharacter.DataCenterId))
                                                                     newCharacter.WorldId = selectedWorld.RowId;
                                                                 row.TableNextColumn();
                                                                 ImGui.SetNextItemWidth(100f * GlobalFontScale);

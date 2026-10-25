@@ -276,15 +276,23 @@ internal static class MovementTasks
         token.ThrowIfCancellationRequested();
         using var scope = new TaskDescriptionScope("Move To moving Object");
         if (Svc.Condition[ConditionFlag.Unconscious]) return;
+        var entityId = gameObject.EntityId;
         if (Player.DistanceTo(gameObject.Position) < distance) return;
         await WaitUntilAsync(async () => Svc.Condition[ConditionFlag.Unconscious] ||
                                         (Vnavmesh.NavIsReady.Invoke() && !await IsBusy(token)), "Wait for navmesh", token);
-        if (Svc.Condition[ConditionFlag.Unconscious]) return;
+        if (Svc.Condition[ConditionFlag.Unconscious] || !gameObject.IsValid() || gameObject.EntityId != entityId ||
+            gameObject is IBattleNpc { IsDead: true }) return;
         var position = gameObject.Position;
 
         ErrorThrowIf(!Vnavmesh.SimpleMovePathfindAndMoveTo.Invoke(position, Svc.Condition[ConditionFlag.InFlight] || (Player.DistanceTo(position) > 25 && Player.Mounted && Player.CanFly)), $"Could not find path to {gameObject.Position}");
-        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || Vnavmesh.PathIsRunning.Invoke(), "Wait for pathing to start", token);
-        if (Svc.Condition[ConditionFlag.Unconscious]) return;
+        await WaitUntilAsync(() => Svc.Condition[ConditionFlag.Unconscious] || Vnavmesh.PathIsRunning.Invoke() ||
+                                   !gameObject.IsValid() || gameObject.EntityId != entityId,
+                             "Wait for pathing to start", token, TimeSpan.FromSeconds(75));
+        if (Svc.Condition[ConditionFlag.Unconscious] || !gameObject.IsValid() || gameObject.EntityId != entityId)
+        {
+            Vnavmesh.StopCompletely();
+            return;
+        }
 
         if (!Player.Mounted && Player.DistanceTo(position) > C.MinRunDistance) UseSprint();
         if (recheckPosition)
@@ -295,7 +303,11 @@ internal static class MovementTasks
             while (!Svc.Condition[ConditionFlag.Unconscious])
             {
                 token.ThrowIfCancellationRequested();
-                if (gameObject is IBattleNpc { IsDead: true }) return;
+                if (!gameObject.IsValid() || gameObject.EntityId != entityId || gameObject is IBattleNpc { IsDead: true })
+                {
+                    Vnavmesh.StopCompletely();
+                    return;
+                }
                 if (gameObject.IsInAttackRange(gameObject.HitboxRadius))
                 {
                     Vnavmesh.StopCompletely();

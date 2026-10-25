@@ -184,7 +184,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                   //ImGui.SameLine(200 * GlobalFontScale);
                                                   ImGui.SameLine();
                                                   ImGui.SetNextItemWidth(40 * GlobalFontScale);
-                                                  ImGui.InputInt("##fisherMaxLevel", ref Configuration.MaxLevel);
+                                                  ConfigChanged |= ImGui.InputInt("##fisherMaxLevel", ref Configuration.MaxLevel);
                                                   ImGui.SameLine();
                                                   ConfigChanged |= ImGui.Checkbox("##stopAt", ref Configuration.OCFishingStopLevel);
                                               });

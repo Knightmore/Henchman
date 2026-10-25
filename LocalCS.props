@@ -1,7 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <LocalCSOverride>false</LocalCSOverride>
+        <LocalCSOverride Condition="'$(Configuration)' == 'Private'">true</LocalCSOverride>
+        <LocalCSOverride Condition="'$(Configuration)' != 'Private'">false</LocalCSOverride>
     </PropertyGroup>
 
 </Project>

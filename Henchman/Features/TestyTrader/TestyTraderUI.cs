@@ -18,6 +18,8 @@ namespace Henchman.Features.TestyTrader;
 [Module]
 public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
 {
+    public override void Dispose() => GameItemTooltip.Dispose();
+
     private static readonly Item[] TradableItems = Svc.Data.GetExcelSheet<Item>()
                                                       .Where(x => x is { IsUntradable: false, RowId: > 0 and < 20 or > 100 } && !string.IsNullOrEmpty(x.Name.ExtractText()))
                                                       .OrderBy(x => x.Name.ExtractText())
@@ -306,14 +308,15 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                             DrawCentered("##TraderNewCharacterDC", () =>
                                                                                                    {
                                                                                                        ImGui.SetNextItemWidth(100f * GlobalFontScale);
+                                                                                                        // World.DataCenter retains the old Japanese grouping; Unknown0 has the current data center ID.
                                                                                                        if (ExcelSheetCombo<WorldDCGroupType>("##newdc", out var selectedDC, s => s.GetRowOrDefault(newCharacter.DataCenterId) is { } row
                                                                                                                                                                                          ? row.Name.ExtractText()
-                                                                                                                                                                                         : string.Empty, x => x.Name.ExtractText(), x => x.RowId is > 0 and < 12))
+                                                                                                                                                                                          : string.Empty, x => x.Name.ExtractText(), x => x.RowId is > 0 and < 12 && Svc.Data.GetExcelSheet<World>().Any(y => y.Unknown0 == x.RowId && y.IsPublic && y.RowId != 3000 && y.RowId != 3001)))
                                                                                                        {
                                                                                                            newCharacter.DataCenterId = selectedDC.RowId;
                                                                                                            newCharacter.WorldId = Svc.Data
                                                                                                                                      .GetExcelSheet<World>()
-                                                                                                                                     .First(x => x.DataCenter.Value.RowId == selectedDC.RowId && x.IsPublic)
+                                                                                                                                     .First(x => x.Unknown0 == selectedDC.RowId && x.IsPublic && x.RowId != 3000 && x.RowId != 3001)
                                                                                                                                      .RowId;
                                                                                                        }
                                                                                                    });
@@ -323,7 +326,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                                                                           ImGui.SetNextItemWidth(110f * GlobalFontScale);
                                                                                                           if (ExcelSheetCombo<World>("##world", out var selectedCharacterWorld, s => s.GetRowOrDefault(newCharacter.WorldId) is { } row
                                                                                                                                                                                              ? row.Name.ExtractText()
-                                                                                                                                                                                             : string.Empty, x => x.Name.ExtractText(), x => x.IsPublic && x.RowId != 3000 && x.RowId != 3001))
+                                                                                                                                                                                             : string.Empty, x => x.Name.ExtractText(), x => x.IsPublic && x.Unknown0 == newCharacter.DataCenterId && x.RowId != 3000 && x.RowId != 3001))
                                                                                                               newCharacter.WorldId = selectedCharacterWorld.RowId;
                                                                                                       });
                                                             row.TableNextColumn();
@@ -482,6 +485,8 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
 
                                                                  ConfigChanged = true;
                                                              }
+
+                                                             GameItemTooltip.ShowOnHover(entry.RowId);
                                                          }
                                                      }
 
@@ -579,6 +584,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
                                                                                                               ? " (HQ)"
                                                                                                               : "")
                                                                                                     );
+                                                                                                GameItemTooltip.ShowOnHover(x.Id);
                                                                                             }),
                                                   new(T("ColAmount"), Width: 120, DrawCustom: (x, index) =>
                                                                                               {
@@ -638,7 +644,7 @@ public class TestyTraderUI : ModuleUI<TestyTrader, Configuration>
 
             var newItem = new TestyTraderCharacterData
                           {
-                                  DataCenterId = worldRow.Value.DataCenter.Value.RowId,
+                                  DataCenterId = worldRow.Value.Unknown0,
                                   Enabled      = true,
                                   Name         = name,
                                   WorldId      = worldRow.Value.RowId

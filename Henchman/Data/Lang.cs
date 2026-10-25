@@ -104,6 +104,10 @@ internal static class Lang
                                                                .GetRow(111)
                                                                .Text;
 
+    internal static ReadOnlySeString SelectYesNoOpenTreasure => Svc.Data.GetExcelSheet<Addon>()
+                                                                   .GetRow(8105)
+                                                                   .Text;
+
     internal static ReadOnlySeString TradeText => Svc.Data.GetExcelSheet<Addon>()
                                                      .GetRow(102223)
                                                      .Text;

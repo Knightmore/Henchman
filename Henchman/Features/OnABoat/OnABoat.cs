@@ -37,7 +37,6 @@ internal class OnABoat : Module
 
     internal Vector3 PositionMerchantMender = new(-399, 3, 80);
 
-
     private static        Configuration? Configuration          => GetFeatureConfig<OnABoatUI, Configuration>();
 
     public unsafe InstanceContentOceanFishing.OceanFishingStatus? GetStatus
@@ -63,6 +62,7 @@ internal class OnABoat : Module
         ErrorThrowIf(!Feesh.Route.IsAvailable || !Feesh.CatchTheBoat.IsAvailable || !Feesh.AutoOcean.IsAvailable ||
                      !Feesh.AutoClean.IsAvailable || !Feesh.Stop.IsAvailable,
                 "Enable Feesh in WahTools to use On A Boat.");
+        ErrorThrowIf(!WahTools.IsBusy.TryInvoke(out _), "Could not read WahTools busy status.");
         if (Configuration!.DiscardAfterVoyage)
         {
             if (Configuration.UseFeeshDiscard)
@@ -229,9 +229,12 @@ internal class OnABoat : Module
     {
         await Task.Delay(GeneralDelayMs * 4, token);
 
-        await WaitUntilAsync(() => CloseIKDResult(), "Waiting for Ocean Fishing results", token);
-
-        await WaitPulseConditionAsync(() => !IsScreenAndPlayerReady(), "Waiting for Player", token);
+        await WaitUntilAsync(() =>
+                             {
+                                 ErrorThrowIf(!WahTools.IsBusy.TryInvoke(out var busy), "WahTools busy status became unavailable.");
+                                 return !busy && !IsIKDResultOpen() && IsScreenAndPlayerReady();
+                             }, "Waiting for Feesh shore leave", token);
+        ErrorThrowIf(!Feesh.Stop.Invoke(), "Feesh could not release control after shore leave.");
 
         await Task.Delay(Random.Shared.Next(16) * GeneralDelayMs, token);
 
@@ -247,7 +250,6 @@ internal class OnABoat : Module
             await WaitWhileAsync(() => AutoRetainer.IsBusy.Invoke(), "Wait until selling finished", token);
         }
 
-        // Feesh owns its cleanup travel; there is no released IPC to wait for it.
         if (!Configuration!.DiscardAfterVoyage || !Configuration.UseFeeshDiscard)
             await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone, token);
 
@@ -363,26 +365,17 @@ internal class OnABoat : Module
 
     internal async Task OnError()
     {
+        var canReturn = WahTools.IsBusy.TryInvoke(out var busy) && !busy && !IsIKDResultOpen() && IsScreenAndPlayerReady();
         UnsubscribeEvents();
-        if (Player.Available)
+        if (canReturn && Player.Available)
             await Lifestream.LifestreamReturn(C.ReturnTo, C.ReturnOnceDone);
     }
 
     internal List<OfflineCharacterData> GetCurrentARCharacterData() => charactersCache.Value;
 
-    internal static async Task<bool> CloseIKDResult()
+    private static unsafe bool IsIKDResultOpen()
     {
-        unsafe
-        {
-            if (TryGetAddonByName<AtkUnitBase>("IKDResult", out var addon) && IsAddonReady(addon))
-            {
-                addon->FireCallback(true, 0);
-                return true;
-            }
-        }
-
-        await Task.Delay(100);
-        return false;
+        return TryGetAddonByName<AtkUnitBase>("IKDResult", out var addon) && addon->IsVisible;
     }
 
     private enum OceanFishingState

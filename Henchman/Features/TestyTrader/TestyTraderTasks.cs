@@ -163,14 +163,16 @@ internal static class TestyTraderTasks
         TaskLog.Debug($"Current tradeQueue amount: {tradeQueue.Count}");
         TaskLog.Debug($"Gil to trade: {gilToTrade}");
 
-        if (gilToTrade > 0) InventoryHelper.SetTradeGilAmount(gilToTrade);
-        await Task.Delay(4 * GeneralDelayMs, token);
+        if (gilToTrade > 0)
+        {
+            InventoryHelper.SetTradeGilAmount(gilToTrade);
+            await Task.Delay(4 * GeneralDelayMs, token);
+        }
 
         for (var i = 0; i < tradeQueue.Count; i++)
         {
             var entry = tradeQueue[i];
             await WaitUntilAsync(() => TryAddItemHandin(entry, i), $"Filling HandIn slot {i + 1}", token);
-            await Task.Delay(GeneralDelayMs, token);
             if (InventoryHelper.GetItemSlot(entry.Type, entry.SlotID)
                                .Quantity >
                 1)
