@@ -210,7 +210,7 @@ internal class OnABoat : Module
                              {
                                  ErrorThrowIf(!Feesh.CatchTheBoat.IsAvailable, "Feesh was disabled while boarding.");
                                  return dutyStarted || Player.TerritoryId is 900 or 1163;
-                             }, "Waiting for Feesh to board the selected route", token, TimeSpan.FromMinutes(15));
+                             }, "Waiting for Feesh to board the selected route", token, TimeSpan.FromMinutes(20));
         dutyStarted = true;
         await WaitUntilAsync(() => GetStatus == InstanceContentOceanFishing.OceanFishingStatus.Fishing, "Waiting for voyage to begin", token);
         await Task.Delay(2 * GeneralDelayMs, token);

@@ -87,8 +87,14 @@ public class Henchman : IDalamudPlugin
         CancelAllTasks();
         CombatAutomation.ForceCleanup();
         Wrath.DisableWrath();
+#if PRIVATE
+        Rendering.SetCancelVfxOnResume(false);
+#endif
         Rendering.SetDisableRenderWhenUnfocused(false);
         Rendering.SetForceRenderEnabled(false);
+#if PRIVATE
+        if (Rendering.ForcedRenderFlag) Rendering.SetRender(true);
+#endif
 
         foreach (var feature in ModuleRegistry.Instances.OfType<ModuleUI>())
         {

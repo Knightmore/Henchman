@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,32 +25,36 @@ public class RetainerVocate : Module
     private const  int            RetainerListEntryStride = 10;
     private static Configuration? Configuration => GetFeatureConfig<RetainerVocateUI, Configuration>();
 
-    private static uint GilShopItemId(uint itemId) => Svc.Data.GetSubrowExcelSheet<GilShopItem>()
-                                                         .Flatten()
-                                                         .FirstOrDefault(x => x.Item.RowId ==
-                                                                              itemId)
-                                                         .RowId;
-
-    private static GilShop GilShop(uint itemId) => Svc.Data.GetExcelSheet<GilShop>()
-                                                      .GetRow(GilShopItemId(itemId));
-
-    private static TopicSelect VendorShop(uint itemId) => Svc.Data.GetExcelSheet<TopicSelect>()
-                                                             .FirstOrDefault(topicSelect => topicSelect.Shop.Any(shop => shop.RowId == GilShopItemId(itemId)));
-
-    private static Item MainHand(uint retainerClass) => Svc.Data.GetExcelSheet<Item>()
-                                                           .FirstOrDefault(item => item.ClassJobCategory.Value.Name.ExtractText()
-                                                                                       .Contains(Svc.Data.GetExcelSheet<ClassJob>()
-                                                                                                    .FirstOrDefault(classJob => classJob.RowId == retainerClass)
-                                                                                                    .Abbreviation.ExtractText()) &&
-                                                                                   item.Name.ExtractText()
-                                                                                       .Contains("Weathered") &&
-                                                                                   new[] { "Arm", "Grimoire", "Primary Tool" }.Any(category => item.ItemUICategory.Value
-                                                                                                                                                   .Name.ExtractText()
-                                                                                                                                                   .Contains(category)));
-
     private static NpcData VendorData(uint retainerClass) => IsCombat(retainerClass)
                                                                      ? NpcDatabase.BeginnerDoWDoMVendor[Configuration!.RetainerCity]
                                                                      : NpcDatabase.BeginnerDoLVendor[Configuration!.RetainerCity];
+
+    private static (Item Item, GilShop Shop, TopicSelect Topic) StarterGear(uint retainerClass)
+    {
+        var vendor = VendorData(retainerClass);
+        var topics = Svc.Data.GetExcelSheet<TopicSelect>();
+        var gilShops = Svc.Data.GetExcelSheet<GilShop>();
+        var shopItems = Svc.Data.GetSubrowExcelSheet<GilShopItem>();
+        (Item Item, GilShop Shop, TopicSelect Topic)? gear = null;
+        foreach (var handler in Svc.Data.GetExcelSheet<ENpcBase>().GetRow(vendor.BaseId).ENpcData)
+        {
+            if (topics.GetRowOrDefault(handler.RowId) is not { } topic) continue;
+            foreach (var shop in topic.Shop)
+            {
+                if (shop.RowId == 0) continue;
+                foreach (var entry in shopItems.GetRow(shop.RowId))
+                {
+                    var item = entry.Item.Value;
+                    if (item.ClassJobUse.RowId != retainerClass || item.LevelEquip != 1 || item.EquipSlotCategory.RowId is not (1 or 13)) continue;
+                    ErrorThrowIf(gear.HasValue, $"Multiple level 1 main hands found at {vendor.Name} for class {retainerClass}");
+                    gear = (item, gilShops.GetRow(shop.RowId), topic);
+                }
+            }
+        }
+
+        ErrorThrowIf(!gear.HasValue, $"No level 1 main hand found at {vendor.Name} for class {retainerClass}");
+        return gear!.Value;
+    }
 
     /*
      * Main Tasks
@@ -232,17 +237,12 @@ public class RetainerVocate : Module
         token.ThrowIfCancellationRequested();
         using var scope      = new TaskDescriptionScope("Purchase Starter Gear");
         var       vendorData = VendorData(retainerClassId);
+        var       gear       = StarterGear(retainerClassId);
 
         await WaitUntilAsync(() => TargetNearestByBaseId(vendorData.BaseId, token), $"Target {vendorData.Name}", token);
-        await WaitUntilAsync(() => EventUtils.OpenEventHandler(vendorData.BaseId, VendorShop(MainHand(retainerClassId)
-                                                                                                    .RowId)
-                                                                      .RowId), "Open Shop", token);
-        await WaitUntilAsync(() => TrySelectSpecificEntry(GilShop(MainHand(retainerClassId)
-                                                                         .RowId)
-                                                         .Name.ExtractText()), $"Try open \"{GilShop(MainHand(retainerClassId).RowId).Name.ExtractText()}\"", token);
-        await WaitUntilAsync(() => ShopUtils.IsShopOpen(GilShop(MainHand(retainerClassId)
-                                                                       .RowId)
-                                                               .RowId), "Wait for Shop Open", token);
+        await WaitUntilAsync(() => EventUtils.OpenEventHandler(vendorData.BaseId, gear.Topic.RowId), "Open Shop", token);
+        await WaitUntilAsync(() => TrySelectSpecificEntry(gear.Shop.Name.ExtractText()), $"Try open \"{gear.Shop.Name.ExtractText()}\"", token);
+        await WaitUntilAsync(() => ShopUtils.IsShopOpen(gear.Shop.RowId), "Wait for Shop Open", token);
 
         byte maxRetainerEntitlement;
         unsafe
@@ -258,13 +258,8 @@ public class RetainerVocate : Module
                  1;
                  i++)
             {
-                await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(GilShop(MainHand(retainerClassId)
-                                                                                    .RowId)
-                                                                            .RowId, MainHand(retainerClassId)
-                                                                            .RowId, 1), $"Buy Item {MainHand(retainerClassId).Name.ExtractText()}", token);
-                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(GilShop(MainHand(retainerClassId)
-                                                                                              .RowId)
-                                                                                      .RowId), "Waiting for transaction", token);
+                await WaitUntilAsync(() => ShopUtils.BuyItemFromShop(gear.Shop.RowId, gear.Item.RowId, 1), $"Buy Item {gear.Item.Name.ExtractText()}", token);
+                await WaitWhileAsync(() => ShopUtils.ShopTransactionInProgress(gear.Shop.RowId), "Waiting for transaction", token);
             }
         }
 
@@ -320,6 +315,7 @@ public class RetainerVocate : Module
             if (index == -1) return;
         }
 
+        var mainHand = StarterGear(retainerClassId == 0 ? Configuration!.RetainerClass : retainerClassId).Item;
         for (var i = index; i < index + retainerAmount; i++)
         {
             var    pos = i;
@@ -337,8 +333,8 @@ public class RetainerVocate : Module
             await WaitUntilAsync(() => TrySelectSpecificEntry(classEntry), "SelectString Class", token);
             await WaitUntilAsync(() => RegexYesNo(true, Lang.SelectYesNoClassConfirmAsk), "SelectYesNo Confirm class", token);
             await WaitUntilAsync(() => TrySelectSpecificEntry(Lang.SelectStringNoMainEquipped), "SelectString Retainer Gear", token);
-            await WaitUntilAsync(() => EquipRetainer(MainHand(retainerClassId), token),
-                                 $"Equip {MainHand(retainerClassId).Name.ExtractText()} to Retainer {nameString}", token);
+            await WaitUntilAsync(() => EquipRetainer(mainHand, token),
+                                 $"Equip {mainHand.Name.ExtractText()} to Retainer {nameString}", token);
             await WaitUntilAsync(() => CloseRetainerCharacter(token), "CloseRetainerWindow", token);
             if ((Configuration!.SendOnFirstExploration || firstExploration) && InventoryHelper.GetInventoryItemCount(21072) > 2)
             {

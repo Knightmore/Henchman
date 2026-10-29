@@ -21,8 +21,12 @@ internal static unsafe partial class Rendering
 
     internal static void SetRender(bool enabled)
     {
+#if PRIVATE
+        SetRenderPrivate(enabled);
+#else
         ForcedRenderFlag = !enabled;
         RenderDisabled   = ForcedRenderFlag;
+#endif
     }
 
     internal static void SetForceRenderEnabled(bool enabled)
