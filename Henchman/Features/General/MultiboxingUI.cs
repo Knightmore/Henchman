@@ -18,34 +18,32 @@ internal class MultiboxingUI : ModuleUI
 
     public override void Draw()
     {
-        var configChanged = false;
-        DrawCentered("##MultiboxingNetworkWarning", () =>
-                                                    {
-                                                        ImGui.TextColored(Theme.ErrorRed, T("NetworkWarning"));
-                                                        ImGui.NewLine();
+        Widgets.Banner(BannerKind.Error, T("NetworkWarning"));
+        ImGui.Dummy(new Vector2(0, 2 * GlobalFontScale));
+        Widgets.Region(520f, () => Widgets.Card(T("Connection"), () =>
+                                                                         {
+                                                                             var configChanged = Widgets.SwitchRow($"{T("UseOnlyLocally").TrimEnd(':')}##localOnly", ref Configuration.LocalOnly,
+                                                                                                                   help: T("LocalOnlyHelp"));
+                                                                             using (Widgets.Disabled(Configuration.LocalOnly))
+                                                                             {
+                                                                                 Widgets.FieldRow(T("IPAddress"), () =>
+                                                                                                                  {
+                                                                                                                      ImGui.SetNextItemWidth(Widgets.Avail - 26 * GlobalFontScale);
+                                                                                                                      ImGui.InputTextWithHint("##ipAddress", "127.0.0.1 / ::1", Configuration.IpBytes);
+                                                                                                                      ImGui.SameLine();
+                                                                                                                      HelpMarker(() => ImGui.Text(T("IPAddressHelp")));
+                                                                                                                  }, 220f);
+                                                                             }
 
-                                                        ImGui.Text(T("UseOnlyLocally"));
-                                                        ImGui.SameLine(240 * GlobalFontScale);
-                                                        configChanged |= ImGui.Checkbox("##localOnly", ref Configuration.LocalOnly);
-                                                        ImGui.SameLine();
-                                                        HelpMarker(() => ImGui.Text(T("LocalOnlyHelp")));
+                                                                             Widgets.FieldRow(T("Port").TrimEnd(':'), () =>
+                                                                                                                       {
+                                                                                                                           ImGui.SetNextItemWidth(Widgets.Avail - 26 * GlobalFontScale);
+                                                                                                                           configChanged |= ImGui.InputUInt("###port", ref Configuration.Port);
+                                                                                                                           ImGui.SameLine();
+                                                                                                                           HelpMarker(() => ImGui.Text(T("PortHelp")));
+                                                                                                                       }, 140f);
 
-                                                        ImGui.Text(T("IPAddress"));
-                                                        ImGui.SameLine(240          * GlobalFontScale);
-                                                        ImGui.SetNextItemWidth(240f * GlobalFontScale);
-                                                        ImGui.BeginDisabled(Configuration.LocalOnly);
-                                                        ImGui.InputTextWithHint("##ipAddress", "127.0.0.1 / ::1", Configuration.IpBytes);
-                                                        ImGui.EndDisabled();
-                                                        ImGui.SameLine();
-                                                        HelpMarker(() => ImGui.Text(T("IPAddressHelp")));
-                                                        ImGui.Text(T("Port"));
-                                                        ImGui.SameLine(240         * GlobalFontScale);
-                                                        ImGui.SetNextItemWidth(60f * GlobalFontScale);
-                                                        configChanged |= ImGui.InputUInt("###port", ref Configuration.Port);
-                                                        ImGui.SameLine();
-                                                        HelpMarker(() => ImGui.Text(T("PortHelp")));
-
-                                                        if (configChanged) SaveConfig(Configuration);
-                                                    });
+                                                                             if (configChanged) SaveConfig(Configuration);
+                                                                         }));
     }
 }

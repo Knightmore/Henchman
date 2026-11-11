@@ -9,5 +9,11 @@
   "AutoRotationPlugin": "自动旋转插件：",
   "UseChocoboCompanion": "使用陆行鸟伙伴",
   "ChocoboCompanionHelp": "召唤你的陆行鸟伙伴，或者在剩余时间少于5分钟时喂食。",
-  "UILanguage": "界面语言："
+  "UILanguage": "界面语言：",
+  "Description": "所有功能共用的通用设置。",
+  "SectionInterface": "界面",
+  "SectionTravel": "移动",
+  "SectionFinish": "功能完成时",
+  "SectionCombat": "战斗",
+  "ReturnDestination": "返回地点"
 }

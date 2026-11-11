@@ -16,5 +16,11 @@
   "ColMap":              "マップ",
   "ColTerritory":        "テリトリー",
   "LeftPositions":		 "残りの可能な位置",
-  "RegisteredPositions": "登録済みの出現位置"
+  "RegisteredPositions": "登録済みの出現位置",
+  "Description":         "選択したテリトリーでAランクを巡回するか、停止するまで1体のBランクを狩り続けます。",
+  "StartARank":          "Aランク開始",
+  "StartBRank":          "Bランク開始",
+  "TerritoriesSelectedFmt": "{0}/{1} テリトリーを選択中",
+  "All":                 "すべて",
+  "None":                "解除"
 }

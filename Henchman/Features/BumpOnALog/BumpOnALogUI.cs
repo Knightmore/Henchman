@@ -2,7 +2,6 @@ using System.IO;
 using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -25,14 +24,16 @@ namespace Henchman.Features.BumpOnALog;
 [Module]
 public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 {
+    private const ImGuiTableFlags TableFlags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.SizingStretchProp;
+
     internal readonly BumpOnALog          Feature = new();
+    private           string              characterFilter = string.Empty;
     private           int                 classMonsterNoteId;
     private           MonsterNoteRankInfo classMonsterNoteRankInfo;
     private           int                 currentClassLogRank;
     private           int                 currentGcLogRank;
     private           int                 gcMonsterNoteId;
     private           MonsterNoteRankInfo gcMonsterNoteRankInfo;
-    private readonly Table<OfflineCharacterData> characterTable;
     private readonly Cached<List<OfflineCharacterData>> characters = new(
             () => SubscriptionManager.IsLoaded(IPCNames.AutoRetainer)
                           ? AutoRetainer.GetRegisteredCIDs.Invoke([])
@@ -41,33 +42,13 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
     private readonly Cached<Dictionary<ulong, (List<CharacterGearsets.Gearset> Gearsets, string? Error)>> offlineGearsets;
     private static readonly Dictionary<string, string> dataCenters = Svc.Data.GetExcelSheet<World>()
             .DistinctBy(x => x.Name.ExtractText())
-            .ToDictionary(x => x.Name.ExtractText(), x => x.DataCenter.Value.Name.ExtractText());
+            .ToDictionary(x => x.Name.ExtractText(), x => x.DataCenterName());
 
     public BumpOnALogUI()
     {
         Configuration = LoadConfig<Configuration>() ?? new Configuration();
         offlineGearsets = new(() => characters.Value.ToDictionary(x => x.CID, x => ReadOfflineGearsets(x.CID)),
                              TimeSpan.FromSeconds(5));
-        characterTable = new Table<OfflineCharacterData>("##LogCharacters",
-                [
-                    new("##Enabled", Width: 35, Alignment: ColumnAlignment.Center, DrawCustom: (x, _) =>
-                    {
-                        var enabled = Configuration.EnableCharacter.GetValueOrDefault(x.CID);
-                        using var color = ImRaii.PushColor(ImGuiCol.Button, 0xFF097000, enabled);
-                        if (IconButton($"\uf021##LogCharacter{x.CID}"))
-                        {
-                            Configuration.EnableCharacter[x.CID] = !enabled;
-                            SaveConfig(Configuration);
-                        }
-                    }),
-                    new(T("ColName"), x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
-                    new(T("ColWorld"), x => x.World, 90, FilterType.MultiSelect, ColumnAlignment.Center),
-                    new(T("ColDataCenter"), x => dataCenters.GetValueOrDefault(x.World, ""),
-                        90, FilterType.MultiSelect, ColumnAlignment.Center),
-                    new(T("ColGCRank"), x => Configuration.CharacterGCRanks.TryGetValue(x.CID, out var rank) && rank >= 0 ? rank.ToString() : "-",
-                        70, Alignment: ColumnAlignment.Center),
-                    new(T("ColGearsets"), Width: 280, DrawCustom: (x, _) => DrawGearsetSelector(x.CID))
-                ], () => characters.Value, x => Svc.ClientState.IsLoggedIn && x.CID == Player.CID);
         Svc.Framework.Update += CaptureGCRank;
     }
 
@@ -98,6 +79,12 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 
     public sealed override required Configuration Configuration { get; init; }
 
+    public override IReadOnlyList<string> Tabs => [T("TabClass"), T("TabGrandCompany"), T("TabCharacters")];
+
+    public override ModuleAction PrimaryAction => LogAction(SelectedTab == 1);
+
+    public override IReadOnlyList<ModuleAction> SecondaryActions => [LogAction(SelectedTab != 1), CycleAction(SelectedTab == 1)];
+
     [Keybind("Bump On A Log - Start Rank Log")]
     private void StartRankLog()
     {
@@ -126,11 +113,42 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         if (Configuration.RecordGCRank(playerState->ContentId, GetGrandCompanyRank())) SaveConfig(Configuration);
     }
 
+    private static unsafe uint CurrentGrandCompany() => PlayerState.Instance()->GrandCompany;
+
+    private static unsafe uint CurrentMonsterNote() => Svc.Data.GetExcelSheet<ClassJob>()
+                                                          .GetRow(PlayerState.Instance()->CurrentClassJobId)
+                                                          .MonsterNote.RowId;
+
+    private ModuleAction LogAction(bool gcLog)
+    {
+        var blocker = !Svc.ClientState.IsLoggedIn
+                              ? T("LoginForLog")
+                              : gcLog
+                                      ? (GcHuntRanks.ContainsKey(CurrentGrandCompany()) ? null : T("NotInGrandCompany"))
+                                      : (ClassHuntRanks.ContainsKey(CurrentMonsterNote()) ? null : T("NoHuntLogForClass"));
+        var enabled = blocker == null && Feature.server == null;
+        return gcLog
+                       ? new ModuleAction(T("StartGCLog"), StartGcLog, "Bump On A Log - Start GC Log", null, enabled, blocker)
+                       : new ModuleAction(T("StartRankLog"), StartRankLog, "Bump On A Log - Start Rank Log", null, enabled, blocker);
+    }
+
+    private ModuleAction CycleAction(bool gcLog)
+    {
+        var hasAutoRetainer = SubscriptionManager.IsLoaded(IPCNames.AutoRetainer);
+        var count = hasAutoRetainer
+                            ? characters.Value.Count(x => Configuration.EnableCharacter.GetValueOrDefault(x.CID) &&
+                                                          (!gcLog || !Configuration.ShouldSkipGCCharacter(x.CID)))
+                            : 0;
+        return new ModuleAction(string.Format(T("CycleFmt"), count), () => StartCharacterCycle(gcLog), null, FontAwesomeIcon.Users,
+                                Feature.server == null && hasAutoRetainer && count > 0,
+                                hasAutoRetainer ? string.Format(T("CycleTooltipFmt"), count) : T("AutoRetainerUnavailable"));
+    }
+
     private void DrawCharacterTab()
     {
         if (!SubscriptionManager.IsLoaded(IPCNames.AutoRetainer))
         {
-            ImGui.TextUnformatted(T("AutoRetainerUnavailable"));
+            Widgets.Banner(BannerKind.Info, T("AutoRetainerUnavailable"));
             return;
         }
         var configChanged = false;
@@ -138,19 +156,75 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
             if (character.GCRank > 0)
                 configChanged |= Configuration.CharacterGCRanks.TryAdd(character.CID, (int)character.GCRank);
         if (configChanged) SaveConfig(Configuration);
-        DrawCentered("##LogAllCharacterSelector", () =>
+
+        var shown = characters.Value
+                              .Where(x => $"{x.Name} {x.World} {dataCenters.GetValueOrDefault(x.World, "")}".Contains(characterFilter, StringComparison.OrdinalIgnoreCase))
+                              .ToList();
+        var headerButton = new Vector2(0, ImGui.GetTextLineHeight() + 4 * GlobalFontScale);
+
+        Widgets.Card(T("TabCharacters"), () =>
+                                         {
+                                             Widgets.SearchField("##LogCharacterFilter", ref characterFilter, T("FilterHint"), 240 * GlobalFontScale);
+                                             ImGui.SameLine(0, 8 * GlobalFontScale);
+                                             if (Widgets.Button(T("SelectAllShown"))) SetCharactersEnabled(shown, true);
+                                             ImGui.SameLine(0, 6 * GlobalFontScale);
+                                             if (Widgets.Button(T("DeselectAllShown"))) SetCharactersEnabled(shown, false);
+                                             DrawCharacterTable(shown);
+                                         }, 0f, () =>
+                                                {
+                                                    if (Widgets.Button(T("SelectAll"), ButtonKind.Ghost, null, headerButton)) SetCharactersEnabled(characters.Value, true);
+                                                    ImGui.SameLine(0, 4 * GlobalFontScale);
+                                                    if (Widgets.Button(T("DeselectAll"), ButtonKind.Ghost, null, headerButton)) SetCharactersEnabled(characters.Value, false);
+                                                });
+    }
+
+    private void DrawCharacterTable(List<OfflineCharacterData> shown)
+    {
+        using var table = ImRaii.Table("##LogCharacters", 4, TableFlags, new Vector2(Widgets.Avail, 0));
+        if (!table.Success) return;
+
+        ImGui.TableSetupColumn("##Enabled", ImGuiTableColumnFlags.WidthFixed, 28 * GlobalFontScale);
+        ImGui.TableSetupColumn(T("ColName").ToUpperInvariant(), ImGuiTableColumnFlags.WidthStretch, 1.3f);
+        ImGui.TableSetupColumn(T("ColGearsets").ToUpperInvariant(), ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn(T("ColGCRank").ToUpperInvariant(), ImGuiTableColumnFlags.WidthFixed, 110 * GlobalFontScale);
+        using (ImRaii.PushColor(ImGuiCol.Text, V2Palette.TextMuted))
         {
-            if (ImGui.Button(T("SelectAll"))) SetCharactersEnabled(characters.Value, true);
-            ImGui.SameLine();
-            if (ImGui.Button(T("DeselectAll"))) SetCharactersEnabled(characters.Value, false);
-        });
-        DrawCentered("##LogShownCharacterSelector", () =>
+            ImGui.TableHeadersRow();
+        }
+
+        var framePadding = ImGui.GetStyle().FramePadding.Y;
+        var stopRank     = Configuration.StopAfterGCRank + 1;
+        foreach (var character in shown)
         {
-            if (ImGui.Button(T("SelectAllShown"))) SetCharactersEnabled(characterTable.FilteredItems, true);
+            ImGui.TableNextRow();
+            if (Svc.ClientState.IsLoggedIn && character.CID == Player.CID) ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, Widgets.U32(Theme.AccentPinkDim));
+
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + framePadding);
+            var enabled = Configuration.EnableCharacter.GetValueOrDefault(character.CID);
+            if (Widgets.Checkbox($"##LogCharacter{character.CID}", ref enabled))
+            {
+                Configuration.EnableCharacter[character.CID] = enabled;
+                SaveConfig(Configuration);
+            }
+
+            ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted(character.Name);
             ImGui.SameLine();
-            if (ImGui.Button(T("DeselectAllShown"))) SetCharactersEnabled(characterTable.FilteredItems, false);
-        });
-        characterTable.Draw();
+            Widgets.TextMuted($"{character.World} · {dataCenters.GetValueOrDefault(character.World, "")}");
+
+            ImGui.TableNextColumn();
+            DrawGearsetSelector(character.CID);
+
+            ImGui.TableNextColumn();
+            var rank = Configuration.CharacterGCRanks.TryGetValue(character.CID, out var savedRank) ? savedRank : -1;
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted(rank >= 0 ? rank.ToString() : "-");
+            ImGui.SameLine();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + framePadding + (ImGui.GetTextLineHeight() - 4 * GlobalFontScale) / 2f);
+            Widgets.ProgressBar(rank / (float)stopRank, rank >= stopRank ? V2Palette.Success : V2Palette.Accent, 4f, ImGui.GetContentRegionAvail().X);
+        }
     }
 
     private void SetCharactersEnabled(IEnumerable<OfflineCharacterData> selectedCharacters, bool enabled)
@@ -198,64 +272,22 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         }
     }
 
-    private void DrawLogActions(bool gcLog, bool canStart, Action? description = null)
-    {
-        var hasAutoRetainer = SubscriptionManager.IsLoaded(IPCNames.AutoRetainer);
-        var count = hasAutoRetainer ? characters.Value.Count(x => Configuration.EnableCharacter.GetValueOrDefault(x.CID) &&
-                                                                 (!gcLog || !Configuration.ShouldSkipGCCharacter(x.CID))) : 0;
-        var cycleLabel = string.Format(T("CycleFmt"), count);
-        var cycleWidth = Math.Max(70 * GlobalFontScale, ImGui.CalcTextSize(cycleLabel).X + 2 * ImGui.GetStyle().FramePadding.X);
-        var shift = cycleWidth - 70 * GlobalFontScale;
-        Layout.DrawInfoBox(() =>
-        {
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - shift);
-            using (ImRaii.Disabled(Running || Feature.server != null || !hasAutoRetainer || count == 0))
-                if (ImGui.Button(cycleLabel, new Vector2(cycleWidth, 30 * GlobalFontScale))) StartCharacterCycle(gcLog);
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGui.SetTooltip(string.Format(T("CycleTooltipFmt"), count));
-        }, description, () =>
-        {
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - shift);
-            using (ImRaii.Disabled(Running || Feature.server != null || !canStart))
-                if (StartButton())
-                {
-                    if (gcLog) StartGcLog();
-                    else StartRankLog();
-                }
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(T("StartTooltip"));
-        });
-        ImGui.Spacing();
-    }
-
     public override void Draw()
     {
-        using var tabs = ImRaii.TabBar("##BumpOnALogTabs", ImGuiTabBarFlags.None);
-        if (tabs)
-        {
-            using (var tab = ImRaii.TabItem(T("TabClass")))
-            {
-                if (tab)
-                    DrawJobHuntLog();
-            }
-
-            using (var tab = ImRaii.TabItem(T("TabGrandCompany")))
-            {
-                if (tab)
-                    DrawGcHuntLog();
-            }
-
-
-            using (var tab = ImRaii.TabItem(T("TabCharacters")))
-            {
-                if (tab) DrawCharacterTab();
-            }
-
-            using (var tab = ImRaii.TabItem(T("TabSettings")))
-            {
-                if (tab)
-                    DrawSettings();
-            }
-        }
+        Widgets.Columns(16f, (0f, () =>
+                                  {
+                                      if (SelectedTab == 1)
+                                          DrawGcHuntLog();
+                                      else if (SelectedTab == 2)
+                                          DrawCharacterTab();
+                                      else
+                                          DrawJobHuntLog();
+                                  }),
+                        (262f, () =>
+                               {
+                                   DrawSettings();
+                                   Widgets.RequirementsCard(this);
+                               }));
     }
 
     private string FormatGearset(CharacterGearsets.Gearset gearset) =>
@@ -321,8 +353,7 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
     {
         if (!Svc.ClientState.IsLoggedIn)
         {
-            DrawLogActions(false, false);
-            ImGui.TextUnformatted(T("LoginForLog"));
+            Widgets.Banner(BannerKind.Info, T("LoginForLog"));
             return;
         }
 
@@ -333,31 +364,28 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 
         if (!ClassHuntRanks.ContainsKey((uint)classMonsterNoteId))
         {
-            DrawLogActions(false, false);
-            TextCentered(ImGuiColors.DalamudRed, T("NoHuntLogForClass"));
+            Widgets.Banner(BannerKind.Error, T("NoHuntLogForClass"));
             return;
         }
 
         classMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[classMonsterNoteId];
         currentClassLogRank      = classMonsterNoteRankInfo.Rank;
 
-        DrawLogActions(false, true, () =>
+        var huntMarks = ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks;
+        Widgets.Card(null, () =>
                            {
-                               ImGui.Text(classJobRow.NameEnglish.ExtractText());
+                               ImGui.TextUnformatted(classJobRow.NameEnglish.ExtractText());
                                ImGui.SameLine();
-
-                               using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentDifficultyFmt"), currentClassLogRank + 1));
+                               Widgets.TextDim(string.Format(T("CurrentDifficultyFmt"), currentClassLogRank + 1));
+                               DrawHuntLog(classMonsterNoteRankInfo, huntMarks, false);
                            });
-
-        DrawHuntLog(classMonsterNoteRankInfo, ClassHuntRanks[(uint)classMonsterNoteId].HuntMarks, false);
     }
 
     private unsafe void DrawGcHuntLog()
     {
         if (!Svc.ClientState.IsLoggedIn)
         {
-            DrawLogActions(true, false);
-            ImGui.TextUnformatted(T("LoginForLog"));
+            Widgets.Banner(BannerKind.Info, T("LoginForLog"));
             return;
         }
 
@@ -367,8 +395,7 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 
         if (!GcHuntRanks.ContainsKey(PlayerState.Instance()->GrandCompany))
         {
-            DrawLogActions(true, false);
-            TextCentered(ImGuiColors.DalamudRed, T("NotInGrandCompany"));
+            Widgets.Banner(BannerKind.Error, T("NotInGrandCompany"));
             return;
         }
 
@@ -378,34 +405,29 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
         gcMonsterNoteRankInfo = MonsterNoteManager.Instance()->RankData[gcMonsterNoteId];
         currentGcLogRank      = gcMonsterNoteRankInfo.Rank;
 
-        DrawLogActions(true, true, () =>
-                              {
-                                  ImGui.Text(gcRow.Name.ExtractText());
-                                  ImGui.SameLine();
+        var gcRank    = GetGrandCompanyRank();
+        var details   = string.Format(T("CurrentRankFmt"), gcRank, GetGCRankTitle(), currentGcLogRank);
+        var huntMarks = GcHuntRanks[PlayerState.Instance()->GrandCompany].HuntMarks;
+        Widgets.Card(null, () =>
+                           {
+                               ImGui.TextUnformatted(gcRow.Name.ExtractText());
+                               ImGui.SameLine();
+                               Widgets.TextDim(details);
 
-                                  using (ImRaii.PushColor(ImGuiCol.Text, Theme.TextSecondary)) ImGui.Text(string.Format(T("CurrentRankFmt"), GetGrandCompanyRank(), GetGCRankTitle(), currentGcLogRank));
-                              });
-
-        if (currentGcLogRank > 2)
-        {
-            TextCentered(ImGuiColors.HealerGreen, T("FinishedAllGCRanks"));
-            return;
-        }
-
-        if ((currentGcLogRank == 1 && GetGrandCompanyRank() < 5) || (currentGcLogRank == 2 && GetGrandCompanyRank() < 9))
-        {
-            TextCentered(ImGuiColors.DalamudRed, T("GCRankNotUnlocked"));
-            return;
-        }
-
-        DrawHuntLog(gcMonsterNoteRankInfo, GcHuntRanks[PlayerState.Instance()->GrandCompany].HuntMarks, true);
+                               if (currentGcLogRank > 2)
+                                   Widgets.TextColored(V2Palette.Success, T("FinishedAllGCRanks"));
+                               else if ((currentGcLogRank == 1 && gcRank < 5) || (currentGcLogRank == 2 && gcRank < 9))
+                                   Widgets.TextColored(V2Palette.Danger, T("GCRankNotUnlocked"));
+                               else
+                                   DrawHuntLog(gcMonsterNoteRankInfo, huntMarks, true);
+                           });
     }
 
     private void DrawHuntLog(MonsterNoteRankInfo rankInfo, HuntMark?[,] huntMarks, bool gcLog)
     {
         if (rankInfo.Rank > huntMarks.GetLength(0) - 1)
         {
-            TextCentered(ImGuiColors.HealerGreen, T("FinishedAllRanks"));
+            Widgets.TextColored(V2Palette.Success, T("FinishedAllRanks"));
             return;
         }
 
@@ -420,20 +442,31 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 
     private void DrawHuntTable(HuntMark[] marks, bool gcLog)
     {
-        var table = new Table<HuntMark>(
-                                        "##HuntTable",
-                                        new List<TableColumn<HuntMark>>
-                                        {
-                                                new(T("ColName"), h => ToTitleCaseExtended(h.Name, Svc.ClientState.ClientLanguage)),
-                                                new("Level", h => h.Level?.ToString() ?? "-", 70, Alignment: ColumnAlignment.Center),
-                                                new(T("ColKills"), h => $"{h.GetCurrentMonsterNoteKills}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
-                                                new(T("ColFinished"), Width: 100, Alignment: ColumnAlignment.Center, DrawCustom: (h, _) => DrawCompletionAction(h, gcLog))
-                                        },
-                                        () => marks,
-                                        h => h.IsCurrentTarget
-                                       );
+        using var table = ImRaii.Table("##HuntTable", 4, TableFlags, new Vector2(Widgets.Avail, 0));
+        if (!table.Success) return;
 
-        table.Draw();
+        ImGui.TableSetupColumn(T("ColName").ToUpperInvariant());
+        ImGui.TableSetupColumn(T("ColLevel").ToUpperInvariant(), ImGuiTableColumnFlags.WidthFixed, 70 * GlobalFontScale);
+        ImGui.TableSetupColumn(T("ColKills").ToUpperInvariant(), ImGuiTableColumnFlags.WidthFixed, 100 * GlobalFontScale);
+        ImGui.TableSetupColumn(T("ColFinished").ToUpperInvariant(), ImGuiTableColumnFlags.WidthFixed, 100 * GlobalFontScale);
+        using (ImRaii.PushColor(ImGuiCol.Text, V2Palette.TextMuted))
+        {
+            ImGui.TableHeadersRow();
+        }
+
+        foreach (var mark in marks)
+        {
+            ImGui.TableNextRow();
+            if (mark.IsCurrentTarget) ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, Widgets.U32(Theme.AccentPinkDim));
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(ToTitleCaseExtended(mark.Name, Svc.ClientState.ClientLanguage));
+            ImGui.TableNextColumn();
+            Widgets.TextMuted(mark.Level?.ToString() ?? "-");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{mark.GetCurrentMonsterNoteKills}/{mark.NeededKills}");
+            ImGui.TableNextColumn();
+            DrawCompletionAction(mark, gcLog);
+        }
     }
 
     private void DrawCompletionAction(HuntMark mark, bool gcLog)
@@ -464,45 +497,33 @@ public class BumpOnALogUI : ModuleUI<BumpOnALog, Configuration>
 
     private void DrawSettings()
     {
-        var configChanged = false;
+        Widgets.Card(T("RunOptions"), () =>
+                                      {
+                                          var configChanged = false;
 
-        DrawCentered("##BumpOnALogSpacer", () => { });
-        ImGui.Text(T("StopAfterJobRank"));
-        ImGui.SameLine(250          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= ImGui.Combo("##jobRank", ref Configuration.StopAfterJobRank, Enumerable.Range(1, 5)
-                                                                                                .Select(x => x.ToString())
-                                                                                                .ToArray(), 5);
+                                          Widgets.TextDim(T("StopAfterJobRank"));
+                                          ImGui.SetNextItemWidth(Widgets.Avail);
+                                          configChanged |= ImGui.Combo("##jobRank", ref Configuration.StopAfterJobRank, Enumerable.Range(1, 5)
+                                                                                                                                  .Select(x => x.ToString())
+                                                                                                                                  .ToArray(), 5);
 
-        ImGui.Text(T("StopAfterGCRank"));
-        ImGui.SameLine(250          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= ImGui.Combo("##gcRank", ref Configuration.StopAfterGCRank, Enumerable.Range(1, 9)
-                                                                                              .Select(x => x.ToString())
-                                                                                              .ToArray(), 9);
+                                          Widgets.TextDim(T("StopAfterGCRank"));
+                                          ImGui.SetNextItemWidth(Widgets.Avail);
+                                          configChanged |= ImGui.Combo("##gcRank", ref Configuration.StopAfterGCRank, Enumerable.Range(1, 9)
+                                                                                                                                .Select(x => x.ToString())
+                                                                                                                                .ToArray(), 9);
 
-        ImGui.Text(T("OrderByTerritory"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##orderByTerritory", ref Configuration.OrderByTerritory);
+                                          configChanged |= Widgets.SwitchRow(T("OrderByTerritory"), ref Configuration.OrderByTerritory);
+                                          configChanged |= Widgets.SwitchRow(T("SkipDutyMarks"), ref Configuration.SkipDutyMarks);
+                                          configChanged |= Widgets.SwitchRow(T("SoloUnsyncDuty"), ref C.SoloUnsyncLogDuty);
+                                          configChanged |= Widgets.SwitchRow(T("RankUpGC"), ref Configuration.AutoGCRankUp);
 
-        ImGui.Text(T("SkipDutyMarks"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##skipDutyMarks", ref Configuration.SkipDutyMarks);
-
-        ImGui.Text(T("SoloUnsyncDuty"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##soloUnsyncDuty", ref C.SoloUnsyncLogDuty);
-
-        ImGui.Text(T("RankUpGC"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##autoGCRankUp", ref Configuration.AutoGCRankUp);
-
-
-        if (configChanged)
-        {
-            PluginConfig.Save();
-            SaveConfig(Configuration);
-        }
+                                          if (configChanged)
+                                          {
+                                              PluginConfig.Save();
+                                              SaveConfig(Configuration);
+                                          }
+                                      });
     }
 
     public unsafe string GetGCRankTitle()

@@ -22,5 +22,20 @@
   "ColAmount":             "Quantité",
   "ColTradeType":          "Type d'échange",
   "IncludeArmory":         "Inclure l'arsenal",
-  "NewPlanNameHint":       "Nouveau nom de plan..."
+  "NewPlanNameHint":       "Nouveau nom de plan...",
+  "Description":           "Envoie vos Henchmen au Boss pour donner ou demander les objets d'un plan d'échange.",
+  "SessionBoss":           "Boss",
+  "SessionHenchman":       "Henchman",
+  "StartBossMode":         "Lancer le mode Boss",
+  "StartHenchmanMode":     "Lancer le mode Henchman",
+  "ActionBarHenchman":     "{0} henchmen choisis · {1} : {2} objets",
+  "Options":               "Options",
+  "TradePlans":            "Plans d'échange",
+  "RenamePlan":            "Renommer",
+  "NewPlan":               "Nouveau plan",
+  "TradeGive":             "Donner",
+  "TradeKeep":             "Garder",
+  "TradeAskFor":           "Demander",
+  "TradeAskUntil":         "Demander jusqu'à",
+  "TradePARLevel":         "Niveau PAR"
 }

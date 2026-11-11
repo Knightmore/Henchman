@@ -2,5 +2,7 @@
   "HelpText":       "目前提供的 IPC 列表",
   "ColReturn":      "回傳值",
   "ColFunction":    "函式",
-  "ColDescription": "說明"
+  "ColDescription": "說明",
+  "Description":    "Henchman 提供給其他插件的所有 IPC 函式。",
+  "Provided":       "提供的函式"
 }

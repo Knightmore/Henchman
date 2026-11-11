@@ -2,5 +2,7 @@
   "HelpText":       "현재 제공되는 IPC 목록",
   "ColReturn":      "반환값",
   "ColFunction":    "함수",
-  "ColDescription": "설명"
+  "ColDescription": "설명",
+  "Description":    "Henchman이 다른 플러그인에 제공하는 모든 IPC 함수입니다.",
+  "Provided":       "제공 함수"
 }

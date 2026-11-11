@@ -71,6 +71,7 @@ public class BringYourXGameUI : ModuleUI<BringYourXGame, Configuration>
     private  Map           map;
 
     internal List<Vector3> PossibleSpawnPoints = [];
+    private  uint          selectedExpansion;
     internal uint          SpawnsRecordedFor;
 
     public BringYourXGameUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
@@ -97,6 +98,12 @@ public class BringYourXGameUI : ModuleUI<BringYourXGame, Configuration>
 
     public override                 bool          LoginNeeded   => false;
     public sealed override required Configuration Configuration { get; init; }
+
+    public override IReadOnlyList<string> Tabs => [T("TabARank"), T("TabBRank")];
+
+    public override ModuleAction PrimaryAction => SelectedTab == 1
+                                                          ? new ModuleAction(T("StartBRank"), StartBRank, "Bring Your A/B Game - Start B-Rank")
+                                                          : new ModuleAction(T("StartARank"), StartARank, "Bring Your A/B Game - Start A-Rank");
 
     [Keybind("Bring Your A/B Game - Start A-Rank")]
     private void StartARank()
@@ -129,250 +136,161 @@ public class BringYourXGameUI : ModuleUI<BringYourXGame, Configuration>
 
     public override void Draw()
     {
-        if (ImGui.BeginTabBar("RankTabs"))
-        {
-            using (var tab = ImRaii.TabItem(T("TabARank")))
-            {
-                if (tab)
-                    DrawA();
-            }
-
-            using (var tab = ImRaii.TabItem(T("TabBRank")))
-            {
-                if (tab)
-                    DrawB();
-            }
-
-
-            ImGui.EndTabBar();
-        }
+        if (SelectedTab == 1)
+            DrawB();
+        else
+            DrawA();
     }
 
     private void DrawA()
     {
         var configChanged = false;
-        DrawCentered("##ARankStart", () =>
-                                             Layout.DrawButton(() =>
-                                                               {
-                                                                   if (StartButton()) StartARank();
-                                                               }));
+        var rowH          = ImGui.GetTextLineHeight() + 20 * GlobalFontScale;
+        var expansions = TerritoryGroupedByExpansionAndZone.Keys
+                                                           .Select(x => (x, Svc.Data.GetExcelSheet<ExVersion>()
+                                                                               .GetRow(x)
+                                                                               .Name.ExtractText()))
+                                                           .ToList();
+        var counts = TerritoryGroupedByExpansionAndZone.Values
+                                                       .Select(x => SelectionCount(x.Values.SelectMany(e => e).ToList()))
+                                                       .ToList();
 
-        DrawCentered("###ARankSelector", () =>
-                                         {
-                                             if (ImGui.Button(T("SelectAll")))
-                                             {
-                                                 Configuration.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
-                                                 configChanged                            = true;
-                                             }
-
-                                             ImGui.SameLine();
-                                             if (ImGui.Button(T("DeselectAll")))
-                                             {
-                                                 Configuration.EnabledTerritoriesForARank.Clear();
-                                                 configChanged = true;
-                                             }
-                                         });
-
-
-        using var exTabs = ImRaii.TabBar("ExTabs");
-        if (exTabs)
+        Widgets.Segmented("##aRankExpansion", ref selectedExpansion, expansions, counts: counts);
+        if (TerritoryGroupedByExpansionAndZone.TryGetValue(selectedExpansion, out var expansion))
         {
-            foreach (var expansion in TerritoryGroupedByExpansionAndZone)
+            ImGui.SameLine(0, 8 * GlobalFontScale);
+            if (Widgets.IconButton("selectExpansion", FontAwesomeIcon.CheckDouble, T("SelectExpansion"), ButtonKind.Secondary, rowH / GlobalFontScale))
             {
-                using (var exTab = ImRaii.TabItem(Svc.Data.GetExcelSheet<ExVersion>()
-                                                     .GetRow(expansion.Key)
-                                                     .Name.ExtractText()))
-                {
-                    if (exTab)
-                    {
-                        ImGui.NewLine();
-                        LineCentered("##ExpansionButtons", () =>
-                                                           {
-                                                               if (ImGui.Button(T("SelectExpansion")))
-                                                               {
-                                                                   Configuration.EnabledTerritoriesForARank.UnionWith(expansion.Value.Values.SelectMany(e => e));
-                                                                   configChanged = true;
-                                                               }
+                Configuration.EnabledTerritoriesForARank.UnionWith(expansion.Values.SelectMany(e => e));
+                configChanged = true;
+            }
 
-                                                               ImGui.SameLine();
-                                                               if (ImGui.Button(T("DeselectExpansion")))
-                                                               {
-                                                                   Configuration.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Value.Values.SelectMany(e => e)
-                                                                                                                                      .Contains(x));
+            ImGui.SameLine(0, 6 * GlobalFontScale);
+            if (Widgets.IconButton("deselectExpansion", FontAwesomeIcon.Times, T("DeselectExpansion"), ButtonKind.Secondary, rowH / GlobalFontScale))
+            {
+                Configuration.EnabledTerritoriesForARank.RemoveWhere(x => expansion.Values.SelectMany(e => e)
+                                                                                   .Contains(x));
 
-                                                                   configChanged = true;
-                                                               }
-                                                           });
-                        ImGui.NewLine();
-                        using var zoneTabs = ImRaii.TabBar("ZoneTabs");
-                        if (zoneTabs)
-                        {
-                            ImGui.NewLine();
-                            foreach (var zone in expansion.Value)
-                            {
-                                using (var zoneTab = ImRaii.TabItem(Svc.Data.GetExcelSheet<PlaceName>()
-                                                                       .GetRow(zone.Key)
-                                                                       .Name.ExtractText()))
-                                {
-                                    if (zoneTab)
-                                    {
-                                        ImGui.NewLine();
-                                        LineCentered("##ZoneButtons", () =>
-                                                                      {
-                                                                          if (ImGui.Button(T("SelectZone")))
-                                                                          {
-                                                                              Configuration.EnabledTerritoriesForARank.UnionWith(zone.Value);
-                                                                              configChanged = true;
-                                                                          }
-
-                                                                          ImGui.SameLine();
-                                                                          if (ImGui.Button(T("DeselectZone")))
-                                                                          {
-                                                                              Configuration.EnabledTerritoriesForARank.RemoveWhere(t => zone.Value.Contains(t));
-
-                                                                              configChanged = true;
-                                                                          }
-                                                                      });
-                                        ImGui.NewLine();
-                                        DrawCentered("AGameTable", () => { DrawARankTable(zone.Value); });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                configChanged = true;
             }
         }
+
+        ImGui.SameLine();
+        Widgets.RightAligned("##aRankToolbar", () =>
+                                               {
+                                                   Widgets.VCenter(rowH, 0, () => Widgets.TextMuted(string.Format(T("TerritoriesSelectedFmt"),
+                                                                                                                  ARankTerritories.Count(Configuration.EnabledTerritoriesForARank.Contains),
+                                                                                                                  ARankTerritories.Count)));
+                                                   ImGui.SameLine(0, 12 * GlobalFontScale);
+                                                   if (Widgets.Button(T("SelectAll"), ButtonKind.Secondary, null, new Vector2(0, rowH)))
+                                                   {
+                                                       Configuration.EnabledTerritoriesForARank = new SortedSet<uint>(ARankTerritories);
+                                                       configChanged                            = true;
+                                                   }
+
+                                                   ImGui.SameLine(0, 6 * GlobalFontScale);
+                                                   if (Widgets.Button(T("DeselectAll"), ButtonKind.Secondary, null, new Vector2(0, rowH)))
+                                                   {
+                                                       Configuration.EnabledTerritoriesForARank.Clear();
+                                                       configChanged = true;
+                                                   }
+                                               });
+
+        ImGui.Dummy(new Vector2(0, 4 * GlobalFontScale));
+        if (expansion != null)
+            Widgets.Grid(3, 12f, expansion.Select(zone => new Action<float>(width => configChanged |= DrawZoneCard(zone.Key, zone.Value, width)))
+                                          .ToList());
 
         if (configChanged) SaveConfig(Configuration);
     }
 
-    private void DrawARankTable(List<uint> zone)
-    {
-        var table = new Table<uint>(
-                                    "##KeepsTable",
-                                    new List<TableColumn<uint>>
-                                    {
-                                            new("##enabled", Alignment: ColumnAlignment.Center, Width: 35, DrawCustom: (x, index) =>
-                                                                                                                       {
-                                                                                                                           var enabled = Configuration.EnabledTerritoriesForARank.Contains(x);
-                                                                                                                           if (ImGui.Checkbox($"##{x}", ref enabled))
-                                                                                                                           {
-                                                                                                                               if (enabled)
-                                                                                                                                   Configuration.EnabledTerritoriesForARank.Add(x);
-                                                                                                                               else
-                                                                                                                                   Configuration.EnabledTerritoriesForARank.Remove(x);
-                                                                                                                           }
-                                                                                                                       }),
-                                            new(T("ColTerritory"), x => Svc.Data.GetExcelSheet<TerritoryType>()
-                                                                           .GetRow(x)
-                                                                           .PlaceName.Value.Name.ExtractText(), 200, Alignment: ColumnAlignment.Center)
-                                    },
-                                    () => zone,
-                                    size: new Vector2(300, 0)
-                                   );
+    private string SelectionCount(List<uint> territories) => $"{territories.Count(Configuration.EnabledTerritoriesForARank.Contains)}/{territories.Count}";
 
-        table.Draw();
+    private bool DrawZoneCard(uint zoneId, List<uint> territories, float width)
+    {
+        var configChanged = false;
+        var headerButton  = new Vector2(0, ImGui.GetTextLineHeight() + 4 * GlobalFontScale);
+
+        Widgets.Card(Svc.Data.GetExcelSheet<PlaceName>()
+                        .GetRow(zoneId)
+                        .Name.ExtractText(), () =>
+                                             {
+                                                 foreach (var territory in territories)
+                                                 {
+                                                     var enabled = Configuration.EnabledTerritoriesForARank.Contains(territory);
+                                                     if (!Widgets.Checkbox($"{Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory).PlaceName.Value.Name.ExtractText()}##aRank{territory}",
+                                                                           ref enabled)) continue;
+
+                                                     if (enabled)
+                                                         Configuration.EnabledTerritoriesForARank.Add(territory);
+                                                     else
+                                                         Configuration.EnabledTerritoriesForARank.Remove(territory);
+                                                     configChanged = true;
+                                                 }
+                                             }, width, () =>
+                                                       {
+                                                           Widgets.TextMuted(SelectionCount(territories));
+                                                           ImGui.SameLine(0, 6 * GlobalFontScale);
+                                                           if (Widgets.Button($"{T("All")}##selectZone{zoneId}", ButtonKind.Ghost, null, headerButton, tooltip: T("SelectZone")))
+                                                           {
+                                                               Configuration.EnabledTerritoriesForARank.UnionWith(territories);
+                                                               configChanged = true;
+                                                           }
+
+                                                           ImGui.SameLine(0, 2 * GlobalFontScale);
+                                                           if (Widgets.Button($"{T("None")}##deselectZone{zoneId}", ButtonKind.Ghost, null, headerButton, tooltip: T("DeselectZone")))
+                                                           {
+                                                               Configuration.EnabledTerritoriesForARank.RemoveWhere(t => territories.Contains(t));
+                                                               configChanged = true;
+                                                           }
+                                                       });
+
+        return configChanged;
     }
 
     private void DrawB()
     {
         var configChanged = false;
-        DrawCentered("##BRankStart", () => Layout.DrawButton(() =>
-                                                             {
-                                                                 if (StartButton()) StartBRank();
-                                                             }));
 
-        DrawCentered("##BRankToFarmSelector", () =>
-                                              {
-                                                  ImGui.Text(T("BRankToFarm"));
-                                                  ImGui.SameLine(150          * GlobalFontScale);
-                                                  ImGui.SetNextItemWidth(150f * GlobalFontScale);
-                                                  if (ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(Configuration.BRankToFarm) is { } row
-                                                                                                                       ? ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
-                                                                                                                                              .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                                                       : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Any(b => b.BNpcNameRowId == x.RowId)))
-                                                  {
-                                                      Configuration.BRankToFarm = brank.RowId;
-                                                      configChanged             = true;
-                                                  }
+        if (C.TrackBRankSpots && GetBRank(Configuration.BRankToFarm) is { } mark)
+        {
+            map = Svc.Data.GetExcelSheet<TerritoryType>()
+                     .GetRow(mark.TerritoryId)
+                     .Map.Value;
+        }
 
-                                                  ImGui.Text(T("TrackFoundSpots"));
-                                                  ImGui.SameLine();
-                                                  configChanged |= ImGui.Checkbox("##echoBRanks", ref C.TrackBRankSpots);
-                                              });
+        Widgets.Card(null, () =>
+                           {
+                               var rowY = ImGui.GetCursorScreenPos().Y;
+                               ImGui.AlignTextToFramePadding();
+                               ImGui.TextUnformatted(T("BRankToFarm"));
+                               ImGui.SameLine();
+                               Widgets.RightAligned("##bRankToFarm", () =>
+                                                                     {
+                                                                         ImGui.SetNextItemWidth(220f * GlobalFontScale);
+                                                                         if (ExcelSheetCombo<BNpcName>("##bRank", out var brank, s => s.GetRowOrDefault(Configuration.BRankToFarm) is { } row
+                                                                                                                                              ? ToTitleCaseExtended(s.GetRow(Configuration.BRankToFarm)
+                                                                                                                                                                     .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
+                                                                                                                                              : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => BRanks.Any(b => b.BNpcNameRowId == x.RowId)))
+                                                                         {
+                                                                             Configuration.BRankToFarm = brank.RowId;
+                                                                             configChanged             = true;
+                                                                         }
+                                                                     }, rowY);
+
+                               configChanged |= Widgets.SwitchRow(T("TrackFoundSpots"), ref C.TrackBRankSpots);
+                               if (!C.TrackBRankSpots) return;
+
+                               ImGui.Dummy(new Vector2(0, 4 * GlobalFontScale));
+                               if (Widgets.Button(T("WritePositions"))) WritePositions();
+                               ImGui.SameLine(0, 6 * GlobalFontScale);
+                               if (Widgets.Button(T("PrintSpawnLocations"))) PrintSpawnLocations();
+                           });
 
         if (C.TrackBRankSpots)
         {
-            if (GetBRank(Configuration.BRankToFarm) is { } mark)
-            {
-                map = Svc.Data.GetExcelSheet<TerritoryType>()
-                         .GetRow(mark.TerritoryId)
-                         .Map.Value;
-            }
-
-            ImGui.Separator();
-            DrawCentered("##WritePositionsButton", () =>
-                                                   {
-                                                       if (ImGui.Button(T("WritePositions")))
-                                                       {
-                                                           var sb = new StringBuilder();
-                                                           sb.AppendLine(T("LeftPositions"));
-                                                           foreach (var position in PossibleSpawnPoints)
-                                                           {
-                                                               sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
-                                                               var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                               sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
-                                                               sb.AppendLine("");
-                                                           }
-
-                                                           sb.AppendLine(T("RegisteredPositions"));
-                                                           foreach (var position in FoundSpawns)
-                                                           {
-                                                               sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
-                                                               var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                               sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
-                                                               sb.AppendLine("");
-                                                           }
-
-                                                           TaskLog.Info(sb.ToString());
-                                                       }
-
-                                                       ImGui.SameLine();
-                                                       if (ImGui.Button(T("PrintSpawnLocations")))
-                                                       {
-                                                           var selectedMark = GetBRank(Configuration.BRankToFarm)!;
-                                                           var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
-                                                                           .GetRow(selectedMark.TerritoryId)
-                                                                           .Map.Value;
-                                                           foreach (var position in FoundSpawns)
-                                                           {
-                                                               var mapCoords = WorldToMap(position.ToVector2(), mapRow.OffsetX, mapRow.OffsetY, mapRow.SizeFactor);
-                                                               var mapLink   = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
-                                                               var message = new XivChatEntry
-                                                                             {
-                                                                                     Type = XivChatType.Echo,
-                                                                                     Message = new SeStringBuilder().AddUiForeground($"B-Rank {selectedMark.Name} found @ ", 561)
-                                                                                                                    .Append(mapLink)
-                                                                                                                    .AddUiForegroundOff()
-                                                                                                                    .Build()
-                                                                             };
-                                                               Svc.Chat.Print(message);
-                                                           }
-                                                       }
-                                                   });
-
-            using (var overviewTable = ImRaii.Table("###positionTables", 2))
-            {
-                ImGui.TableSetupColumn("##leftPositions", ImGuiTableColumnFlags.WidthFixed);
-                ImGui.TableSetupColumn("##rightPositions", ImGuiTableColumnFlags.WidthFixed);
-                var regionSize = ImGui.GetContentRegionAvail();
-                ImGui.TableNextColumn();
-                DrawPossibleSpawnTable(regionSize, map);
-
-                ImGui.TableNextColumn();
-                DrawFoundSpawnTable(regionSize, map);
-            }
+            Widgets.Columns(16f, (0f, () => DrawSpawnTable(T("LeftPositions"), "##BGamePossible", PossibleSpawnPoints)),
+                            (0f, () => DrawSpawnTable(T("RegisteredPositions"), "##BGameSpawned", FoundSpawns)));
         }
 
         if (configChanged)
@@ -382,48 +300,77 @@ public class BringYourXGameUI : ModuleUI<BringYourXGame, Configuration>
         }
     }
 
-
-    private void DrawPossibleSpawnTable(Vector2 regionSize, Map map)
+    private void WritePositions()
     {
-        var adjustedHeight = regionSize.Y - 5;
-        using (var leftChild = ImRaii.Child("###leftChild", regionSize with { X = (regionSize.X / 2) - 5, Y = adjustedHeight }, false, ImGuiWindowFlags.NoDecoration))
+        var sb = new StringBuilder();
+        sb.AppendLine(T("LeftPositions"));
+        foreach (var position in PossibleSpawnPoints)
         {
-            var table = new Table<Vector3>(
-                                           "##BGamePossible",
-                                           new List<TableColumn<Vector3>>
-                                           {
-                                                   new(T("ColWorld"), pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
-                                                   new(T("ColMap"), pos =>
-                                                                    {
-                                                                        var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                                        return $"X: {mapCoords.X} | Y: {mapCoords.Y}";
-                                                                    })
-                                           },
-                                           () => PossibleSpawnPoints);
+            sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
+            var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+            sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
+            sb.AppendLine("");
+        }
 
-            table.Draw();
+        sb.AppendLine(T("RegisteredPositions"));
+        foreach (var position in FoundSpawns)
+        {
+            sb.AppendLine($"World - X: {position.X} | Y: {position.Y} | Z: {position.Z}");
+            var mapCoords = WorldToMap(position.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+            sb.AppendLine($"Map - X: {mapCoords.X} | Y: {mapCoords.Y}");
+            sb.AppendLine("");
+        }
+
+        TaskLog.Info(sb.ToString());
+    }
+
+    private void PrintSpawnLocations()
+    {
+        var selectedMark = GetBRank(Configuration.BRankToFarm)!;
+        var mapRow = Svc.Data.GetExcelSheet<TerritoryType>()
+                        .GetRow(selectedMark.TerritoryId)
+                        .Map.Value;
+        foreach (var position in FoundSpawns)
+        {
+            var mapCoords = WorldToMap(position.ToVector2(), mapRow.OffsetX, mapRow.OffsetY, mapRow.SizeFactor);
+            var mapLink   = SeString.CreateMapLink(mapRow.PlaceName.Value.Name.ExtractText(), mapCoords.X, mapCoords.Y);
+            var message = new XivChatEntry
+                          {
+                                  Type = XivChatType.Echo,
+                                  Message = new SeStringBuilder().AddUiForeground($"B-Rank {selectedMark.Name} found @ ", 561)
+                                                                 .Append(mapLink)
+                                                                 .AddUiForegroundOff()
+                                                                 .Build()
+                          };
+            Svc.Chat.Print(message);
         }
     }
 
-    private void DrawFoundSpawnTable(Vector2 regionSize, Map map)
+    private void DrawSpawnTable(string title, string id, List<Vector3> positions)
     {
-        var adjustedHeight = regionSize.Y - 5;
-        using (var leftChild = ImRaii.Child("###rightChild", regionSize with { X = (regionSize.X / 2) - 5, Y = adjustedHeight }, false, ImGuiWindowFlags.NoDecoration))
-        {
-            var table = new Table<Vector3>(
-                                           "##BGameSpawned",
-                                           new List<TableColumn<Vector3>>
-                                           {
-                                                   new(T("ColWorld"), pos => $"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}"),
-                                                   new(T("ColMap"), pos =>
-                                                                    {
-                                                                        var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
-                                                                        return $"X: {mapCoords.X} | Y: {mapCoords.Y}";
-                                                                    })
-                                           },
-                                           () => FoundSpawns);
+        var rows = positions.ToList();
+        Widgets.Card(title, () =>
+                            {
+                                using var table = ImRaii.Table(id, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.SizingStretchProp,
+                                                               new Vector2(Widgets.Avail, 0));
+                                if (!table.Success) return;
 
-            table.Draw();
-        }
+                                ImGui.TableSetupColumn(T("ColWorld").ToUpperInvariant());
+                                ImGui.TableSetupColumn(T("ColMap").ToUpperInvariant());
+                                using (ImRaii.PushColor(ImGuiCol.Text, V2Palette.TextMuted))
+                                {
+                                    ImGui.TableHeadersRow();
+                                }
+
+                                foreach (var pos in rows)
+                                {
+                                    var mapCoords = WorldToMap(pos.ToVector2(), map.OffsetX, map.OffsetY, map.SizeFactor);
+                                    ImGui.TableNextRow();
+                                    ImGui.TableNextColumn();
+                                    ImGui.TextUnformatted($"X: {pos.X} | Y: {pos.Y} | Z: {pos.Z}");
+                                    ImGui.TableNextColumn();
+                                    ImGui.TextUnformatted($"X: {mapCoords.X} | Y: {mapCoords.Y}");
+                                }
+                            }, 0f, () => Widgets.TextMuted(rows.Count.ToString()));
     }
 }

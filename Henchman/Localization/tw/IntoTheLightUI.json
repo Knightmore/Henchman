@@ -10,5 +10,8 @@
   "ColClassJob":   "職業",
   "ColPreset":     "預設",
   "Random":        "隨機",
-  "None":          "無"
+  "None":          "無",
+  "Description":   "從標題畫面開始，在指定的資料中心與伺服器建立你列出的新角色。",
+  "TitleScreenNote": "按下開始前，請先回到標題畫面。",
+  "CharactersToCreate": "要建立的角色"
 }

@@ -29,7 +29,7 @@ internal class IPCUI : ModuleUI
                                                     () => IPCCatalog.BuildIpcList(typeof(IPCProvider))
                                                    );
 
-        ipcTable.Draw();
+        Widgets.Card(T("Provided"), () => ipcTable.Draw());
     }
 
 

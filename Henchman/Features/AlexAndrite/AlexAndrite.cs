@@ -423,10 +423,10 @@ internal class AlexAndrite : Module
 
     private static async Task ApproachTreasure(uint entityId, Vector3 treasurePosition, CancellationToken token)
     {
-        if (Player.DistanceTo(treasurePosition) < 5f) return;
+        if (Player.DistanceTo(treasurePosition) < 2f) return;
         var chest = Svc.Objects.SearchByEntityId(entityId);
         ErrorThrowIf(chest == null, "Treasure chest disappeared before interaction.");
-        ErrorThrowIf(!await MoveToMovingObject(chest!, distance: 4f, token: token), "Could not reach treasure chest.");
+        ErrorThrowIf(!await MoveToMovingObject(chest!, distance: 2f, token: token), "Could not reach treasure chest.");
         Underlings.IPC.Vnavmesh.StopCompletely();
     }
 

@@ -27,6 +27,8 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
             new("Sacks of Nuts", SacksOfNutsItemId, HuntCurrencyCap)
     ];
 
+    private string selectedExpansion = ExpansionOf(HuntBoardOptions[0]);
+
     public OnYourMarkUI() => Configuration = LoadConfig<Configuration>() ?? new Configuration();
 
     public override string          Name     => "On Your Mark";
@@ -67,6 +69,10 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
             (IPCNames.RotationSolverReborn, false)
     ];
 
+    public override ModuleAction PrimaryAction => new(Loc.G("UI.V2.Start", "Start"), StartTask, "On Your Mark - Start");
+
+    public override string? Summary => string.Format(T("SummaryEnabled"), HuntBoardOptions.Count(IsEnabled), HuntBoardOptions.Count);
+
     [Keybind("On Your Mark - Start")]
     private void StartTask()
     {
@@ -74,218 +80,190 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
         Feature.RunTask();
     }
 
-    public override unsafe void Draw()
+    public override void Draw()
     {
-        var configChanged = false;
-        var groupedCategories = BillCategories
-               .GroupBy(kvp => new string(kvp.Key.TakeWhile(c => char.IsLetter(c) || c == ' ')
-                                             .ToArray()));
+        Widgets.Columns(16f, (0f, () =>
+                                  {
+                                      DrawHuntCurrencyOverview();
+                                      DrawExpansionPicker();
+                                      DrawBills();
+                                  }),
+                        (262f, () =>
+                               {
+                                   Widgets.RequirementsCard(this);
+                                   DrawSettings();
+                               }));
+    }
 
-        var mobHuntOrderTypeEnumerator = Svc.Data.GetExcelSheet<MobHuntOrderType>()
-                                            .GetEnumerator();
+    private void DrawExpansionPicker()
+    {
+        var expansions = HuntBoardOptions.GroupBy(ExpansionOf)
+                                         .ToList();
+        var rowY = ImGui.GetCursorScreenPos().Y;
 
-        DrawCentered("##MarkStart", () => Layout.DrawButton(() =>
-                                                            {
-                                                                if (StartButton()) StartTask();
-                                                            }));
+        Widgets.Segmented("huntExpansion", ref selectedExpansion, expansions.Select(group => (group.Key, T(group.Key))).ToList(), 0f, null,
+                          expansions.Select(group => $"{group.Count(IsEnabled)}/{group.Count()}").ToList());
+        ImGui.SameLine();
+        Widgets.RightAligned("##expansionToggles", () =>
+                                                   {
+                                                       if (Widgets.Button(T("EnableAll"), ButtonKind.Ghost)) SetExpansionEnabled(true);
+                                                       ImGui.SameLine(0, 4 * GlobalFontScale);
+                                                       if (Widgets.Button(T("DisableAll"), ButtonKind.Ghost)) SetExpansionEnabled(false);
+                                                   }, rowY + 2 * GlobalFontScale);
+    }
 
-        DrawHuntCurrencyOverview();
+    private void SetExpansionEnabled(bool enabled)
+    {
+        foreach (var key in HuntBoardOptions.Where(key => ExpansionOf(key) == selectedExpansion))
+            Configuration.EnableHuntBills[key] = enabled;
+        SaveConfig(Configuration);
+    }
 
-        using var tabs = ImRaii.TabBar("Tabs");
-        if (tabs)
+    private void DrawBills()
+    {
+        var mobHuntOrderTypes = GetCorrectedMobHuntOrderTypes();
+        var huntedType = IsTaskRunning(Name)
+                                 ? HuntMarks.FirstOrDefault(mark => mark.IsCurrentTarget)?.MobHuntRowId
+                                 : null;
+        var cells = new List<Action<float>>();
+
+        for (var i = 0; i < HuntBoardOptions.Count && i < mobHuntOrderTypes.Count; i++)
         {
-            foreach (var group in groupedCategories)
-            {
-                using (var tab = ImRaii.TabItem(group.Key))
-                {
-                    if (tab)
-                    {
-                        ImGui.NewLine();
-                        LineCentered("##ExpansionButtons", () =>
-                                                           {
-                                                               if (ImGui.Button(T("SelectExpansion")))
-                                                               {
-                                                                   foreach (var (key, _) in group)
-                                                                       Configuration.EnableHuntBills[key] = true;
-                                                                   configChanged = true;
-                                                               }
+            var key = HuntBoardOptions[i];
+            if (ExpansionOf(key) != selectedExpansion) continue;
 
-                                                               ImGui.SameLine();
-                                                               if (ImGui.Button(T("DeselectExpansion")))
-                                                               {
-                                                                   foreach (var (key, _) in group)
-                                                                       Configuration.EnableHuntBills[key] = false;
-                                                                   configChanged = true;
-                                                               }
-                                                           });
-                        ImGui.NewLine();
+            var typeRow = (byte)mobHuntOrderTypes[i].RowId;
+            var bill    = GetBill(typeRow);
+            cells.Add(width => DrawBillCard(key, bill, typeRow == huntedType, width));
+        }
 
-                        var indexInEnumerator = HuntBoardOptions
-                                               .Select((key, index) => new { key, index })
-                                               .FirstOrDefault(x => x.key.Contains(group.Key))
-                                              ?.index;
+        Widgets.Grid(2, 10f, cells);
+    }
 
-                        for (var i = 0; i <= indexInEnumerator; i++)
-                            mobHuntOrderTypeEnumerator.MoveNext();
+    private void DrawBillCard(string key, BillInfo bill, bool hunted, float width)
+    {
+        var enabled        = IsEnabled(key);
+        var (label, color) = GetStatus(bill.Status);
+        var chipId         = $"##billStatus_{key}";
 
-                        ImGui.Spacing();
+        Widgets.Card(null, () =>
+                           {
+                               var rowY = ImGui.GetCursorScreenPos().Y;
+                               if (Widgets.Switch($"##bill_{key}", ref enabled))
+                               {
+                                   Configuration.EnableHuntBills[key] = enabled;
+                                   SaveConfig(Configuration);
+                               }
 
-                        foreach (var (key, title) in group)
-                        {
-                            var currentMobHuntType = mobHuntOrderTypeEnumerator.Current;
-                            var isMarkBillObtained = MobHunt.Instance()->IsMarkBillObtained(GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var availableMarkId    = MobHunt.Instance()->GetAvailableHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var obtainedMarkId     = MobHunt.Instance()->GetObtainedHuntOrderRowId((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId));
-                            var mobHuntOrderTypeOffset = isMarkBillObtained && availableMarkId != obtainedMarkId
-                                                                 ? MobHunt.Instance()->ObtainedMarkId.ToArray()
-                                                                 : MobHunt.Instance()->AvailableMarkId.ToArray();
-                            var mobHuntTargets =
-                                    Svc.Data.Excel.GetSubrowSheet<MobHuntOrder>()
-                                            [Svc.Data.Excel.GetSheet<MobHuntOrderType>()
-                                                .GetRow((uint)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId))
-                                                .OrderStart.Value.RowId +
-                                             ((uint)mobHuntOrderTypeOffset[GetTranslatedMobHuntOrderType(currentMobHuntType.RowId)] - 1)];
-                            var billAmountFinished =
-                                    (uint)mobHuntTargets.Count(mark
-                                                                       => MobHunt
-                                                                                         .Instance()->
-                                                                                  GetKillCount((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId),
-                                                                                               (byte)mark.SubrowId) ==
-                                                                          mark.NeededKills);
+                               ImGui.SameLine(0, 10 * GlobalFontScale);
+                               ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (20 * GlobalFontScale - ImGui.GetTextLineHeight()) / 2f);
+                               ImGui.BeginGroup();
+                               ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + Widgets.Avail - Widgets.LastWidth(chipId) - 8 * GlobalFontScale);
+                               Widgets.TextColored(enabled ? V2Palette.Text : V2Palette.TextDim, BillCategories[key], true);
+                               ImGui.PopTextWrapPos();
+                               ImGui.EndGroup();
+                               ImGui.SameLine();
+                               Widgets.RightAligned(chipId, () => Widgets.Chip(label, color), rowY);
 
-                            if (!MobHunt.Instance()->IsMarkBillUnlocked((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId)))
-                            {
-                                TextCentered(ImGuiColors.DalamudGrey, $"{title}");
-                                continue;
-                            }
+                               if (bill.Status is BillStatus.Locked or BillStatus.NotObtained)
+                               {
+                                   Widgets.TextMuted(T(bill.Status == BillStatus.Locked ? "NoteLocked" : "NoteNotObtained"), true);
+                                   return;
+                               }
 
+                               Widgets.ProgressBar(bill.Finished / (float)bill.Marks.Count, color, 6f);
+                               Widgets.TextMuted(string.Format(T("MarksDone"), bill.Finished, bill.Marks.Count));
+                               if (bill.Status != BillStatus.Complete) DrawMarkTable(key, bill.Marks);
+                           }, width, null, hunted ? V2Palette.Accent : null, enabled ? null : V2Palette.HeaderBg);
+    }
 
-                            var allMobsKilled =
-                                    mobHuntTargets.All(x => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId),
-                                                                                             (byte)x.SubrowId) ==
-                                                            x.NeededKills);
+    private void DrawMarkTable(string key, List<BillMark> marks)
+    {
+        using var table = ImRaii.Table($"##{key}BillTable", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.SizingStretchProp, new Vector2(Widgets.Avail, 0));
+        if (!table.Success) return;
 
-                            if ((!isMarkBillObtained && !allMobsKilled) || (obtainedMarkId != availableMarkId && !isMarkBillObtained && allMobsKilled))
-                                TextCentered(ImGuiColors.DalamudRed, $"{title}");
-                            else if (obtainedMarkId == availableMarkId && isMarkBillObtained)
-                                TextCentered(ImGuiColors.DalamudYellow, $"{title} {billAmountFinished}/{mobHuntTargets.Count}");
-                            else if (obtainedMarkId != availableMarkId && isMarkBillObtained)
-                                TextCentered(ImGuiColors.ParsedOrange, $"{title} {billAmountFinished}/{mobHuntTargets.Count}");
-                            else if ((obtainedMarkId == availableMarkId || !isMarkBillObtained) && allMobsKilled)
-                                TextCentered(ImGuiColors.HealerGreen, $"{title} {billAmountFinished}/{mobHuntTargets.Count}");
+        ImGui.TableSetupColumn(T("ColName").ToUpperInvariant());
+        ImGui.TableSetupColumn(T("ColAmount").ToUpperInvariant(), ImGuiTableColumnFlags.WidthFixed);
+        using (ImRaii.PushColor(ImGuiCol.Text, V2Palette.TextMuted))
+        {
+            ImGui.TableHeadersRow();
+        }
 
-                            ImGui.Spacing();
-
-                            var enabled = Configuration.EnableHuntBills[key];
-                            if (ImGui.Checkbox($"{T("Enable")}##{key}", ref enabled))
-                            {
-                                Configuration.EnableHuntBills[key] = enabled;
-                                configChanged                      = true;
-                            }
-
-                            ImGui.Spacing();
-                            if (!isMarkBillObtained)
-                            {
-                                mobHuntOrderTypeEnumerator.MoveNext();
-                                ImGui.Spacing();
-                                ImGui.Separator();
-                                ImGui.Spacing();
-                                continue;
-                            }
-
-
-                            using (var table = ImRaii.Table($"###{key}BillTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
-                            {
-                                ImGui.TableSetupColumn(T("ColName"), ImGuiTableColumnFlags.WidthStretch);
-                                ImGui.TableSetupColumn(T("ColAmount"), ImGuiTableColumnFlags.WidthFixed);
-                                ImGui.TableSetupColumn(T("ColFinished"), ImGuiTableColumnFlags.WidthFixed);
-                                ImGui.TableHeadersRow();
-
-                                foreach (var mark in mobHuntTargets)
-                                {
-                                    ImGui.TableNextRow();
-                                    ImGui.TableNextColumn();
-                                    Text(ToTitleCaseExtended(mark.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage));
-                                    ImGui.TableNextColumn();
-                                    TextCentered($"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId), (byte)mark.SubrowId)}/{mark.NeededKills}");
-                                    ImGui.TableNextColumn();
-                                    var markFinished =
-                                            MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentMobHuntType.RowId),
-                                                                             (byte)mark.SubrowId) ==
-                                            mark.NeededKills;
-                                    ColoredIcon(markFinished
-                                                        ? ImGuiColors.HealerGreen
-                                                        : ImGuiColors.DalamudRed,
-                                                markFinished
-                                                        ? FontAwesomeIcon.Check.ToIconString()
-                                                        : FontAwesomeIcon.Times.ToIconString());
-                                }
-                            }
-
-                            mobHuntOrderTypeEnumerator.MoveNext();
-                            ImGui.Spacing();
-                            ImGui.Separator();
-                            ImGui.Spacing();
-                        }
-                    }
-                }
-            }
-
-            using (var tab = ImRaii.TabItem(T("TabSettings")))
-            {
-                if (tab)
-                    DrawSettings();
-            }
-
-            if (configChanged) SaveConfig(Configuration);
+        foreach (var mark in marks)
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            Widgets.StatusCircle(mark.Finished ? V2Palette.Success : V2Palette.Danger, mark.Finished ? FontAwesomeIcon.Check : FontAwesomeIcon.Times);
+            ImGui.SameLine(0, 8 * GlobalFontScale);
+            Widgets.TextColored(mark.Finished ? V2Palette.TextDim : V2Palette.Text, mark.Name);
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{mark.Kills}/{mark.NeededKills}");
         }
     }
 
-    private unsafe void DrawMarkTable(SubrowCollection<MobHuntOrder> mobHunt, MobHuntOrderType currentType)
-    {
-        var table = new Table<MobHuntOrder>(
-                                            "##HuntTable",
-                                            new List<TableColumn<MobHuntOrder>>
-                                            {
-                                                    new("Name", h => ToTitleCaseExtended(h.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage)),
-                                                    new("Amount", h => $"{MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId), (byte)h.SubrowId)}/{h.NeededKills}", 100, Alignment: ColumnAlignment.Center),
-                                                    new("Finished", h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
-                                                                                                          (byte)h.SubrowId) ==
-                                                                         h.NeededKills
-                                                                                 ? FontAwesomeIcon.Check.ToIconString()
-                                                                                 : FontAwesomeIcon.Times.ToIconString(), 100, Alignment: ColumnAlignment.Center,
-                                                        GetTextColor: h => MobHunt.Instance()->GetKillCount((byte)GetTranslatedMobHuntOrderType(currentType.RowId),
-                                                                                                            (byte)h.SubrowId) ==
-                                                                           h.NeededKills
-                                                                                   ? Theme.SuccessGreen
-                                                                                   : Theme.ErrorRed)
-                                            },
-                                            () => mobHunt
-                                           );
+    private (string Label, Vector4 Color) GetStatus(BillStatus status) => status switch
+                                                                          {
+                                                                                  BillStatus.Locked      => (T("StatusLocked"), V2Palette.TextMuted),
+                                                                                  BillStatus.NotObtained => (T("StatusNotObtained"), V2Palette.Danger),
+                                                                                  BillStatus.InProgress  => (T("StatusInProgress"), V2Palette.Warning),
+                                                                                  BillStatus.OldBill     => (T("StatusOldBill"), ImGuiColors.ParsedOrange),
+                                                                                  _                      => (T("StatusComplete"), V2Palette.Success)
+                                                                          };
 
-        table.Draw();
+    private static unsafe BillInfo GetBill(byte typeRow)
+    {
+        var mobHunt = MobHunt.Instance();
+        if (!mobHunt->IsMarkBillUnlocked(typeRow)) return new BillInfo(BillStatus.Locked, []);
+
+        var obtained        = mobHunt->IsMarkBillObtained(typeRow);
+        var availableMarkId = mobHunt->GetAvailableHuntOrderRowId(typeRow);
+        var obtainedMarkId  = mobHunt->GetObtainedHuntOrderRowId(typeRow);
+        var markOffset = obtained && availableMarkId != obtainedMarkId
+                                 ? mobHunt->ObtainedMarkId[typeRow]
+                                 : mobHunt->AvailableMarkId[typeRow];
+        var marks = new List<BillMark>();
+
+        if (markOffset > 0)
+        {
+            var orderRowId = Svc.Data.GetExcelSheet<MobHuntOrderType>()
+                                .GetRow(typeRow)
+                                .OrderStart.Value.RowId +
+                             markOffset -
+                             1u;
+            foreach (var mark in Svc.Data.GetSubrowExcelSheet<MobHuntOrder>()[orderRowId])
+                marks.Add(new BillMark(ToTitleCaseExtended(mark.Target.Value.Name.Value.Singular, Svc.ClientState.ClientLanguage),
+                                       mobHunt->GetKillCount(typeRow, (byte)mark.SubrowId),
+                                       mark.NeededKills));
+        }
+
+        var allMobsKilled = marks.All(mark => mark.Finished);
+        var status = obtained
+                             ? obtainedMarkId == availableMarkId
+                                       ? BillStatus.InProgress
+                                       : BillStatus.OldBill
+                             : allMobsKilled && obtainedMarkId == availableMarkId
+                                     ? BillStatus.Complete
+                                     : BillStatus.NotObtained;
+        return new BillInfo(status, marks);
     }
+
+    private bool IsEnabled(string key) => Configuration.EnableHuntBills.GetValueOrDefault(key);
+
+    private static string ExpansionOf(string huntBoardOption) => new(huntBoardOption.TakeWhile(c => char.IsLetter(c) || c == ' ')
+                                                                                    .ToArray());
 
     private void DrawSettings()
     {
-        var configChanged = false;
-        ImGui.Text(T("DiscardOldBills"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##oldHuntBills", ref C.DiscardOldBills);
-        ImGui.Text(T("DetourForARanks"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##ABDetour", ref C.DetourForARanks);
-        ImGui.SameLine();
-        HelpMarker(T("DetourHelp"));
-        ImGui.Text(T("SkipFateMarks"));
-        ImGui.SameLine(250 * GlobalFontScale);
-        configChanged |= ImGui.Checkbox("##skipFateMarks", ref C.SkipFateMarks);
+        Widgets.Card(T("TabSettings"), () =>
+                                       {
+                                           var configChanged = Widgets.SwitchRow(T("DiscardOldBills"), ref C.DiscardOldBills);
+                                           configChanged |= Widgets.SwitchRow(T("DetourForARanks"), ref C.DetourForARanks, help: T("DetourHelp"));
+                                           configChanged |= Widgets.SwitchRow(T("SkipFateMarks"), ref C.SkipFateMarks);
+                                           if (!configChanged) return;
 
-        if (configChanged)
-        {
-            PluginConfig.Save();
-            SaveConfig(Configuration);
-        }
+                                           PluginConfig.Save();
+                                           SaveConfig(Configuration);
+                                       });
     }
 
     private unsafe void DrawAvailableBillsDebugTable()
@@ -322,11 +300,10 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
             var key                = HuntBoardOptions[i];
             var currentMobHuntType = mobHuntOrderTypes[i];
             var mobHuntOrderType   = (byte)currentMobHuntType.RowId;
-            var expansion = new string(key.TakeWhile(c => char.IsLetter(c) || c == ' ')
-                                          .ToArray());
-            var title    = BillCategories.GetValueOrDefault(key, key);
-            var enabled  = Configuration.EnableHuntBills.TryGetValue(key, out var isEnabled) && isEnabled;
-            var unlocked = MobHunt.Instance()->IsMarkBillUnlocked(mobHuntOrderType);
+            var expansion          = ExpansionOf(key);
+            var title              = BillCategories.GetValueOrDefault(key, key);
+            var enabled            = Configuration.EnableHuntBills.TryGetValue(key, out var isEnabled) && isEnabled;
+            var unlocked           = MobHunt.Instance()->IsMarkBillUnlocked(mobHuntOrderType);
             var availableRowId = unlocked
                                          ? MobHunt.Instance()->GetAvailableHuntOrderRowId(mobHuntOrderType)
                                          : 0;
@@ -426,61 +403,24 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
 
     private void DrawHuntCurrencyOverview()
     {
-        var projections = GetHuntCurrencyProjections();
-        if (projections.Count == 0) return;
+        var cells = GetHuntCurrencyProjections()
+                   .Select<HuntCurrencyProjection, Action<float>>(projection => width => DrawHuntCurrency(projection, width))
+                   .ToList();
+        Widgets.Grid(3, 10f, cells);
+    }
 
-        var spacing = ImGui.GetStyle()
-                           .ItemSpacing.X *
-                      3;
-        var iconSize = 24 * GlobalFontScale;
-        var totalWidth = projections.Sum(projection =>
-                                         {
-                                             var pendingText = $"+{projection.PendingReward:N0}";
-                                             var textWidth = ImGui.CalcTextSize($"{projection.Current:N0}/{projection.Max:N0} ")
-                                                                  .X +
-                                                             ImGui.CalcTextSize(pendingText)
-                                                                  .X;
-                                             return iconSize +
-                                                    ImGui.GetStyle()
-                                                         .ItemSpacing.X +
-                                                    textWidth;
-                                         }) +
-                         (spacing * (projections.Count - 1));
+    private void DrawHuntCurrency(HuntCurrencyProjection projection, float width)
+    {
+        var item = Svc.Data.GetExcelSheet<Item>()
+                      .GetRow(projection.Currency.ItemId);
+        var hint = projection.WillExceedCap
+                           ? string.Format(T("PendingOverCap"), projection.PendingReward, projection.Overflow)
+                           : string.Format(T("Pending"), projection.PendingReward);
 
-        ImGui.Spacing();
-        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), (ImGui.GetContentRegionAvail()
-                                                                  .X -
-                                                             totalWidth) /
-                                                            2));
-
-        for (var i = 0; i < projections.Count; i++)
-        {
-            var projection = projections[i];
-            var item = Svc.Data.GetExcelSheet<Item>()
-                          .GetRow(projection.Currency.ItemId);
-            DrawIcon(item.Icon, 0.6f);
-            ImGui.SameLine();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextUnformatted($"{projection.Current:N0}/{projection.Max:N0} ");
-            ImGui.SameLine(0, 0);
-            Text(projection.WillExceedCap
-                         ? ImGuiColors.DalamudRed
-                         : ImGuiColors.HealerGreen,
-                 $"+{projection.PendingReward:N0}");
-
-            if (projection.Overflow > 0)
-            {
-                ImGui.SameLine();
-                Text(ImGuiColors.DalamudRed, $"({projection.Overflow:N0} over)");
-            }
-
-            if (i < projections.Count - 1)
-                ImGui.SameLine(0, spacing);
-        }
-
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
+        Widgets.StatCard(item.Name.ExtractText(), projection.Current.ToString("N0"), hint, item.Icon, color: projection.WillExceedCap
+                                                                                                                    ? V2Palette.Warning
+                                                                                                                    : V2Palette.Success,
+                         width: width, progress: projection.Current / (float)projection.Max, max: projection.Max.ToString("N0"));
     }
 
     private unsafe List<HuntCurrencyProjection> GetHuntCurrencyProjections()
@@ -547,18 +487,31 @@ public class OnYourMarkUI : ModuleUI<OnYourMark, Configuration>
         }
     }
 
-    private static uint GetHuntCurrencyItemId(string huntBoardOption)
-    {
-        var expansion = new string(huntBoardOption.TakeWhile(c => char.IsLetter(c) || c == ' ')
-                                                  .ToArray());
+    private static uint GetHuntCurrencyItemId(string huntBoardOption) => ExpansionOf(huntBoardOption) switch
+                                                                         {
+                                                                                 "A Realm Reborn"                               => AlliedSealsItemId,
+                                                                                 "Heavensward" or "Stormblood"                  => CenturioSealsItemId,
+                                                                                 "Shadowbringers" or "Endwalker" or "Dawntrail" => SacksOfNutsItemId,
+                                                                                 _                                              => 0
+                                                                         };
 
-        return expansion switch
-               {
-                       "A Realm Reborn"                               => AlliedSealsItemId,
-                       "Heavensward" or "Stormblood"                  => CenturioSealsItemId,
-                       "Shadowbringers" or "Endwalker" or "Dawntrail" => SacksOfNutsItemId,
-                       _                                              => 0
-               };
+    private enum BillStatus
+    {
+        Locked,
+        NotObtained,
+        InProgress,
+        OldBill,
+        Complete
+    }
+
+    private sealed record BillMark(string Name, int Kills, int NeededKills)
+    {
+        public bool Finished => Kills >= NeededKills;
+    }
+
+    private sealed record BillInfo(BillStatus Status, List<BillMark> Marks)
+    {
+        public int Finished => Marks.Count(mark => mark.Finished);
     }
 
     private sealed record HuntCurrencyInfo(string Name, uint ItemId, uint Max);

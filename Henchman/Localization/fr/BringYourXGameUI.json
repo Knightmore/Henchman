@@ -16,5 +16,11 @@
   "ColMap":              "Carte",
   "ColTerritory":        "Territoire",
   "LeftPositions":		 "Positions possibles restantes",
-  "RegisteredPositions": "Positions d'apparition enregistrées"
+  "RegisteredPositions": "Positions d'apparition enregistrées",
+  "Description":         "Parcourt vos territoires de rang A choisis, ou farme un rang B jusqu'à ce que vous l'arrêtiez.",
+  "StartARank":          "Lancer rang A",
+  "StartBRank":          "Lancer rang B",
+  "TerritoriesSelectedFmt": "{0} sur {1} territoires choisis",
+  "All":                 "Tous",
+  "None":                "Aucun"
 }

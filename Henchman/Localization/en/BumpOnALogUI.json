@@ -42,5 +42,11 @@
   "OrderByTerritory":      "Order Mobs by Territory",
   "SkipDutyMarks":         "Skip Duty Marks",
   "SoloUnsyncDuty":        "Solo Unsync Duty",
-  "RankUpGC":              "Rank Up GC"
+  "RankUpGC":              "Rank Up GC",
+  "Description":           "Completes the hunting log of your class or Grand Company, on this character or a cycle of characters.",
+  "StartRankLog":          "Start Rank Log",
+  "StartGCLog":            "Start GC Log",
+  "RunOptions":            "Run options",
+  "FilterHint":            "Filter by name, world or data center",
+  "ColLevel":              "Level"
 }

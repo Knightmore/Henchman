@@ -9,5 +9,11 @@
   "AutoRotationPlugin":    "オートローテーションプラグイン：",
   "UseChocoboCompanion":   "チョコボコンパニオンを使用",
   "ChocoboCompanionHelp":  "チョコボコンパニオンを召喚するか、残り時間が5分未満の場合は餌を与えます。",
-  "UILanguage":            "UI言語："
+  "UILanguage":            "UI言語：",
+  "Description":           "すべての機能で使用される一般設定です。",
+  "SectionInterface":      "インターフェース",
+  "SectionTravel":         "移動",
+  "SectionFinish":         "機能の完了時",
+  "SectionCombat":         "戦闘",
+  "ReturnDestination":     "戻り先"
 }

@@ -16,5 +16,11 @@
   "ColMap":              "맵",
   "ColTerritory":        "지역",
   "LeftPositions":		 "남은 가능한 위치",
-  "RegisteredPositions": "등록된 출현 위치"
+  "RegisteredPositions": "등록된 출현 위치",
+  "Description":         "선택한 지역을 돌며 A랭크를 찾거나, 중지할 때까지 B랭크 하나를 파밍합니다.",
+  "StartARank":          "A랭크 시작",
+  "StartBRank":          "B랭크 시작",
+  "TerritoriesSelectedFmt": "{0}/{1}개 지역 선택됨",
+  "All":                 "전체",
+  "None":                "해제"
 }

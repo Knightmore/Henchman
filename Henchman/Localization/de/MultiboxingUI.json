@@ -6,5 +6,7 @@
   "IPAddress":      "IP-Adresse (Boss) zum Verbinden",
   "IPAddressHelp":  "Dies muss nur auf deinen Henchmen (Clients) eingestellt werden, wenn du es nicht nur lokal verwendest.",
   "Port":           "Port:",
-  "PortHelp":       "Wenn du nicht mehrere Boss-Instanzen (Server) in deinem Netzwerk betreibst, kannst du den Standard-Port behalten.\nAndernfalls musst du für jede separate Boss/Henchmen-Gruppe (Server/Client) einen anderen Port festlegen."
+  "PortHelp":       "Wenn du nicht mehrere Boss-Instanzen (Server) in deinem Netzwerk betreibst, kannst du den Standard-Port behalten.\nAndernfalls musst du für jede separate Boss/Henchmen-Gruppe (Server/Client) einen anderen Port festlegen.",
+  "Description":    "Verbindungseinstellungen, um einen Boss mit Henchmen auf einer oder mehreren Maschinen zu betreiben.",
+  "Connection":     "Verbindung"
 }

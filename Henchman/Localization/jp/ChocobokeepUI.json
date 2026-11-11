@@ -4,5 +4,12 @@
   "ColKeepId":     "駅ID",
   "ColTerritory":  "テリトリー",
   "ColPlaceName":  "地名",
-  "ColUnlocked":   "解放済み"
+  "ColUnlocked":   "解放済み",
+  "Description":   "未解放のチョコボポーターをすべて巡り、登録します。",
+  "SummaryUnlocked": "{0}/{1} 解放済み",
+  "OfStandsUnlocked": "/ {0}か所の発着所を解放済み",
+  "MissingIn":     "{1}テリトリーで{0}か所が未解放",
+  "Stands":        "発着所",
+  "Unlocked":      "解放済み",
+  "Missing":       "未解放"
 }

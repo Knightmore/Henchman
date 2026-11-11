@@ -2,5 +2,7 @@
   "HelpText":       "現在提供されているIPCの一覧",
   "ColReturn":      "戻り値",
   "ColFunction":    "関数",
-  "ColDescription": "説明"
+  "ColDescription": "説明",
+  "Description":    "Henchmanが他のプラグインに提供するすべてのIPC関数です。",
+  "Provided":       "提供関数"
 }

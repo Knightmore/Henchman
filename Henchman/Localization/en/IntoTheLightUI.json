@@ -10,5 +10,8 @@
   "ColClassJob":   "ClassJob",
   "ColPreset":     "Preset",
   "Random":        "Random",
-  "None":          "None"
+  "None":          "None",
+  "Description":   "Creates the new characters you list on their data centers and worlds, starting from the title screen.",
+  "TitleScreenNote": "Go to the title screen before you press Start.",
+  "CharactersToCreate": "Characters to create"
 }

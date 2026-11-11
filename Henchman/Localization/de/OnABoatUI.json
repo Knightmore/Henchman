@@ -24,5 +24,13 @@
     "UseARItemSellHelp": "Funktioniert nur, wenn du zu einem Ziel mit einer Verwalterglocke/Händler-NPC in der Nähe zurückkehrst.",
     "UseARDiscard": "AR-Wegwerfen nach Reise verwenden",
     "UseARLocalSell": "Verkaufe an den lokalen Händler",
-    "UseARLocalSellHelp": "Hiermit wird direkt an den lokalen Verkäufer am Hafen verkauft. Hohes Risiko, dass du mit anderen Bottern stackst!"
+    "UseARLocalSellHelp": "Hiermit wird direkt an den lokalen Verkäufer am Hafen verkauft. Hohes Risiko, dass du mit anderen Bottern stackst!",
+  "Description":     "Nimmt mit deinen Charakteren nacheinander an Hochseefahrten teil und verkauft oder entsorgt danach den Fang.",
+  "SummaryCharacters": "{0} Charaktere",
+  "Mode":            "Modus",
+  "ModeManual":      "Charakterliste",
+  "ModeAutoRetainer": "AutoRetainer-Multimodus",
+  "StopAtLevel":     "Stoppen, wenn alle gewählten Charaktere dieses Level erreichen",
+  "Characters":      "Charaktere",
+  "AfterVoyage":     "Nach der Reise"
 }

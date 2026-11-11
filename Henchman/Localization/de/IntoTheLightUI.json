@@ -10,5 +10,8 @@
   "ColClassJob":     "Klasse/Job",
   "ColPreset":       "Voreinstellung",
   "Random":          "Zufällig",
-  "None":            "Keins"
+  "None":            "Keins",
+  "Description":     "Erstellt die gelisteten neuen Charaktere auf ihren Datenzentren und Welten, ausgehend vom Titelbildschirm.",
+  "TitleScreenNote": "Gehe zum Titelbildschirm, bevor du Start drückst.",
+  "CharactersToCreate": "Zu erstellende Charaktere"
 }

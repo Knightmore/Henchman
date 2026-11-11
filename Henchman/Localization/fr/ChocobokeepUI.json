@@ -4,5 +4,12 @@
   "ColKeepId":     "ID du poste",
   "ColTerritory":  "Territoire",
   "ColPlaceName":  "Nom du lieu",
-  "ColUnlocked":   "Débloqué"
+  "ColUnlocked":   "Débloqué",
+  "Description":   "Se rend à chaque point de taxi chocobo pas encore débloqué et l'enregistre.",
+  "SummaryUnlocked": "{0}/{1} débloqués",
+  "OfStandsUnlocked": "sur {0} postes débloqués",
+  "MissingIn":     "{0} manquants dans {1} territoires",
+  "Stands":        "Postes",
+  "Unlocked":      "Débloqué",
+  "Missing":       "Manquant"
 }

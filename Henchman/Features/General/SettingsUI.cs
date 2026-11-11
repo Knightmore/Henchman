@@ -35,17 +35,61 @@ internal class SettingsUI : ModuleUI
     {
         var configChanged = false;
 
-        ImGui.Text(T("UILanguage"));
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
+        Widgets.Grid(2, 12f,
+        [
+                width => Widgets.Card(T("SectionInterface"), () => Widgets.FieldRow(Label("UILanguage"), () => configChanged |= DrawLanguageCombo()), width),
+                width => Widgets.Card(T("SectionTravel"), () =>
+                                                          {
+                                                              configChanged |= Widgets.SwitchRow($"{T("UseMount")}##useMount", ref C.UseMount);
+                                                              configChanged |= Widgets.SwitchRow($"{T("UseMountRoulette")}##useMountRoulette", ref C.UseMountRoulette, child: true,
+                                                                                                 enabled: C.UseMount);
+                                                              Widgets.FieldRow(Label("Mount"), () =>
+                                                                                               {
+                                                                                                   if (ExcelSheetCombo<Mount>("##mount", out var selectedMount, s => s.GetRowOrDefault(C.MountId) is { } row
+                                                                                                                                                                       ? ToTitleCaseExtended(row
+                                                                                                                                                                                            .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
+                                                                                                                                                                       : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => PlayerState.Instance()->IsMountUnlocked(x.RowId)))
+                                                                                                   {
+                                                                                                       C.MountId     = selectedMount.RowId;
+                                                                                                       configChanged = true;
+                                                                                                   }
+                                                                                               });
+                                                              Widgets.FieldRow(Label("MountDistance"), () => configChanged |= ImGui.InputInt("##mountForDistance", ref C.MinMountDistance), 140f);
+                                                              Widgets.FieldRow(Label("RunDistance"), () => configChanged |= ImGui.InputInt("##runForDistance", ref C.MinRunDistance), 140f);
+                                                          }, width),
+                width => Widgets.Card(T("SectionFinish"), () =>
+                                                          {
+                                                              configChanged |= Widgets.SwitchRow($"{Label("ReturnOnceDone")}##returnOnceDone", ref C.ReturnOnceDone);
+                                                              using (Widgets.Disabled(!C.ReturnOnceDone))
+                                                              {
+                                                                  Widgets.FieldRow(T("ReturnDestination"), () => configChanged |= EnumCombo("##returnDestination", ref C.ReturnTo), 160f);
+                                                              }
+                                                          }, width),
+                width => Widgets.Card(T("SectionCombat"), () =>
+                                                          {
+                                                              Widgets.FieldRow(Label("AutoRotationPlugin"),
+                                                                               () => configChanged |= Combo("##AutoRotation", ref C.AutoRotationPlugin, AutoRotation.SupportedPlugins, null,
+                                                                                                            AutoRotation.DisplayNames), 160f);
+                                                              configChanged |= Widgets.SwitchRow($"{T("UseChocoboCompanion")}##useChocoboCompanion", ref C.UseChocoboInFights,
+                                                                                                 T("ChocoboCompanionHelp"));
+                                                          }, width)
+        ]);
+
+        if (configChanged) PluginConfig.Save();
+    }
+
+    private string Label(string key) => T(key).TrimEnd(':', ' ');
+
+    private static bool DrawLanguageCombo()
+    {
         var availableLanguages = GetAvailableLanguages();
         if (availableLanguages.Length == 0)
         {
             ImGui.TextDisabled("No languages found");
-            if (configChanged) PluginConfig.Save();
-            return;
+            return false;
         }
 
+        var changed                    = false;
         var currentIdx                 = Array.FindIndex(availableLanguages, l => l.Lang == C.UILanguage);
         if (currentIdx < 0) currentIdx = 0;
         if (ImGui.BeginCombo("##uiLanguage", availableLanguages[currentIdx].Label))
@@ -57,8 +101,7 @@ internal class SettingsUI : ModuleUI
                 {
                     C.UILanguage = availableLanguages[i].Lang;
                     Loc.Load(MapLanguage(C.UILanguage));
-                    P.MainWindow.RebuildSidebar();
-                    configChanged = true;
+                    changed = true;
                 }
 
                 if (selected) ImGui.SetItemDefaultFocus();
@@ -67,48 +110,7 @@ internal class SettingsUI : ModuleUI
             ImGui.EndCombo();
         }
 
-        ImGui.NewLine();
-        ImGui.Separator();
-        ImGui.NewLine();
-
-        configChanged |= ImGui.Checkbox($"{T("UseMount")}##useMount", ref C.UseMount);
-        configChanged |= ImGui.Checkbox($"{T("UseMountRoulette")}##useMountRoulette", ref C.UseMountRoulette);
-        ImGui.Text(T("Mount"));
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(150f * GlobalFontScale);
-        if (ExcelSheetCombo<Mount>("##mount", out var selectedMount, s => s.GetRowOrDefault(C.MountId) is { } row
-                                                                                  ? ToTitleCaseExtended(row
-                                                                                                       .Singular.ExtractText(), Svc.ClientState.ClientLanguage)
-                                                                                  : string.Empty, x => ToTitleCaseExtended(x.Singular.ExtractText(), Svc.ClientState.ClientLanguage), x => PlayerState.Instance()->IsMountUnlocked(x.RowId)))
-        {
-            C.MountId     = selectedMount.RowId;
-            configChanged = true;
-        }
-
-        ImGui.Text(T("MountDistance"));
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= ImGui.InputInt("##mountForDistance", ref C.MinMountDistance);
-
-        ImGui.Text(T("RunDistance"));
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= ImGui.InputInt("##runForDistance", ref C.MinRunDistance);
-
-        configChanged |= ImGui.Checkbox($"{T("ReturnOnceDone")}##returnOnceDone", ref C.ReturnOnceDone);
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= EnumCombo("##returnDestination", ref C.ReturnTo);
-
-        ImGui.Text(T("AutoRotationPlugin"));
-        ImGui.SameLine(240          * GlobalFontScale);
-        ImGui.SetNextItemWidth(120f * GlobalFontScale);
-        configChanged |= Combo("##AutoRotation", ref C.AutoRotationPlugin, AutoRotation.SupportedPlugins, null, AutoRotation.DisplayNames);
-        configChanged |= ImGui.Checkbox($"{T("UseChocoboCompanion")}##useChocoboCompanion", ref C.UseChocoboInFights);
-        ImGui.SameLine();
-        HelpMarker(T("ChocoboCompanionHelp"));
-
-        if (configChanged) PluginConfig.Save();
+        return changed;
     }
 
     private static (string Label, UiLanguage Lang, string Folder)[] GetAvailableLanguages()

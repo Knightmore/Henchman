@@ -10,5 +10,8 @@
   "ColClassJob":   "Classe/Job",
   "ColPreset":     "Préréglage",
   "Random":        "Aléatoire",
-  "None":          "Aucun"
+  "None":          "Aucun",
+  "Description":   "Crée les nouveaux personnages listés sur leurs centres de données et mondes, depuis l'écran titre.",
+  "TitleScreenNote": "Allez à l'écran titre avant d'appuyer sur Démarrer.",
+  "CharactersToCreate": "Personnages à créer"
 }

@@ -42,5 +42,11 @@
   "OrderByTerritory":      "依地圖排序怪物",
   "SkipDutyMarks":         "跳過任務標記",
   "SoloUnsyncDuty":        "單人非同步任務",
-  "RankUpGC":              "提升軍團階級"
+  "RankUpGC":              "提升軍團階級",
+  "Description":              "為目前角色或輪替多個角色，完成職業或軍團的狩獵日誌。",
+  "StartRankLog":             "開始職業日誌",
+  "StartGCLog":               "開始軍團日誌",
+  "RunOptions":               "執行選項",
+  "FilterHint":               "依名稱、伺服器或資料中心篩選",
+  "ColLevel":                 "等級"
 }

@@ -4,5 +4,12 @@
   "ColKeepId":     "站點ID",
   "ColTerritory":  "地圖",
   "ColPlaceName":  "地點名稱",
-  "ColUnlocked":   "已解鎖"
+  "ColUnlocked":   "已解鎖",
+  "Description":   "前往所有尚未解鎖的陸行鳥站點並完成登記。",
+  "SummaryUnlocked": "{0}/{1} 已解鎖",
+  "OfStandsUnlocked": "/ {0} 個站點已解鎖",
+  "MissingIn":     "{1} 個地圖中缺少 {0} 個",
+  "Stands":        "站點",
+  "Unlocked":      "已解鎖",
+  "Missing":       "未解鎖"
 }

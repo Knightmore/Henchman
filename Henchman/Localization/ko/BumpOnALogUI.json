@@ -42,5 +42,11 @@
   "OrderByTerritory":      "지역별로 몬스터 정렬",
   "SkipDutyMarks":         "듀티 마크 건너뛰기",
   "SoloUnsyncDuty":        "솔로 비동기화 듀티",
-  "RankUpGC":              "GC 계급 올리기"
+  "RankUpGC":              "GC 계급 올리기",
+  "Description":              "클래스 또는 총사령부 토벌수첩을 현재 캐릭터나 여러 캐릭터를 순환하며 완료합니다.",
+  "StartRankLog":             "클래스 수첩 시작",
+  "StartGCLog":               "총사령부 수첩 시작",
+  "RunOptions":               "실행 옵션",
+  "FilterHint":               "이름, 월드, 데이터 센터로 필터",
+  "ColLevel":                 "레벨"
 }

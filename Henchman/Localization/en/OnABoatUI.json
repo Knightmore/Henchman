@@ -24,5 +24,13 @@
     "UseARItemSellHelp": "If you do not enable the option below, this will only work if you return to a destination with a retainer bell/vendor NPC nearby.",
     "UseARDiscard": "Use AR Discard after Voyage",
     "UseARLocalSell": "Sell to the vendor at the docks",
-    "UseARLocalSellHelp": "This will sell to the local vendor at the docks. High risk to stack with other botters, so be careful!"
+    "UseARLocalSellHelp": "This will sell to the local vendor at the docks. High risk to stack with other botters, so be careful!",
+    "Description": "Joins ocean fishing voyages with your characters, one after another, and sells or discards the catch afterwards.",
+    "SummaryCharacters": "{0} characters",
+    "Mode": "Mode",
+    "ModeManual": "Character list",
+    "ModeAutoRetainer": "AutoRetainer multimode",
+    "StopAtLevel": "Stop when all selected characters reach this level",
+    "Characters": "Characters",
+    "AfterVoyage": "After voyage"
 }

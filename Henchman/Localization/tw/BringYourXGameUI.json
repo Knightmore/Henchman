@@ -16,5 +16,11 @@
   "ColMap":              "地圖",
   "ColTerritory":        "地圖",
   "LeftPositions":		 "剩餘可能位置",
-  "RegisteredPositions": "已登錄的出現位置"
+  "RegisteredPositions": "已登錄的出現位置",
+  "Description":         "巡迴所選地圖尋找A級，或反覆討伐單一B級直到手動停止。",
+  "StartARank":          "開始A級",
+  "StartBRank":          "開始B級",
+  "TerritoriesSelectedFmt": "已選 {0}/{1} 個地圖",
+  "All":                 "全選",
+  "None":                "全不選"
 }

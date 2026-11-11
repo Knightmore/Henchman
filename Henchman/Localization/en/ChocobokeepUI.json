@@ -4,5 +4,12 @@
   "ColKeepId":     "KeepId",
   "ColTerritory":  "Territory",
   "ColPlaceName":  "Place Name",
-  "ColUnlocked":   "Unlocked"
+  "ColUnlocked":   "Unlocked",
+  "Description":     "Travels to every chocobo porter you have not unlocked yet and registers it.",
+  "SummaryUnlocked": "{0}/{1} unlocked",
+  "OfStandsUnlocked": "of {0} stands unlocked",
+  "MissingIn":       "{0} missing in {1} territories",
+  "Stands":          "Stands",
+  "Unlocked":        "Unlocked",
+  "Missing":         "Missing"
 }

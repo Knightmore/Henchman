@@ -43,30 +43,24 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                                                                                                                          if (!Configuration.EnableCharacterForOCFishing.TryAdd(x.CID, false))
                                                                                                                                          {
                                                                                                                                              var isEnabled = Configuration.EnableCharacterForOCFishing[x.CID];
-                                                                                                                                             if (isEnabled) ImGui.PushStyleColor(ImGuiCol.Button, 0xFF097000);
-
-                                                                                                                                             if (IconButton($"\uf021###{x.CID}"))
+                                                                                                                                             if (Widgets.Checkbox($"##ocFishing{x.CID}", ref isEnabled))
                                                                                                                                              {
-                                                                                                                                                 Configuration.EnableCharacterForOCFishing[x.CID] = !isEnabled;
+                                                                                                                                                 Configuration.EnableCharacterForOCFishing[x.CID] = isEnabled;
                                                                                                                                                  ConfigChanged                                    = true;
                                                                                                                                              }
-
-                                                                                                                                             if (isEnabled) ImGui.PopStyleColor();
                                                                                                                                          }
                                                                                                                                          else
                                                                                                                                              ConfigChanged = true;
                                                                                                                                      }),
                                                           new("Name", x => x.Name, 135, FilterType.String, ColumnAlignment.Center),
                                                           new("World", x => x.World, 90, FilterType.MultiSelect, ColumnAlignment.Center),
-                                                          new("DataCenter", x => Worlds[x.World]
-                                                                                .DataCenter.Value.Name.ExtractText(), 90, FilterType.MultiSelect, ColumnAlignment.Center),
+                                                          new("DataCenter", x => Worlds[x.World].DataCenterName(), 90, FilterType.MultiSelect, ColumnAlignment.Center),
                                                           new("Lvl", x => x.ClassJobLevelArray[17]
                                                                            .ToString(), 35, Alignment: ColumnAlignment.Center),
                                                           new("Inv.", x => x.InventorySpace.ToString(), 75, Alignment: ColumnAlignment.Center)
                                                   },
                                                   () => Feature.GetCurrentARCharacterData(),
-                                                  x => x.CID == Player.CID,
-                                                  new Vector2(500, 0)
+                                                  x => x.CID == Player.CID
                                                  );
         manualTable = CreateManualTable();
     }
@@ -93,6 +87,19 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
 
     public override bool LoginNeeded => false;
 
+    public override ModuleAction PrimaryAction => new(Loc.G("UI.V2.Start", "Start"), Start, "On A Boat - Start");
+
+    public override string? Summary => string.Format(T("SummaryCharacters"), Configuration.OCFishingHandleAR
+                                                                                     ? Configuration.EnableCharacterForOCFishing.Count(x => x.Value)
+                                                                                     : Configuration.GetManualCharacters().Count);
+
+    public override Action? ActionBarInfo => () =>
+                                             {
+                                                 Widgets.Dot(Feature.IsRegistrationOpen ? V2Palette.Success : V2Palette.TextMuted, 8f);
+                                                 ImGui.SameLine(0, 10 * GlobalFontScale);
+                                                 Widgets.TextSoft(VoyageTimer());
+                                             };
+
     [Keybind("On A Boat - Start")]
     public void Start()
     {
@@ -111,124 +118,112 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
             Configuration.SellAtLocalVendor = false;
         }
 
-        using var tabs = ImRaii.TabBar("Tabs");
-        if (tabs)
-        {
-            using (var tab = ImRaii.TabItem(T("TabMain")))
-            {
-                if (tab)
-                    DrawMain();
-            }
+        Widgets.Columns(16f, (0f, () =>
+                                  {
+                                      DrawModeCard();
+                                      DrawCharactersCard();
+                                      DrawAfterVoyageCard();
+                                  }),
+                        (262f, () => Widgets.RequirementsCard(this)));
 
-            using (var tab = ImRaii.TabItem(T("TabSettings")))
-            {
-                if (tab)
-                    DrawSettings();
-            }
-        }
         if (ConfigChanged) SaveConfig(Configuration);
     }
 
-    private void DrawMain()
+    private string VoyageTimer()
     {
         var utcNow = DateTime.UtcNow;
-        var hour   = utcNow.Hour;
-        var minute = utcNow.Minute;
-        var second = utcNow.Second;
-
-        Layout.DrawInfoBox(() =>
-                           {
-                               if (StartButton() && !IsTaskRunning(Name)) Start();
-                           }, () =>
-                              {
-                                  if (Feature.IsRegistrationOpen)
-                                  {
-                                      var remaining = new TimeSpan(0, 14 - minute, 59 - second);
-                                      ImGui.Text(string.Format(T("RegistrationOpenFmt"), remaining.Minutes, remaining.Seconds));
-                                  }
-                                  else
-                                  {
-                                      DateTime nextWindowStart;
-
-                                      var currentWindow = new DateTime(
-                                                                       utcNow.Year, utcNow.Month, utcNow.Day,
-                                                                       utcNow.Hour, 00, 0, DateTimeKind.Utc);
-
-                                      if (utcNow.Hour % 2 == 0)
-                                      {
-                                          nextWindowStart = utcNow < currentWindow
-                                                                    ? currentWindow
-                                                                    : currentWindow.AddHours(2);
-                                      }
-                                      else
-                                          nextWindowStart = currentWindow.AddHours(1);
-
-                                      var waitTime = nextWindowStart - utcNow;
-                                      ImGui.Text(string.Format(T("NextVoyageFmt"), waitTime.Hours, waitTime.Minutes, waitTime.Seconds));
-                                  }
-                              });
-
-        using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
+        if (Feature.IsRegistrationOpen)
         {
-            DrawCentered("##boatArCharacters", () =>
-                                               {
-                                                   ImGui.Text(T("UseWithARMultimode"));
-                                                   ImGui.SameLine();
-                                                   ConfigChanged |= ImGui.Checkbox("##HandleAR", ref Configuration.OCFishingHandleAR);
-                                               });
-
-            if (Configuration.OCFishingHandleAR)
-                DrawCentered("##boatArStopAt100", () =>
-                                              {
-                                                  ImGui.Text(T("StopAt"));
-                                                  //ImGui.SameLine(200 * GlobalFontScale);
-                                                  ImGui.SameLine();
-                                                  ImGui.SetNextItemWidth(40 * GlobalFontScale);
-                                                  ConfigChanged |= ImGui.InputInt("##fisherMaxLevel", ref Configuration.MaxLevel);
-                                                  ImGui.SameLine();
-                                                  ConfigChanged |= ImGui.Checkbox("##stopAt", ref Configuration.OCFishingStopLevel);
-                                              });
+            var remaining = new TimeSpan(0, 14 - utcNow.Minute, 59 - utcNow.Second);
+            return string.Format(T("RegistrationOpenFmt"), remaining.Minutes, remaining.Seconds);
         }
 
-        if (Configuration.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
+        DateTime nextWindowStart;
+
+        var currentWindow = new DateTime(
+                                         utcNow.Year, utcNow.Month, utcNow.Day,
+                                         utcNow.Hour, 00, 0, DateTimeKind.Utc);
+
+        if (utcNow.Hour % 2 == 0)
         {
-            DrawCentered("##BoatCharSelector", () =>
-                                               {
-                                                   if (ImGui.Button(T("SelectAll")))
-                                                   {
-                                                       foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
-                                                       ConfigChanged = true;
-                                                   }
-
-                                                   ImGui.SameLine();
-                                                   if (ImGui.Button(T("DeselectAll")))
-                                                   {
-                                                       foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
-                                                       ConfigChanged = true;
-                                                   }
-                                               });
-            DrawCentered("##BoatFilteredCharSelector", () =>
-                                                       {
-                                                           if (ImGui.Button(T("SelectAllShown")))
-                                                           {
-                                                               foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
-                                                               ConfigChanged = true;
-                                                           }
-
-                                                           ImGui.SameLine();
-                                                           if (ImGui.Button(T("DeselectAllShown")))
-                                                           {
-                                                               foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
-                                                               ConfigChanged = true;
-                                                           }
-                                                       });
-            DrawCentered("##CenteredARFisherTable", () => DrawARTable());
+            nextWindowStart = utcNow < currentWindow
+                                      ? currentWindow
+                                      : currentWindow.AddHours(2);
         }
         else
+            nextWindowStart = currentWindow.AddHours(1);
+
+        var waitTime = nextWindowStart - utcNow;
+        return string.Format(T("NextVoyageFmt"), waitTime.Hours, waitTime.Minutes, waitTime.Seconds);
+    }
+
+    private void DrawModeCard()
+    {
+        Widgets.Card(T("Mode"), () =>
+                                {
+                                    using (Widgets.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
+                                    {
+                                        ConfigChanged |= Widgets.Segmented("boatMode", ref Configuration.OCFishingHandleAR, [(false, T("ModeManual")), (true, T("ModeAutoRetainer"))], Widgets.Avail);
+                                    }
+
+                                    ImGui.AlignTextToFramePadding();
+                                    ImGui.TextUnformatted(T("Route"));
+                                    ImGui.SameLine();
+                                    Widgets.RightAligned("##boatRoute", () => ConfigChanged |= Widgets.Segmented("boatRoute", ref Configuration.PreferRuby, [(false, "Indigo"), (true, "Ruby")]));
+
+                                    if (!Configuration.OCFishingHandleAR) return;
+
+                                    ConfigChanged |= Widgets.SwitchRow(T("StopAtLevel"), ref Configuration.OCFishingStopLevel);
+                                    if (!Configuration.OCFishingStopLevel) return;
+
+                                    ImGui.Indent(16 * GlobalFontScale);
+                                    ImGui.SetNextItemWidth(Widgets.Avail);
+                                    ConfigChanged |= ImGui.InputInt("##fisherMaxLevel", ref Configuration.MaxLevel);
+                                    ImGui.Unindent(16 * GlobalFontScale);
+                                });
+    }
+
+    private void DrawCharactersCard()
+    {
+        if (Configuration.OCFishingHandleAR && SubscriptionManager.IsInitialized(IPCNames.AutoRetainer))
         {
-            using var disabled = ImRaii.Disabled(IsTaskRunning(Name));
-            DrawManualCharacters();
+            Widgets.Card(T("Characters"), DrawARCharacters);
+            return;
         }
+
+        Widgets.Card(T("Characters"), DrawManualCharacters);
+    }
+
+    private void DrawARCharacters()
+    {
+        if (Widgets.Button(T("SelectAll")))
+        {
+            foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = true;
+            ConfigChanged = true;
+        }
+
+        ImGui.SameLine(0, 6 * GlobalFontScale);
+        if (Widgets.Button(T("DeselectAll")))
+        {
+            foreach (var keyValuePair in Configuration.EnableCharacterForOCFishing) Configuration.EnableCharacterForOCFishing[keyValuePair.Key] = false;
+            ConfigChanged = true;
+        }
+
+        ImGui.SameLine(0, 6 * GlobalFontScale);
+        if (Widgets.Button(T("SelectAllShown")))
+        {
+            foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = true;
+            ConfigChanged = true;
+        }
+
+        ImGui.SameLine(0, 6 * GlobalFontScale);
+        if (Widgets.Button(T("DeselectAllShown")))
+        {
+            foreach (var character in ARTable.FilteredItems) Configuration.EnableCharacterForOCFishing[character.CID] = false;
+            ConfigChanged = true;
+        }
+
+        DrawFittedTable("##boatARTable", ARTable.FilteredItems.Count, ARTable.Draw);
     }
 
     private TableReorderable<BoatCharacter, Guid> CreateManualTable() => new(
@@ -236,7 +231,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
             [
                     new(T("CharacterName"), x => x.Name, 150, FilterType.String, ColumnAlignment.Center),
                     new(T("World"), x => x.World, 110, FilterType.MultiSelect, ColumnAlignment.Center),
-                    new(T("DataCenter"), x => Worlds.TryGetValue(x.World, out var world) ? world.DataCenter.Value.Name.ExtractText() : string.Empty,
+                    new(T("DataCenter"), x => Worlds.TryGetValue(x.World, out var world) ? world.DataCenterName() : string.Empty,
                         110, FilterType.MultiSelect, ColumnAlignment.Center),
                     new("##Remove", Width: 40, Alignment: ColumnAlignment.Center, DrawCustom: (x, _) =>
                                                                                            {
@@ -248,7 +243,6 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
             x => x.Id,
             x => Configuration.GetManualCharacters().FindIndex(h => h.Id == x.Id),
             MoveManualCharacter,
-            size: new Vector2(500, 0),
             highlightPredicate: x => Player.Available && x.Name == Player.Name && x.World == Player.HomeWorld.Value.Name.ExtractText(),
             drawExtraRow: DrawNewCharacterRow);
 
@@ -265,7 +259,12 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
 
     private void DrawManualCharacters()
     {
-        DrawCentered("##boatManualCharacters", manualTable.Draw);
+        Widgets.TextMuted(T("ManualCharactersHelp"), true);
+        using (ImRaii.Disabled(IsTaskRunning(Name)))
+        {
+            DrawFittedTable("##boatManualTable", manualTable.FilteredItems.Count + 1, manualTable.Draw);
+        }
+
         if (characterToRemove is not null)
         {
             Configuration.GetManualCharacters().Remove(characterToRemove);
@@ -297,7 +296,7 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                              {
                                                  ImGui.AlignTextToFramePadding();
                                                  ImGui.TextUnformatted(Worlds.TryGetValue(newCharacterWorld, out var world)
-                                                                               ? world.DataCenter.Value.Name.ExtractText()
+                                                                               ? world.DataCenterName()
                                                                                : string.Empty);
                                              });
         ImGui.TableSetColumnIndex(4);
@@ -316,53 +315,30 @@ internal class OnABoatUI : ModuleUI<OnABoat, Configuration>
                                           });
     }
 
-    private void DrawSettings()
+    private void DrawAfterVoyageCard()
     {
-        DrawCentered("##boatRoute", () =>
-                                    {
-                                        var route = Configuration.PreferRuby ? 1 : 0;
-                                        if (ImGui.Combo(T("Route"), ref route, new[] { "Indigo", "Ruby" }, 2))
-                                        {
-                                            Configuration.PreferRuby = route == 1;
-                                            ConfigChanged = true;
-                                        }
-                                    });
+        var arLoaded = SubscriptionManager.IsInitialized(IPCNames.AutoRetainer);
+        Widgets.Card(T("AfterVoyage"), () =>
+                                       {
+                                           ConfigChanged |= Widgets.SwitchRow(T("UseARItemSell"), ref Configuration.SellAfterVoyage, help: T("UseARItemSellHelp"), enabled: arLoaded);
+                                           if (Configuration.SellAfterVoyage)
+                                               ConfigChanged |= Widgets.SwitchRow(T("UseARLocalSell"), ref Configuration.SellAtLocalVendor, help: T("UseARLocalSellHelp"), child: true, enabled: arLoaded);
 
-        using (ImRaii.Disabled(!SubscriptionManager.IsInitialized(IPCNames.AutoRetainer)))
-        {
-            DrawCentered("##boatArSelling", () =>
-                                            {
-                                                ConfigChanged |= ImGui.Checkbox(T("UseARItemSell"), ref Configuration.SellAfterVoyage);
-                                                ImGui.SameLine();
-                                                HelpMarker(() => ImGui.Text(T("UseARItemSellHelp")));
-                                            });
+                                           ConfigChanged |= Widgets.SwitchRow(T("DiscardAfterVoyage"), ref Configuration.DiscardAfterVoyage);
+                                           if (!Configuration.DiscardAfterVoyage) return;
 
-            DrawCentered("##boatArLocalSelling", () =>
-                                                 {
-                                                     ConfigChanged |= ImGui.Checkbox(T("UseARLocalSell"), ref Configuration.SellAtLocalVendor);
-                                                     ImGui.SameLine();
-                                                     HelpMarker(() => ImGui.Text(T("UseARLocalSellHelp")));
-                                                 });
-
-
-        }
-
-        DrawCentered("##boatDiscard", () => { ConfigChanged |= ImGui.Checkbox(T("DiscardAfterVoyage"), ref Configuration.DiscardAfterVoyage); });
-        DrawCentered("##boatDiscardProvider", () =>
-                                              {
-                                                  var provider = Configuration.UseFeeshDiscard ? 1 : 0;
-                                                  if (ImGui.Combo(T("DiscardProvider"), ref provider, new[] { "AutoRetainer", "WahTools (Feesh)" }, 2))
-                                                  {
-                                                      Configuration.UseFeeshDiscard = provider == 1;
-                                                      ConfigChanged = true;
-                                                  }
-                                                  ImGui.SameLine();
-                                                  HelpMarker(() => ImGui.Text(T("DiscardProviderHelp")));
-                                              });
+                                           ImGui.Indent(16 * GlobalFontScale);
+                                           Widgets.TextDim(T("DiscardProvider"));
+                                           HelpMarker(T("DiscardProviderHelp"));
+                                           ConfigChanged |= Widgets.Segmented("boatDiscardProvider", ref Configuration.UseFeeshDiscard, [(false, "AutoRetainer"), (true, "WahTools (Feesh)")], Widgets.Avail);
+                                           ImGui.Unindent(16 * GlobalFontScale);
+                                       });
     }
 
-    private void DrawARTable()
+    private static void DrawFittedTable(string id, int rows, Action drawTable)
     {
-        ARTable.Draw();
+        var rowHeight = ImGui.GetFrameHeight() + ImGui.GetStyle().CellPadding.Y * 2;
+        using var child = ImRaii.Child(id, new Vector2(Widgets.Avail, (rows + 1) * rowHeight + 6 * GlobalFontScale), false, ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoScrollbar);
+        if (child.Success) drawTable();
     }
 }

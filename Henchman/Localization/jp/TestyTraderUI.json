@@ -22,5 +22,20 @@
   "ColAmount":             "数量",
   "ColTradeType":          "取引タイプ",
   "IncludeArmory":         "アーモリーを含める",
-  "NewPlanNameHint":       "新しいプラン名..."
+  "NewPlanNameHint":       "新しいプラン名...",
+  "Description":           "Henchmenをボスの元へ送り、取引プランのアイテムを渡したり要求したりします。",
+  "SessionBoss":           "ボス",
+  "SessionHenchman":       "Henchman",
+  "StartBossMode":         "ボスモード開始",
+  "StartHenchmanMode":     "Henchmanモード開始",
+  "ActionBarHenchman":     "Henchmen {0}人選択中 · {1}: {2}アイテム",
+  "Options":               "オプション",
+  "TradePlans":            "取引プラン",
+  "RenamePlan":            "名前を変更",
+  "NewPlan":               "新しいプラン",
+  "TradeGive":             "渡す",
+  "TradeKeep":             "保持",
+  "TradeAskFor":           "要求",
+  "TradeAskUntil":         "要求（継続）",
+  "TradePARLevel":         "PARレベル"
 }

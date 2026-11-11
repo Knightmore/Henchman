@@ -2,5 +2,7 @@
   "HelpText":       "Liste des IPC actuellement fournis",
   "ColReturn":      "Retour",
   "ColFunction":    "Fonction",
-  "ColDescription": "Description"
+  "ColDescription": "Description",
+  "Description":    "Toutes les fonctions IPC que Henchman fournit aux autres plugins.",
+  "Provided":       "Fonctions fournies"
 }

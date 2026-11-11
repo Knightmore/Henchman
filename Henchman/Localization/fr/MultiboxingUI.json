@@ -6,5 +6,7 @@
   "IPAddress":          "Adresse IP (Boss) à laquelle se connecter",
   "IPAddressHelp":      "Vous n'avez besoin de définir ceci que sur vos henchmen (clients) si vous ne l'utilisez pas uniquement en local.",
   "Port":               "Port :",
-  "PortHelp":           "Si vous n'exécutez pas plusieurs instances boss (serveurs) sur votre réseau, vous pouvez garder le port par défaut.\nSinon, vous devez changer le port pour chaque groupe boss/henchmen (serveur/client) distinct vers un port différent."
+  "PortHelp":           "Si vous n'exécutez pas plusieurs instances boss (serveurs) sur votre réseau, vous pouvez garder le port par défaut.\nSinon, vous devez changer le port pour chaque groupe boss/henchmen (serveur/client) distinct vers un port différent.",
+  "Description":        "Paramètres de connexion pour faire tourner un Boss avec des Henchmen sur une ou plusieurs machines.",
+  "Connection":         "Connexion"
 }

@@ -22,5 +22,20 @@
   "ColAmount":             "数量",
   "ColTradeType":          "交易类型",
   "IncludeArmory":         "包括军械库",
-  "NewPlanNameHint":       "新计划名称..."
+  "NewPlanNameHint":       "新计划名称...",
+  "Description":           "派你的从机前往主机，按交易计划给予或请求物品。",
+  "SessionBoss":           "主机",
+  "SessionHenchman":       "从机",
+  "StartBossMode":         "开始主机模式",
+  "StartHenchmanMode":     "开始从机模式",
+  "ActionBarHenchman":     "已选 {0} 个从机 · {1}：{2} 个物品",
+  "Options":               "选项",
+  "TradePlans":            "交易计划",
+  "RenamePlan":            "重命名",
+  "NewPlan":               "新计划",
+  "TradeGive":             "给予",
+  "TradeKeep":             "保留",
+  "TradeAskFor":           "请求",
+  "TradeAskUntil":         "请求直到",
+  "TradePARLevel":         "平衡等级"
 }

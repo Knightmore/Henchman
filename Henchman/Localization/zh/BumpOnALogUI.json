@@ -42,5 +42,11 @@
   "OrderByTerritory": "按地图排序怪物",
   "SkipDutyMarks": "跳过副本标记",
   "SoloUnsyncDuty": "单人无同步副本",
-  "RankUpGC": "提升大国防联等级"
+  "RankUpGC": "提升大国防联等级",
+  "Description":              "为当前角色或轮换多个角色，完成职业或大国防联的讨伐笔记。",
+  "StartRankLog":             "开始职业笔记",
+  "StartGCLog":               "开始大国防联笔记",
+  "RunOptions":               "运行选项",
+  "FilterHint":               "按名称、世界或数据中心筛选",
+  "ColLevel":                 "等级"
 }

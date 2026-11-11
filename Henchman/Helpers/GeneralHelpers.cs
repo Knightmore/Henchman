@@ -34,6 +34,10 @@ public static class GeneralHelpers
     public static          bool  IsPlayerBusy       => Player.IsBusy;
     internal static unsafe float GetChocoboTimeLeft => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
 
+    /// <summary>Returns the name of the data center <paramref name="world" /> belongs to.</summary>
+    internal static string DataCenterName(this World world) => Svc.Data.GetExcelSheet<WorldDCGroupType>()
+                                                                  .GetRowOrDefault(world.Unknown0)?.Name.ExtractText() ?? string.Empty;
+
     internal static unsafe IEnumerable<PartyMember> PartyMembers => GroupManager.Instance()->MainGroup.PartyMembers.ToArray()
                                                                                                       .Where(x => x.TerritoryType != 0);
 
@@ -206,7 +210,7 @@ public static class GeneralHelpers
     internal static bool IsDutyUnlocked(uint dutyId) => Svc.UnlockState.IsInstanceContentUnlocked(Svc.Data.Excel.GetSheet<InstanceContent>()
                                                                                                      .GetRow(Svc.Data.Excel.GetSheet<ContentFinderCondition>()
                                                                                                                 .First(x => x.TerritoryType.RowId == dutyId)
-                                                                                                                .RowId));
+                                                                                                                .Content.RowId));
 
     internal static        bool IsQuestCompleted(uint questId) => QuestManager.IsQuestComplete(questId);
     internal static unsafe bool IsQuestAccepted(uint  questId) => QuestManager.Instance()->IsQuestAccepted(questId);

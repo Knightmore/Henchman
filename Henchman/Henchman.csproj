@@ -2,7 +2,7 @@
 
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>3.0.1.40</Version>
+        <Version>4.0.0.0</Version>
         <Description></Description>
         <PackageProjectUrl>https://github.com/Knightmore/Henchman</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -61,10 +61,15 @@
             <Link>Data\BRanks.json</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Private|x64'">
         <DefineConstants>$(DefineConstants);DEBUG;PRIVATE</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Private'">
+        <NuGetLockFilePath>$(MSBuildProjectDirectory)\Features\Private\packages.lock.json</NuGetLockFilePath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(Configuration)' != 'Private'">

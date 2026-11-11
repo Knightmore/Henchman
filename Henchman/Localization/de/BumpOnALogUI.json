@@ -42,5 +42,11 @@
   "OrderByTerritory":     "Monster nach Gebiet sortieren",
   "SkipDutyMarks":        "Duty-Markierungen überspringen",
   "SoloUnsyncDuty":       "Duty solo (unsync)",
-  "RankUpGC":             "GC-Rang aufsteigen"
+  "RankUpGC":             "GC-Rang aufsteigen",
+  "Description":              "Schließt das Jagdprotokoll deiner Klasse oder staatlichen Gesellschaft ab, auf diesem Charakter oder reihum auf mehreren.",
+  "StartRankLog":             "Klassenlog starten",
+  "StartGCLog":               "GC-Log starten",
+  "RunOptions":               "Laufoptionen",
+  "FilterHint":               "Nach Name, Welt oder Datenzentrum filtern",
+  "ColLevel":                 "Level"
 }

@@ -22,5 +22,20 @@
   "ColAmount":             "Menge",
   "ColTradeType":          "Handelstyp",
   "IncludeArmory":         "Ausrüstung einbeziehen",
-  "NewPlanNameHint":       "Neuer Planname..."
+  "NewPlanNameHint":       "Neuer Planname...",
+  "Description":           "Schickt deine Henchmen zum Boss, um die Gegenstände eines Handelsplans zu geben oder zu erbitten.",
+  "SessionBoss":           "Boss",
+  "SessionHenchman":       "Henchman",
+  "StartBossMode":         "Boss-Modus starten",
+  "StartHenchmanMode":     "Henchman-Modus starten",
+  "ActionBarHenchman":     "{0} Henchmen gewählt · {1}: {2} Gegenstände",
+  "Options":               "Optionen",
+  "TradePlans":            "Handelspläne",
+  "RenamePlan":            "Umbenennen",
+  "NewPlan":               "Neuer Plan",
+  "TradeGive":             "Geben",
+  "TradeKeep":             "Behalten",
+  "TradeAskFor":           "Bitten",
+  "TradeAskUntil":         "Bis zu",
+  "TradePARLevel":         "PAR-Level"
 }

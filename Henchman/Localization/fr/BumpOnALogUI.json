@@ -42,5 +42,11 @@
   "OrderByTerritory":      "Trier les monstres par territoire",
   "SkipDutyMarks":         "Ignorer les marques de donjon",
   "SoloUnsyncDuty":        "Donjon en solo désynchronisé",
-  "RankUpGC":              "Monter en rang GC"
+  "RankUpGC":              "Monter en rang GC",
+  "Description":              "Termine le journal de chasse de votre classe ou de votre Grande Compagnie, sur ce personnage ou en cycle sur plusieurs.",
+  "StartRankLog":             "Lancer journal de classe",
+  "StartGCLog":               "Lancer journal GC",
+  "RunOptions":               "Options d'exécution",
+  "FilterHint":               "Filtrer par nom, monde ou centre de données",
+  "ColLevel":                 "Niveau"
 }

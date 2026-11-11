@@ -22,5 +22,20 @@
   "ColAmount":             "數量",
   "ColTradeType":          "交易類型",
   "IncludeArmory":         "包含軍械庫",
-  "NewPlanNameHint":       "新計劃名稱..."
+  "NewPlanNameHint":       "新計劃名稱...",
+  "Description":           "派你的 Henchmen 前往主機，依交易計劃給予或索取物品。",
+  "SessionBoss":           "主機",
+  "SessionHenchman":       "Henchman",
+  "StartBossMode":         "開始主機模式",
+  "StartHenchmanMode":     "開始 Henchman 模式",
+  "ActionBarHenchman":     "已選 {0} 位 Henchmen · {1}：{2} 個物品",
+  "Options":               "選項",
+  "TradePlans":            "交易計劃",
+  "RenamePlan":            "重新命名",
+  "NewPlan":               "新計劃",
+  "TradeGive":             "給予",
+  "TradeKeep":             "保留",
+  "TradeAskFor":           "索取",
+  "TradeAskUntil":         "持續索取",
+  "TradePARLevel":         "PAR 等級"
 }

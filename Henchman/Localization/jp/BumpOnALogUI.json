@@ -42,5 +42,11 @@
   "OrderByTerritory":      "テリトリー順にモンスターを並べる",
   "SkipDutyMarks":         "デューティマークをスキップ",
   "SoloUnsyncDuty":        "ソロ非同期デューティ",
-  "RankUpGC":              "GCの階級を上げる"
+  "RankUpGC":              "GCの階級を上げる",
+  "Description":              "クラスまたはグランドカンパニーの討伐手帳を、現在のキャラクターか複数キャラクターの巡回で達成します。",
+  "StartRankLog":             "クラス手帳を開始",
+  "StartGCLog":               "GC手帳を開始",
+  "RunOptions":               "実行オプション",
+  "FilterHint":               "名前・ワールド・データセンターで絞り込み",
+  "ColLevel":                 "レベル"
 }

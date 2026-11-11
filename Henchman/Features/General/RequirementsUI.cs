@@ -13,8 +13,16 @@ internal class RequirementsUI : ModuleUI
     public override Action?         Help        { get; }
     public override bool            LoginNeeded => false;
 
+    public override string Description => Loc.G("Requirements.HeaderText");
+
     public override void Draw()
     {
-        DrawRequirements(ModuleRegistry.Instances.OfType<ModuleUI>());
+        var features = ModuleRegistry.Instances.OfType<ModuleUI>()
+                                     .Where(f => f.Requirements.Count > 0)
+                                     .OrderBy(f => f.Category)
+                                     .ThenBy(f => f.Name)
+                                     .ToList();
+        Widgets.Grid(3, 12f, features.Select<ModuleUI, Action<float>>(f => width => Widgets.RequirementsCard(f, null, width, f.DisplayName))
+                                     .ToList());
     }
 }

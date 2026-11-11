@@ -10,5 +10,8 @@
   "ColClassJob": "职业",
   "ColPreset": "预设",
   "Random": "随机",
-  "None": "无"
+  "None": "无",
+  "Description": "从标题画面开始，在指定的数据中心和世界创建你列出的新角色。",
+  "TitleScreenNote": "点击开始前，请先返回标题画面。",
+  "CharactersToCreate": "要创建的角色"
 }

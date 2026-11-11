@@ -13,6 +13,7 @@ global using Underlings.Helpers.Lumina;
 global using Underlings.Helpers.Numerics;
 global using Underlings.Logging;
 global using Underlings.Ui;
+global using Underlings.Ui.V2;
 global using Underlings.Localization;
 global using Henchman.IPC;
 global using Underlings.IPC;

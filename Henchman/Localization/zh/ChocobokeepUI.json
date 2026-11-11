@@ -4,5 +4,12 @@
   "ColKeepId": "驿站ID",
   "ColTerritory": "地图",
   "ColPlaceName": "地点名称",
-  "ColUnlocked": "已解锁"
+  "ColUnlocked": "已解锁",
+  "Description":  "前往所有尚未解锁的陆行鸟驿站并完成登记。",
+  "SummaryUnlocked": "{0}/{1} 已解锁",
+  "OfStandsUnlocked": "/ {0} 个驿站已解锁",
+  "MissingIn":    "{1} 个地图中缺少 {0} 个",
+  "Stands":       "驿站",
+  "Unlocked":     "已解锁",
+  "Missing":      "未解锁"
 }

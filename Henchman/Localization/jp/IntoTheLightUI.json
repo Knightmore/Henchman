@@ -10,5 +10,8 @@
   "ColClassJob":   "クラス/ジョブ",
   "ColPreset":     "プリセット",
   "Random":        "ランダム",
-  "None":          "なし"
+  "None":          "なし",
+  "Description":   "リストの新規キャラクターを、タイトル画面から指定のデータセンターとワールドに作成します。",
+  "TitleScreenNote": "開始を押す前にタイトル画面に移動してください。",
+  "CharactersToCreate": "作成するキャラクター"
 }

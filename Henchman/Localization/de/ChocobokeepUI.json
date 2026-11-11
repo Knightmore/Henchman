@@ -4,5 +4,12 @@
   "ColKeepId":    "StandID",
   "ColTerritory": "Gebiet",
   "ColPlaceName": "Ortsname",
-  "ColUnlocked":  "Freigeschaltet"
+  "ColUnlocked":  "Freigeschaltet",
+  "Description":  "Reist zu jedem Chocobo-Taxistand, den du noch nicht freigeschaltet hast, und registriert ihn.",
+  "SummaryUnlocked": "{0}/{1} freigeschaltet",
+  "OfStandsUnlocked": "von {0} Ständen freigeschaltet",
+  "MissingIn":    "{0} fehlen in {1} Gebieten",
+  "Stands":       "Stände",
+  "Unlocked":     "Freigeschaltet",
+  "Missing":      "Fehlt"
 }

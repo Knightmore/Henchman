@@ -22,5 +22,20 @@
   "ColAmount":             "수량",
   "ColTradeType":          "거래 유형",
   "IncludeArmory":         "무기고 포함",
-  "NewPlanNameHint":       "새 계획 이름..."
+  "NewPlanNameHint":       "새 계획 이름...",
+  "Description":           "Henchmen을 보스에게 보내 거래 계획의 아이템을 주거나 요청합니다.",
+  "SessionBoss":           "보스",
+  "SessionHenchman":       "Henchman",
+  "StartBossMode":         "보스 모드 시작",
+  "StartHenchmanMode":     "Henchman 모드 시작",
+  "ActionBarHenchman":     "Henchmen {0}명 선택 · {1}: 아이템 {2}개",
+  "Options":               "옵션",
+  "TradePlans":            "거래 계획",
+  "RenamePlan":            "이름 변경",
+  "NewPlan":               "새 계획",
+  "TradeGive":             "주기",
+  "TradeKeep":             "보유",
+  "TradeAskFor":           "요청",
+  "TradeAskUntil":         "계속 요청",
+  "TradePARLevel":         "PAR 레벨"
 }

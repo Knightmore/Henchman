@@ -4,5 +4,12 @@
   "ColKeepId":     "정류장 ID",
   "ColTerritory":  "지역",
   "ColPlaceName":  "장소 이름",
-  "ColUnlocked":   "해금됨"
+  "ColUnlocked":   "해금됨",
+  "Description":   "아직 해금하지 않은 초코보 택시 정류장을 모두 찾아가 등록합니다.",
+  "SummaryUnlocked": "{0}/{1} 해금됨",
+  "OfStandsUnlocked": "/ {0}개 정류장 해금됨",
+  "MissingIn":     "{1}개 지역에서 {0}곳 미해금",
+  "Stands":        "정류장",
+  "Unlocked":      "해금됨",
+  "Missing":       "미해금"
 }

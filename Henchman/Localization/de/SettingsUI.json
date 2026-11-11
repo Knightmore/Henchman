@@ -9,5 +9,11 @@
   "AutoRotationPlugin":   "Auto-Rotations-Plugin:",
   "UseChocoboCompanion":  "Chocobo-Begleiter verwenden",
   "ChocoboCompanionHelp": "Ruft deinen Chocobo-Begleiter herbei oder füttert ihn, wenn die verbleibende Zeit unter 5 Minuten liegt.",
-  "UILanguage":           "UI-Sprache:"
+  "UILanguage":           "UI-Sprache:",
+  "Description":          "Allgemeine Einstellungen für alle Funktionen.",
+  "SectionInterface":     "Oberfläche",
+  "SectionTravel":        "Reisen",
+  "SectionFinish":        "Nach Abschluss einer Funktion",
+  "SectionCombat":        "Kampf",
+  "ReturnDestination":    "Ziel"
 }

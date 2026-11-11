@@ -53,10 +53,19 @@ public class Henchman : IDalamudPlugin
                                                                                { Category.System, FontAwesomeIcon.Cog }
                                                                        };
 
+    public readonly Dictionary<Category, Vector4> categoryColors = new()
+                                                                   {
+                                                                           { Category.Combat, V2Palette.Accent },
+                                                                           { Category.Exploration, V2Palette.Blue },
+                                                                           { Category.Economy, V2Palette.Teal },
+                                                                           { Category.Tweaks, V2Palette.Purple },
+                                                                           { Category.System, V2Palette.TextSoft }
+                                                                   };
+
     public readonly WindowSystem  WindowSystem = new("Henchman");
     public          Configuration Config;
     internal        MainWindow    MainWindow;
-    internal        StatusWindow  StatusWindow;
+    internal        StatusHud     StatusHud;
 
     public Henchman(IDalamudPluginInterface pluginInterface, ISigScanner sigScanner)
     {
@@ -81,7 +90,9 @@ public class Henchman : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
 
         MainWindow.Dispose();
-        StatusWindow.Dispose();
+        StatusHud.Dispose();
+        OnCancelled   -= Vnavmesh.StopCompletely;
+        OnTaskStarted -= OpenStatusHud;
 
 
         CancelAllTasks();
@@ -135,7 +146,7 @@ public class Henchman : IDalamudPlugin
         Config = PluginConfig.Init<Configuration>();
         Loc.Load(MapLanguage(Config.UILanguage));
         OnCancelled   += Vnavmesh.StopCompletely;
-        OnTaskStarted += () => StatusWindow.IsOpen = true;
+        OnTaskStarted += OpenStatusHud;
 
         IPCProvider.Init();
         Svc.Framework.Update += SubscriptionManager.Subscribe;
@@ -173,38 +184,25 @@ public class Henchman : IDalamudPlugin
         Svc.Commands.AddHandler("/hench", new CommandInfo(OnCommand) { ShowInHelp     = false });
 
         MainWindow = new MainWindow(
-                                    $"{Name} - {GetType().Assembly.GetName().Version}",
+                                    Name,
+                                    GetType().Assembly.GetName().Version?.ToString() ?? string.Empty,
                                     categories.ToDictionary(kv => (Enum)kv.Key, kv => kv.Value),
                                     Path.Combine(Svc.PluginInterface.AssemblyLocation.Directory?.FullName!, "Images", "Henchman.png"),
                                     () =>
                                     {
-                                        TextCentered(Theme.ErrorRed, Loc.G("Splash.Attention"));
-                                        TextCentered(Loc.G("Splash.AttentionBody"));
-                                        ImGui.NewLine();
-                                        ImGui.Separator();
-                                        ImGui.NewLine();
-
-                                        TextCentered(Theme.ErrorRed, Loc.G("Splash.PositionalData"));
-                                        TextCentered(Loc.G("Splash.PositionalDataBody"));
+                                        Widgets.TextColored(V2Palette.Warning, Loc.G("Splash.Attention"));
+                                        Widgets.TextDim(Loc.G("Splash.AttentionBody"), true);
+                                        ImGui.Dummy(new Vector2(0, 2 * GlobalFontScale));
+                                        Widgets.TextColored(V2Palette.Warning, Loc.G("Splash.PositionalData"));
+                                        Widgets.TextDim(Loc.G("Splash.PositionalDataBody"), true);
                                     },
-                                    () =>
-                                    {
-                                        ImGui.Text("Plugin by");
-                                        ImGui.SameLine(0, 2);
-                                        DrawLink("Knightmore", "GitHub", "https://github.com/Knightmore/Henchman");
-                                        ImGui.SameLine();
-                                        ImGui.Text("•");
-                                        ImGui.SameLine();
-                                        ImGui.Text("Theme/Design by");
-                                        ImGui.SameLine(0, 2);
-                                        DrawLink("Wah", "GitHub", "https://github.com/Brappp");
-                                    },
-                                    () => StatusWindow.IsOpen = !StatusWindow.IsOpen);
-        StatusWindow = new StatusWindow("HENCHMAN STATUS", () => P!.MainWindow.IsOpen = true);
-
+                                    null,
+                                    () => StatusHud.IsOpen = !StatusHud.IsOpen,
+                                    categoryColors.ToDictionary(kv => (Enum)kv.Key, kv => kv.Value));
+        StatusHud = new StatusHud(Name, () => P!.MainWindow.IsOpen = true, MainWindow.State);
 
         WindowSystem.AddWindow(MainWindow);
-        WindowSystem.AddWindow(StatusWindow);
+        WindowSystem.AddWindow(StatusHud);
 
         Svc.PluginInterface.UiBuilder.Draw       += DrawUi;
         Svc.PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
@@ -213,7 +211,9 @@ public class Henchman : IDalamudPlugin
     }
 
     [Keybind("Toggle Status Overlay")]
-    private static void ToggleStatusOverlay() => P!.StatusWindow.IsOpen = !P!.StatusWindow.IsOpen;
+    private static void ToggleStatusOverlay() => P!.StatusHud.IsOpen = !P!.StatusHud.IsOpen;
+
+    private void OpenStatusHud() => StatusHud.IsOpen = true;
 
     internal static string MapLanguage(UiLanguage lang) => lang switch
                                                            {

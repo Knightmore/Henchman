@@ -16,5 +16,11 @@
   "ColMap":              "Karte",
   "ColTerritory":        "Gebiet",
   "LeftPositions":		 "Übrige mögliche Positionen",
-  "RegisteredPositions": "Registrierte Positionen"
+  "RegisteredPositions": "Registrierte Positionen",
+  "Description":         "Durchstreift deine gewählten A-Rang-Gebiete oder farmt einen B-Rang, bis du stoppst.",
+  "StartARank":          "A-Rang starten",
+  "StartBRank":          "B-Rang starten",
+  "TerritoriesSelectedFmt": "{0} von {1} Gebieten gewählt",
+  "All":                 "Alle",
+  "None":                "Keine"
 }

@@ -16,5 +16,11 @@
   "ColMap":              "Map",
   "ColTerritory":        "Territory",
   "LeftPositions":		 "Leftover possible positions",
-  "RegisteredPositions": "Registered spawn positions" 
+  "RegisteredPositions": "Registered spawn positions",
+  "Description":         "Roams your selected A-Rank territories, or farms one B-Rank until you stop it.",
+  "StartARank":          "Start A-Rank",
+  "StartBRank":          "Start B-Rank",
+  "TerritoriesSelectedFmt": "{0} of {1} territories selected",
+  "All":                 "All",
+  "None":                "None"
 }

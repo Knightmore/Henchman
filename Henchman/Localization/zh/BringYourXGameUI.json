@@ -16,5 +16,11 @@
   "ColMap": "地图",
   "ColTerritory": "地图",
   "LeftPositions": "剩余可能位置",
-  "RegisteredPositions": "已注册的刷新位置"
+  "RegisteredPositions": "已注册的刷新位置",
+  "Description": "巡游所选地图寻找A级，或反复刷同一只B级直到手动停止。",
+  "StartARank": "开始A级",
+  "StartBRank": "开始B级",
+  "TerritoriesSelectedFmt": "已选 {0}/{1} 个地图",
+  "All":      "全选",
+  "None":     "全不选"
 }

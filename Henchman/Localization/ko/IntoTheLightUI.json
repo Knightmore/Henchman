@@ -10,5 +10,8 @@
   "ColClassJob":   "클래스/직업",
   "ColPreset":     "프리셋",
   "Random":        "무작위",
-  "None":          "없음"
+  "None":          "없음",
+  "Description":   "목록의 새 캐릭터를 타이틀 화면에서 시작해 지정한 데이터 센터와 월드에 생성합니다.",
+  "TitleScreenNote": "시작을 누르기 전에 타이틀 화면으로 이동하세요.",
+  "CharactersToCreate": "생성할 캐릭터"
 }

@@ -17,5 +17,5 @@ internal class KeybindsUI : ModuleUI
 
     public override bool LoginNeeded => false;
 
-    public override void Draw() => KeybindsUi.Draw();
+    public override void Draw() => KeybindsPage.Draw();
 }
